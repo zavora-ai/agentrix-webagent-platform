@@ -2,6 +2,10 @@
 
 **Goodbye WordPress. Meet your WebAgents.**
 
+![Agentrix WebAgent Websites: Kilele Bakery, Classy Perfumes and Tana Valley Times, each with its Chief WebAgent and the WebAgents at work](docs/images/webagent-websites.png)
+
+*Agentrix WebAgent Websites*
+
 Agentrix WebAgent Platform transforms any WordPress/Shopify/React website into an Autonomous AI
 Business using WebAgents running on secure sandboxes on Vultr. Developed using ADK-Rust AI Agent
 Framework.
