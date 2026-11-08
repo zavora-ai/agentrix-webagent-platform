@@ -16,6 +16,39 @@ sealed sandboxes on Vultr with no secrets and no way out except a per-job allowl
 live only when the owner approves it with a DNS verification and passkey, with an audit trail
 and an agent-driven migration process.
 
+## Try it on your machine
+
+Two commands run the platform on your laptop, with three sample businesses and their WebAgents.
+You need [Rust](https://rustup.rs) and git; the first build fetches the dependencies and takes a
+few minutes.
+
+```sh
+git clone https://github.com/zavora-ai/agentrix-webagent-platform && cd agentrix-webagent-platform
+AGENTRIX_DATA_DIR=$HOME/.agentrix-local AGENTRIX_ORIGIN=http://localhost:8080 cargo run -p agentrix-node --locked
+```
+
+When it prints `agentrix-node up`, open:
+- http://localhost:8080, the home page;
+- http://kilele-bakery-sample.localhost:8080, a sample bakery and its WebAgents. Classy Perfumes and
+  Tana Valley Times are at `classy-perfumes-sample.localhost:8080` and
+  `tana-valley-times-sample.localhost:8080`;
+- http://localhost:8080/status, the platform's health.
+
+To let the WebAgents answer with a model, copy `.env.example` to `.env`, put your Vultr Serverless
+Inference key in `VULTR_INFERENCE_API_KEY`, and start the Model Gateway in a second terminal:
+
+```sh
+AGENTRIX_PROVIDER=vultr AGENTRIX_CONTROL_DB=$HOME/.agentrix-local/control.db cargo run -p agentrix-models --locked -- --env-file .env
+```
+
+Then ask Kilele Bakery something. Plain facts, such as opening hours, come back at once with the
+page they came from. Anything else goes to a model on Vultr, and when the site doesn't say, the
+WebAgent says so and offers to ask the owner.
+
+Checking and moving a real site needs the sealed rooms on a Vultr sandbox VM ([Deploy](#6-deploy));
+on a laptop, *Paste your website address* says so instead of guessing. More in
+[Run it locally](#8-run-it-locally).
+
 ## Contents
 
 1. [Why Agentrix WebAgent Platform?](#1-why-agentrix-webagent-platform)
@@ -515,24 +548,24 @@ cd agentrix-webagent-platform
 cargo test --workspace --locked
 
 export AGENTRIX_DATA_DIR=$HOME/.agentrix-local      # any empty folder; keys are made on first start
-export AGENTRIX_ORIGIN=http://localhost:18050
-export AGENTRIX_LISTEN=127.0.0.1:18050
-export AGENTRIX_INTERNAL_LISTEN=127.0.0.1:18049
+export AGENTRIX_ORIGIN=http://localhost:8080         # set AGENTRIX_LISTEN too to use another port
 cargo run -p agentrix-node --locked
 ```
 
-Wait for `curl http://127.0.0.1:18050/healthz` to answer `ok`. With no runner set, sealed rooms
-use a fake runner. With no Model Gateway on port 8090, Ask says "Answers are paused right now".
+Wait for `curl http://127.0.0.1:8080/healthz` to answer `ok`. With no sandbox runner set,
+*Paste your website address* says it can't check a site rather than guessing. With no Model
+Gateway on port 8090, questions that need a model get "Answers are paused right now".
 
 **Model calls.** In a second terminal, start the gateway against the same database:
 
 ```sh
 cp .env.example .env                                 # add VULTR_INFERENCE_API_KEY
-AGENTRIX_CONTROL_DB=$HOME/.agentrix-local/control.db \
+AGENTRIX_PROVIDER=vultr AGENTRIX_CONTROL_DB=$HOME/.agentrix-local/control.db \
   cargo run -p agentrix-models --locked -- --env-file .env
 ```
 
-`AGENTRIX_MODELS_MODE=replay` answers only from recordings and needs no key; a call with no
+`--env-file` reads only the key; `AGENTRIX_PROVIDER=vultr` sends every purpose to Vultr (without
+it, the gateway expects an Anthropic key). `AGENTRIX_MODELS_MODE=replay` answers only from recordings and needs no key; a call with no
 recording returns HTTP 503 `no_recording`, naming the file to record with
 `AGENTRIX_MODELS_MODE=record`. Tests never call live models.
 
@@ -541,14 +574,14 @@ without editing `/etc/hosts`.
 
 | Page | Address |
 |---|---|
-| Home page | http://localhost:18050/home |
-| Paste an address | http://localhost:18050/start |
-| Owner sign-up | http://localhost:18050/account/new (email codes go to the outbox) |
-| Owner console | http://localhost:18050/os |
-| Messages outbox | http://localhost:18050/console/messages |
-| Status | http://localhost:18050/status |
-| Operator console | http://ops.localhost:18050/ (needs `operators.txt` in `$AGENTRIX_DATA_DIR/agentrix-operator/`) |
-| Sample sites | http://kilele-bakery-sample.localhost:18050/, `classy-perfumes-sample.localhost`, `tana-valley-times-sample.localhost` |
+| Home page | http://localhost:8080/ |
+| Paste an address | http://localhost:8080/start |
+| Owner sign-up | http://localhost:8080/account/new (email codes go to the outbox) |
+| Owner console | http://localhost:8080/os |
+| Messages outbox | http://localhost:8080/console/messages |
+| Status | http://localhost:8080/status |
+| Operator console | http://ops.localhost:8080/ (needs `operators.txt` in `$AGENTRIX_DATA_DIR/agentrix-operator/`) |
+| Sample sites | http://kilele-bakery-sample.localhost:8080/, `classy-perfumes-sample.localhost`, `tana-valley-times-sample.localhost` |
 
 More: [specs/platform/run-locally.md](specs/platform/run-locally.md). The infected fixture runs
 locally with Docker Compose: `fixtures/wordpress-infected/up.sh`
