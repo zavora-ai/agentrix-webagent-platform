@@ -173,8 +173,8 @@ flowchart TB
   fingerprint, and the effect runs once.
 - **Receipts for everything.** Each job, decision and release is a signed receipt (RFC 8785
   canonical JSON, Ed25519). The public keys are at `/.well-known/agentrix/keys`.
-- **One codebase, two profiles.** The single-node profile is built and running. The fleet
-  profile (cells on VKE, Managed PostgreSQL, CDN) is designed, not built.
+- **One codebase.** Every site, both consoles and the WebAgents run from three binaries:
+  `agentrix-node`, `agentrix-models` and `agentrix-runner`.
 
 The reasons for each rule are in [docs/02-architecture.md](docs/02-architecture.md),
 [docs/03-trust.md](docs/03-trust.md) and the [ADRs](docs/adr/).
@@ -226,17 +226,6 @@ Control plans the Move as a graph of jobs and sends each job to a sealed room:
 More detail: [docs/02-architecture.md §4.4](docs/02-architecture.md),
 [specs/brick-1/design.md](specs/brick-1/design.md) and
 [section 9.4](#94-how-the-agent-does-real-work).
-
-### 2.5 From one node to a fleet
-
-The same binaries are meant to run as a fleet for Zavora's managed service: cells on VKE with
-Managed PostgreSQL, Object Storage behind the CDN, a pool of VX1 runners and release trains.
-That profile is designed, not built:
-[specs/platform/02-architecture.md](specs/platform/02-architecture.md) (what is built against
-what production needs), [docs/08-control-plane.md](docs/08-control-plane.md) and
-[the two profiles](docs/diagrams/vultr-deployment.svg).
-
-![Target platform architecture](docs/diagrams/platform-architecture.svg)
 
 ## 3. The main parts
 
@@ -342,27 +331,13 @@ The deployed platform's first Assess of the fixture read 49 pages in gVisor room
 seconds and caught five of the planted attacks; that is the Assess stage alone. **Score:
 TODO(live) n/10 contained**, from receipts, on the Trust tab of the live deployment.
 
-### 4.5 Throwaway instances: what is real now, and what comes next
+### 4.5 Throwaway rooms
 
-Brick 1 makes the **room** the throwaway unit: each job gets a fresh gVisor container that
-exists only for that job and is destroyed when it ends, and the signed receipt records the
-destruction. The sandbox VM itself stays up, holds no secrets and runs nothing but rooms.
-
-The next step is a **throwaway Vultr VM per Move**: the Move's rooms run on a short-lived
-instance created through the API from a prepared sandbox snapshot, joined to the VPC behind the
-sandbox firewall group, and destroyed with a receipt when the Move ends. Two pieces exist
-already:
-- `provision.sh wake` restores the sandbox from its snapshot with its room images, runner and
-  keys intact, and `provision.sh restore-test sandbox` creates a throwaway copy with nothing
-  inbound, times it to ready and deletes it.
-- The runner's address is one setting on the control VM (`AGENTRIX_RUNNER`).
-
-What's missing is a broker that picks a runner per Move, and a pool of warm instances, because a
-snapshot restore takes minutes. Measured on Sun 8 Nov: restoring the sandbox VM from its 9.6 GB
-snapshot took 12 min 33 s to a restored disk and 12 min 55 s until it was serving. A smaller,
-purpose-built image should start faster, but that hasn't been measured. Until a VM can be ready
-in well under a minute, a Move waits on no VM boot: it uses the warm sandbox VM and a fresh room
-per job.
+Every job gets a fresh gVisor container that exists only for that job and is destroyed when it
+ends, and the signed receipt records the destruction. The sandbox VM itself holds no secrets and
+runs nothing but rooms. Through the Vultr API, `provision.sh restore-test sandbox` creates a
+throwaway copy of the sandbox VM from its snapshot, with nothing inbound, times it to ready and
+deletes it. On Sun 8 Nov the sandbox VM came back from its 9.6 GB snapshot in 12 min 55 s.
 
 Trust design in full: [docs/03-trust.md](docs/03-trust.md).
 
@@ -660,7 +635,7 @@ The three VMs, the VPC, firewall groups and DNS records are created by
 The **Mover** is the agent that moves a site. Control plans the Move as a graph of jobs,
 dispatches each to a sealed room as a signed spec, and gets back content-addressed artifacts,
 which it checks and receipts ([section 2.4](#24-how-a-move-flows)). On the first live Move (50
-pages, Phase 1 routes), Replay took 12.4 s, Clean 37.5 s and Rebuild 26.6 s. Brick 1 uses both of
+pages, Phase 1 routes), Replay took 12.4 s, Clean 37.5 s and Rebuild 26.6 s. The Move uses both of
 Challenge 1's patterns.
 
 **Pattern A: the model writes code, a container runs it**
@@ -699,7 +674,7 @@ Challenge 1's patterns.
 
 **Challenge 1: Blast Radius Zero**
 
-| Vultr asks | How Brick 1 meets it |
+| Vultr asks | How Agentrix meets it |
 |---|---|
 | **Pattern A:** the model writes code, it runs in a container, the output returns and is explained, errors feed retries | The builder (`qwen3.8-27b`, raised to `glm-5.3` on retries) writes the page code. A gVisor room renders it, and the agent explains whether the result matches the old page. Failures go back to the builder |
 | **Pattern B:** goal, plan, browser in a container, screenshots, vision check, human approval before the final action | Goal: "move my site". The Mover plans the crawl, a browser runs in sealed rooms and returns screenshots, `deepseek-v4.1-flash-1017` checks visual parity, and the owner approves go-live with a passkey |
@@ -710,8 +685,8 @@ Challenge 1's patterns.
 | **Serverless Inference** | Every model call goes through the Model Gateway to Vultr |
 | **One containment moment** | The gauntlet: ten attacks planted in a hacked WordPress copy, each stopped and receipted, scored live ([4.4](#44-the-gauntlet)) |
 
-**Challenge 2: Future of Work.** Brick 1 is entered under Challenge 1; the platform behind it also
-does the work Challenge 2 asks for.
+**Challenge 2: Future of Work.** Agentrix is entered under Challenge 1, and the platform also does
+the work Challenge 2 asks for.
 
 | Vultr asks | The platform | In this repository |
 |---|---|---|
@@ -736,12 +711,12 @@ apps/            Flutter workspace: owner app, customer app, shared packages
 deploy/          provision.sh, deploy.sh, cloud-init, systemd units, Caddy, nftables, smoke tests
 fixtures/        the infected WordPress fixture and the three sample businesses' seeds
 docs/            product, architecture, trust, WebAgents, website, console, control plane, data; ADRs; diagrams
-specs/brick-1/   the Vultr Agent Rush build: requirements, design, tasks, status, acceptance, bake-off
+specs/brick-1/   the single-node build: requirements, design, tasks, status, acceptance, bake-off
 specs/platform/  the platform build: plan, architecture, data, UI, channels, cost and runbooks, voice
 specs/submission/ the Vultr Agent Rush submission: form, deck, cover, video script and pipeline
 concept/         the HTML concepts every screen was drawn from
 scripts/         copy-lint, acceptance checks, merge and build helpers
-submission/      Brick 1's submission work: checklist, deck, form texts, video script
+submission/      earlier submission drafts: checklist, deck, form texts, video script
 program/         the build boards used while the platform was made
 ```
 
@@ -750,13 +725,13 @@ program/         the build boards used while the platform was made
 1. [Product: business model, experience, growth](docs/01-product.md)
 2. [Architecture](docs/02-architecture.md) and [ADRs](docs/adr/)
 3. [Trust and security](docs/03-trust.md)
-4. [Brick 1: the Vultr Agent Rush entry](docs/04-vultr-agent-rush.md)
+4. [The Vultr Agent Rush entry](docs/04-vultr-agent-rush.md)
 5. [WebAgents: anatomy, teams, surfaces, deployment](docs/05-webagents.md)
 6. [The website experience](docs/06-website-experience.md) ([concepts](concept/experience/))
 7. [The owner console](docs/07-owner-console.md) ([concepts](concept/console/))
 8. [The control plane: how Zavora, agencies and resellers run the fleet](docs/08-control-plane.md) ([concepts](concept/control-plane/))
 9. [Data architecture: stores, vectors, the content-free lakehouse, erasure and export](docs/09-data-architecture.md)
-10. Build specs: [Brick 1](specs/brick-1/) and [the platform](specs/platform/), starting at
+10. Build specs: [the single-node build](specs/brick-1/) and [the platform](specs/platform/), starting at
     [00-plan.md](specs/platform/00-plan.md) and
     [02-architecture.md](specs/platform/02-architecture.md) (what is built against what
     production needs)

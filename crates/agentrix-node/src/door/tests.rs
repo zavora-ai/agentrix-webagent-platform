@@ -274,3 +274,79 @@ fn order_validation() {
     email["email"] = json!("not-an-email");
     assert!(validate_order(&email, today).is_err());
 }
+
+#[tokio::test]
+async fn with_the_concierge_off_duty_no_order_is_held() {
+    let site = Site::new().await;
+    site.release(1, "Sourdough and cakes").await;
+    let (state, _) = site.state();
+    let state = state.with_guards(crate::guards::testing::team("site-kilele", &["editor"]).await);
+    let held = Arc::new(Held::default());
+    let app = crate::site::router(state.clone()).merge(router(DoorState {
+        site: state,
+        held: held.clone(),
+    }));
+    let (status, _, reply) = rpc(
+        &app,
+        json!({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
+               "params": {"name": "request_custom_order", "arguments": order_args()}}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(reply["result"]["isError"], true);
+    assert_eq!(reply["result"]["content"][0]["text"], NOT_TAKING_ORDERS);
+    assert!(held.cards.lock().unwrap().is_empty(), "no card raised");
+}
+
+#[tokio::test]
+async fn while_frozen_the_door_takes_no_calls() {
+    let site = Site::new().await;
+    site.release(1, "Sourdough and cakes").await;
+    let (state, _) = site.state();
+    let state = state.with_guards(crate::guards::testing::frozen_alone("site-kilele").await);
+    let held = Arc::new(Held::default());
+    let app = crate::site::router(state.clone()).merge(router(DoorState {
+        site: state,
+        held: held.clone(),
+    }));
+    for (name, arguments) in [
+        ("request_custom_order", order_args()),
+        (
+            "ask_site",
+            json!({"question": "Do you deliver to Kilimani?"}),
+        ),
+    ] {
+        let (_, _, reply) = rpc(
+            &app,
+            json!({"jsonrpc": "2.0", "id": 4, "method": "tools/call",
+                   "params": {"name": name, "arguments": arguments}}),
+        )
+        .await;
+        assert_eq!(reply["result"]["isError"], true, "{name}");
+        assert_eq!(reply["result"]["content"][0]["text"], PAUSED, "{name}");
+    }
+    assert!(held.cards.lock().unwrap().is_empty());
+    let (status, _) = get_json(&app, "/.well-known/awp").await;
+    assert_eq!(status, StatusCode::OK, "discovery still answers");
+}
+
+#[tokio::test]
+async fn under_a_platform_hold_the_door_takes_no_calls() {
+    let site = Site::new().await;
+    site.release(1, "Sourdough and cakes").await;
+    let (state, _) = site.state();
+    let state = state.with_guards(crate::guards::testing::held("site-kilele", "read-only").await);
+    let held = Arc::new(Held::default());
+    let app = crate::site::router(state.clone()).merge(router(DoorState {
+        site: state,
+        held: held.clone(),
+    }));
+    let (_, _, reply) = rpc(
+        &app,
+        json!({"jsonrpc": "2.0", "id": 5, "method": "tools/call",
+               "params": {"name": "request_custom_order", "arguments": order_args()}}),
+    )
+    .await;
+    assert_eq!(reply["result"]["content"][0]["text"], PAUSED);
+    assert!(held.cards.lock().unwrap().is_empty());
+}

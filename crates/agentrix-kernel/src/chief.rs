@@ -485,6 +485,7 @@ impl Chief {
             "answer",
             format!("answered from {} sources", sources.len()),
         );
+        let text = no_dashes(&text);
         let trace = tr.steps();
         let trace_id = self
             .keep_trace(site, surface, &said, &text, &trace, &sources)
@@ -1651,6 +1652,14 @@ fn fallback(e: GatewayError, sources: Vec<Source>, cards: Vec<CardRef>) -> Answe
     }
 }
 
+/// House style (voice.md): no dashes in prose. Vultr's models write em dashes where Anthropic's
+/// mostly didn't. Line breaks stay, since Telegram and the console show the answer as written.
+fn no_dashes(s: &str) -> String {
+    s.replace(" \u{2014} ", ", ")
+        .replace('\u{2014}', ", ")
+        .replace(" \u{2013} ", ", ")
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::{HashMap, VecDeque};
@@ -1661,6 +1670,14 @@ mod tests {
     use axum::routing::post;
 
     use super::*;
+
+    #[test]
+    fn the_chief_writes_no_dashes_and_keeps_its_lines() {
+        assert_eq!(
+            no_dashes("Two orders wait \u{2014} both from today.\n- Sourdough \u{2013} 2"),
+            "Two orders wait, both from today.\n- Sourdough, 2"
+        );
+    }
 
     const SITE: &str = "kilele-bakery-sample";
 

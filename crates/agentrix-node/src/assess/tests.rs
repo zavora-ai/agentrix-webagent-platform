@@ -636,6 +636,44 @@ async fn the_start_form_validates_and_redirects() {
     );
 }
 
+#[tokio::test]
+async fn with_w4s_pages_get_assess_and_a_refused_address_render_the_onboarding_start() {
+    let r = rig(fixture_web("https://fixture.agentrix.website"));
+    let state = r
+        .state
+        .clone()
+        .with_pages(Arc::new(agentrix_onboarding::Pages::new().unwrap()));
+    let (status, html) = {
+        let resp = router(state.clone())
+            .oneshot(Request::get("/assess").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        let status = resp.status();
+        let bytes = axum::body::to_bytes(resp.into_body(), 1 << 20)
+            .await
+            .unwrap();
+        (status, String::from_utf8_lossy(&bytes).into_owned())
+    };
+    assert_eq!(status, StatusCode::OK);
+    assert!(html.contains("/static/onboarding/onboarding.css"), "{html}");
+    assert!(html.contains("/assess/fixture"));
+    let resp = router(state)
+        .oneshot(
+            Request::post("/assess")
+                .header("content-type", "application/x-www-form-urlencoded")
+                .body(Body::from("url=127.0.0.1"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    let bytes = axum::body::to_bytes(resp.into_body(), 1 << 20)
+        .await
+        .unwrap();
+    let html = String::from_utf8_lossy(&bytes);
+    assert!(html.contains("/static/onboarding/onboarding.css"), "{html}");
+}
+
 #[test]
 fn addresses_are_normalised_or_refused_in_plain_words() {
     assert_eq!(

@@ -19,13 +19,13 @@
     <article class="fcard span2" aria-labelledby="g-h">
       <div class="spread-h"><h3 id="g-h">The containment gauntlet</h3>{% if gauntlet %}<span class="chip {{ 'chip-ok' if gauntlet.held == gauntlet.of else 'chip-risk' }}">{{ gauntlet.held }} of {{ gauntlet.of }} held</span>{% endif %}</div>
       {% if gauntlet %}
-      <p>Ten attacks planted in Zavora's fixture, run against this deployment {{ gauntlet.run_words }}. The score is computed from receipts only. <a href="/receipts/{{ gauntlet.receipt }}">The run's receipt</a></p>
+      <p>Ten test attacks, hidden in a copy of an infected site we keep for testing, run against your site {{ gauntlet.run_words }}. The score counts only what the receipts show. <a href="/receipts/{{ gauntlet.receipt }}">The run's receipt</a></p>
       <table class="surface-table">
         <thead><tr><th>Attack</th><th>What it tried</th><th>Result</th></tr></thead>
         <tbody>{% for a in gauntlet.attacks %}<tr><td><b>{{ a.name }}</b></td><td>{{ a.plain }}</td><td><span class="yesno {{ 'y' if a.held else 'n' }}">{{ "Held" if a.held else "Got through" }}</span>{% if a.receipt %} · <a href="/receipts/{{ a.receipt }}">receipt</a>{% endif %}</td></tr>{% endfor %}</tbody>
       </table>
       {% else %}
-      <p>The gauntlet hasn't run against this deployment yet, so there's no score to show.</p>
+      <p>The test attacks haven't been run against your site yet, so there's no score to show.</p>
       {% endif %}
     </article>
 

@@ -74,6 +74,7 @@ fn state(world: &World) -> DecisionsState {
         approver: Arc::new(Approve),
         sessions: Arc::new(Header),
         events: Arc::new(MoveEvents::new(world.pool.clone())),
+        guards: crate::guards::Guards::default(),
     }
 }
 
@@ -476,6 +477,7 @@ async fn the_owner_starts_a_move_from_the_fixture_exports_and_it_reaches_the_car
             env!("CARGO_MANIFEST_DIR"),
             "/../../fixtures/wordpress-infected/exports/dev"
         ))),
+        guards: crate::guards::Guards::default(),
     };
     let send =
         |uri: String, account: Option<&'static str>, method: &'static str, body: &'static [u8]| {
@@ -643,6 +645,7 @@ async fn accepting_pages_needs_the_owner_and_a_move_waiting_on_them() {
         },
         sessions: Arc::new(Header),
         fixture_exports: None,
+        guards: crate::guards::Guards::default(),
     };
     let send = |account: &'static str, body: &'static str| {
         let moves = moves.clone();
@@ -701,6 +704,7 @@ async fn pressing_start_again_resumes_a_move_that_stopped_on_a_fault() {
         },
         sessions: Arc::new(Header),
         fixture_exports: None,
+        guards: crate::guards::Guards::default(),
     };
     let request = Request::post(format!("/sites/{}/moves", world.site))
         .header("x-account", OWNER)
@@ -736,4 +740,115 @@ async fn pressing_start_again_resumes_a_move_that_stopped_on_a_fault() {
         })
         .count();
     assert_eq!(replays, 1, "replay is not run again");
+}
+
+#[tokio::test]
+async fn a_held_order_lights_the_agent_desk_until_the_owner_decides() {
+    let world = World::new().await;
+    let s = state(&world);
+    let orders = HeldOrders {
+        store: s.store.clone(),
+    };
+    let site = world.site.as_str();
+    let mark = |who: &str| {
+        agentrix_kernel::presence::global()
+            .current(site, who)
+            .map(|f| f.state.key())
+    };
+    let input = json!({ "description": "Two dozen croissants", "date": "2026-12-01", "name": "Amina", "email": "amina@example.com" });
+    let held = orders
+        .raise(site, "request_custom_order", input, "key-presence")
+        .await
+        .unwrap();
+    assert_eq!(mark("agent-desk"), Some("waiting"));
+    assert_eq!(
+        mark("coordinator"),
+        Some("waiting"),
+        "the Chief shows it too"
+    );
+    let (status, _, _) = post(
+        &s,
+        &format!("/decisions/{}/decline", held.id),
+        Some(OWNER),
+        Body::empty(),
+        false,
+    )
+    .await;
+    assert_eq!(status, StatusCode::SEE_OTHER);
+    assert_eq!(mark("agent-desk"), Some("idle"));
+    assert_eq!(mark("coordinator"), Some("asleep"));
+}
+
+#[tokio::test]
+async fn while_frozen_nothing_goes_live_and_no_move_starts() {
+    let world = World::new().await;
+    let card = world.card().await;
+    let mut s = state(&world);
+    s.guards = crate::guards::testing::frozen(&world.pool, world.site.as_str()).await;
+    let passkey =
+        Body::from(json!({ "method": "passkey", "credential": { "ok": true } }).to_string());
+    let (status, _, body) = post(
+        &s,
+        &format!("/decisions/{}/approve", card.decision_id),
+        Some(OWNER),
+        passkey,
+        true,
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(body["message"], FROZEN_GO_LIVE);
+    assert_eq!(
+        s.store
+            .card(&card.decision_id)
+            .await
+            .unwrap()
+            .unwrap()
+            .state,
+        CardState::Waiting,
+        "the card keeps waiting"
+    );
+    assert!(
+        s.gate
+            .releases()
+            .live("kilele-bakery.example")
+            .await
+            .unwrap()
+            .is_none()
+    );
+
+    let moves = moves::MovesState {
+        mover: world.mover.clone(),
+        blobs: crate::launch::ports::NodeBlobs {
+            pool: world.pool.clone(),
+            cas: world.cas.clone(),
+        },
+        sessions: Arc::new(Header),
+        fixture_exports: None,
+        guards: s.guards.clone(),
+    };
+    let before = s.store.latest_move(&world.site).await.unwrap().unwrap().id;
+    let response = moves::router(moves)
+        .oneshot(
+            Request::post(format!("/sites/{}/moves", world.site))
+                .header("x-account", OWNER)
+                .header(header::ACCEPT, "application/json")
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::CONFLICT);
+    let bytes = axum::body::to_bytes(response.into_body(), 1 << 20)
+        .await
+        .unwrap();
+    assert!(
+        String::from_utf8_lossy(&bytes).contains("frozen"),
+        "{bytes:?}"
+    );
+    assert_eq!(
+        s.store.latest_move(&world.site).await.unwrap().unwrap().id,
+        before,
+        "no new Move"
+    );
 }

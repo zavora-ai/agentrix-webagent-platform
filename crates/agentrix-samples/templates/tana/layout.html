@@ -56,7 +56,7 @@
   </div>
 </aside>
 <div class="team-sheet" id="teamSheet" role="dialog" aria-label="{{ shell.site.name }}'s desks">
-  <div class="spread sheet-top"><b class="sheet-title">{{ shell.site.name }}'s desks</b><button class="icon-btn" id="sheetClose" type="button" aria-label="Close menu"></button></div>
+  <div class="spread sheet-top"><b class="sheet-title">The desks at {{ shell.site.name }}</b><button class="icon-btn" id="sheetClose" type="button" aria-label="Close menu"></button></div>
   {% for d in shell.desks %}
   <div class="team-row">{{ mark(d, 40, shell.site, "lg") }}<div><b>{{ d.name }}</b><p>{{ d.mandate }}</p>
     <div class="acts"><button class="act primary" type="button" data-ask="{{ d.id }}">Ask {{ d.name }}</button><a class="act" href="{{ d.href }}">Open page</a></div></div></div>

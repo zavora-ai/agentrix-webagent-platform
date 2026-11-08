@@ -765,8 +765,9 @@ fn capitalise(s: &str) -> String {
         .unwrap_or_default()
 }
 
-/// House style for a model's sentence: no exclamation marks, no dashes in prose.
-fn plain(s: &str) -> String {
+/// House style for a model's sentence: no exclamation marks, no dashes in prose. Sample Ask
+/// uses it too.
+pub(crate) fn plain(s: &str) -> String {
     s.replace(" \u{2014} ", ", ")
         .replace('\u{2014}', ", ")
         .replace(" \u{2013} ", ", ")

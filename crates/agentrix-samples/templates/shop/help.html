@@ -18,7 +18,7 @@
       {% if outcome %}
       {% if outcome.step == "offer" %}
       <div class="k-msg desk">Thanks for telling me. I've passed it to the Cashier, which handles refunds under {{ owner }}'s rule.</div>
-      <p class="k-hand">The Cashier works behind the scenes. It sees the order and the request, not your account.</p>
+      <p class="k-hand">You don't talk to the Cashier yourself. It sees the order and the request, not your account.</p>
       {% endif %}
       <div class="k-msg desk">{{ outcome.words }}{% if outcome.small %}<small>{{ outcome.small }}</small>{% endif %}</div>
       {% if outcome.pill %}<span class="k-pill {% if outcome.covered %}ok{% else %}wait{% endif %}">{{ outcome.pill }}</span>{% endif %}

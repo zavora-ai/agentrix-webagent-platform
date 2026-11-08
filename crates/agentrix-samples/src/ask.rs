@@ -693,7 +693,11 @@ pub(crate) async fn model_turn(
     Ok(ModelTurn {
         desk,
         covered: true,
-        phrases: sentences(&answer),
+        // House style: Vultr's models write em dashes (voice.md bans them in prose).
+        phrases: sentences(&answer)
+            .iter()
+            .map(|p| crate::studio::desk::plain(p))
+            .collect(),
         cited,
         action,
     })

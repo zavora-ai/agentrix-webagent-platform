@@ -153,8 +153,10 @@ pub struct SiteView {
     pub contact_href: Option<String>,
     /// Zavora's fixture site (R3.3).
     pub fixture: bool,
-    /// Whether the site counts visits (it does not, this weekend).
+    /// Whether the site counts visits: the footer says so and offers the visitor's switch.
     pub counting: bool,
+    /// The visit counter's script tag (W8's `visits::script_tag`), when the site counts visits.
+    pub counter: Option<String>,
 }
 
 /// One page, as the template names it.
@@ -243,6 +245,7 @@ mod tests {
             contact_href: None,
             fixture: true,
             counting: false,
+            counter: None,
         };
         let page = PageView {
             title: "Home",
@@ -256,5 +259,37 @@ mod tests {
         assert!(html.contains("<h1>Kilele</h1>"));
         assert!(html.contains("Kilele &lt;Bakery&gt;"));
         assert!(html.contains("Zavora&#x27;s fixture") || html.contains("Zavora's fixture"));
+        assert!(!html.contains("/_agx/visit.js") && !html.contains("counts visits"));
+    }
+
+    #[test]
+    fn a_counting_site_carries_the_counter_and_the_visitors_switch() {
+        let site = SiteView {
+            name: "Kilele".into(),
+            domain: "kilele-bakery.example".into(),
+            lang: "en".into(),
+            tokens: Tokens::default(),
+            nav: vec![],
+            contact_href: None,
+            fixture: false,
+            counting: true,
+            counter: Some(agentrix_store::visits::script_tag(Some(3))),
+        };
+        let page = PageView {
+            title: "Home",
+            description: None,
+            path: "/",
+            md_href: "/index.md".into(),
+            body_html: "<h1>Kilele</h1>",
+            updated: None,
+        };
+        let html = render_page(&site, &page).unwrap();
+        assert!(
+            html.contains(r#"<script src="/_agx/visit.js" data-seq="3" defer></script>"#),
+            "{html}"
+        );
+        assert!(html.contains(r#"data-agx-count="off""#));
+        assert!(html.contains(r#"data-agx-count="on""#));
+        assert!(html.contains(r#"data-visits="gpc""#));
     }
 }

@@ -285,6 +285,11 @@ pub trait ConsoleReads: Send + Sync + 'static {
     async fn meter(&self, _site: &SiteId) -> ReadResult<Option<MeterRow>> {
         Ok(None)
     }
+    /// Pictures the Move's fill drafted for pages that had none, waiting for the owner in W11's
+    /// Pictures (handover-wiring 1.3).
+    async fn pictures_waiting(&self, _site: &SiteId) -> ReadResult<i64> {
+        Ok(0)
+    }
     /// Items left behind.
     async fn quarantine(&self, site: &SiteId) -> ReadResult<Vec<QuarantineRow>>;
     /// A frame from the CAS, if the viewer may see it (design §4.1: "Owner, public during

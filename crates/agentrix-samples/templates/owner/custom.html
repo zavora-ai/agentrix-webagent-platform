@@ -1,7 +1,7 @@
 {% extends "owner/base.html" %}
 {% block field %}{% import "owner/macros.html" as m %}
 {{ m.head(c) }}
-{% if live.list %}<p class="note">{{ m.icon("catalogue") }}<span>Quotes are priced from price list <b>{{ live.list }}</b> ({{ live.list_source }}), {{ live.rate }}. Each request keeps the list it was priced on. No model prices anything.</span></p>{% endif %}
+{% if live.list %}<p class="note">{{ m.icon("catalogue") }}<span>Quotes are priced from price list <b>{{ live.list }}</b> ({{ live.list_source }}), {{ live.rate }}. Each request keeps the list it was priced on. AI never sets a price.</span></p>{% endif %}
 {% for o in held %}
 <article class="fcard decision" id="{{ o.id }}">
   <div class="from">{{ m.agent("Cashier") }}<span>The Orders desk holds this request · nothing charged</span>{{ m.chip("Waiting for you", "wait") }}</div>

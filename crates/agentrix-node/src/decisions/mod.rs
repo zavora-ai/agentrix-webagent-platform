@@ -163,6 +163,8 @@ pub struct DecisionsState {
     pub sessions: Arc<dyn Sessions>,
     /// The Move's live stream.
     pub events: Arc<dyn Events>,
+    /// The platform's checks (the owner's Freeze stops go-live).
+    pub guards: crate::guards::Guards,
 }
 
 impl DecisionsState {
@@ -393,11 +395,17 @@ impl DecisionsState {
         if record.state != CardState::Waiting {
             return Err(fail(StatusCode::CONFLICT, "This card was already decided."));
         }
+        // While the owner's Freeze is in force nothing goes live; the card keeps waiting
+        // (W5, handover-wiring 2b.1).
+        if card.kind == CardKind::GoLive && self.guards.frozen(card.site.as_str()).await {
+            return Err(fail(StatusCode::CONFLICT, FROZEN_GO_LIVE));
+        }
         if card.effect.is_expired(now) {
             self.store
                 .expire(&card.decision_id)
                 .await
                 .map_err(internal)?;
+            presence_decided(&card);
             return Err(fail(
                 StatusCode::GONE,
                 "This card expired, so nothing was done. Ask for a fresh one.",
@@ -460,6 +468,7 @@ impl DecisionsState {
         {
             return Err(fail(StatusCode::CONFLICT, "This card was already decided."));
         }
+        presence_decided(&card);
         self.run_effect(&card, &receipt, &account).await
     }
 
@@ -498,6 +507,7 @@ impl DecisionsState {
         {
             return Err(fail(StatusCode::CONFLICT, "This card was already decided."));
         }
+        presence_decided(&card);
         match card.kind {
             CardKind::GoLive => {
                 if let Ok(args) = agentrix_move::golive::GoLiveArgs::of(&card) {
@@ -644,6 +654,20 @@ impl DecisionsState {
             .map_err(|e| fail(StatusCode::CONFLICT, first_line(&e)))?;
         Ok("/console/move".into())
     }
+}
+
+/// Why go-live waits while the owner's Freeze is in force.
+pub const FROZEN_GO_LIVE: &str = "Your site is frozen, so it can't go live. Unfreeze it from your console, then approve again. This card keeps waiting.";
+
+/// A card stopped waiting (approved, declined or expired): the WebAgent that raised it, and
+/// the Chief, stop showing the amber dot for it (W1, handover-wiring 2.3).
+fn presence_decided(card: &DecisionCard) {
+    agentrix_kernel::presence::global().on_decision(
+        card.site.as_str(),
+        card.decision_id.as_str(),
+        card.kind,
+        false,
+    );
 }
 
 fn first_line(e: &anyhow::Error) -> String {
@@ -809,6 +833,13 @@ impl HeldCalls for HeldOrders {
             now,
         )?;
         self.store.insert_card(&card).await?;
+        // The agent desk shows the amber dot while the order waits on the owner (2.3).
+        agentrix_kernel::presence::global().on_decision(
+            site.as_str(),
+            card.decision_id.as_str(),
+            CardKind::OrderHeld,
+            true,
+        );
         let record = self
             .store
             .card(&card.decision_id)

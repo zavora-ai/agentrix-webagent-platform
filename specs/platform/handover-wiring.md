@@ -5,6 +5,10 @@ them on `platform` once Brick 1 spec hands over `main`, in this order, each with
 (`scripts/platform-merge.sh --check`) and a local node run, and with the owner's agreement where
 the owner is back. Kept current by W0.
 
+**§1 to §3 are applied** on branch `w0/w15-node-wiring` (W0, Sun 8 Nov 2026, 19:57 EAT), one
+commit per item or group, each with tests; the coordinator merges and deploys. Workspace fmt,
+clippy (`-D warnings`) and tests pass on that branch. The "Applied" column names the commit.
+
 ## 0. Before anything else on main
 
 | # | Change | From | Files | Why first |
@@ -28,44 +32,48 @@ the owner is back. Kept current by W0.
 
 ## 1. Front door and onboarding
 
-| # | Change | From | Files |
-|---|---|---|---|
-| 1.1 | Assess renders W4's pages; `GET /assess` beside `POST` | W4 | `specs/platform/patches/w4-assess-wiring.patch` (assess/, claim/, app.rs) |
-| 1.2 | The home page becomes `/`: drop `.route("/", get(start_page))` from `assess::router`, call `agentrix_home::mount_with_front_door` instead of `mount` | W10 | `crates/agentrix-node/src/assess/`, `wiring/host.rs` |
-| 1.3 | Pictures for bare pages at go-live: right after `go_live` moves the pointer (beside W3's `Billing::went_live`, same moment), spawn in the background `agentrix_media::fill::fill(&agentrix_media::routes::MediaState::new(&ctx), site, "", &pages, 5)` with `pages` from the new release (`fill::Page { path, title, summary, has_picture }`). At most 5 drafts a site per go-live (about $0.10, inside the site's budget and W12's daily caps); go-live never waits on it and a page view never starts it. W4's "you're live" card then shows "Pictures for pages that had none wait for you in Pictures" when `agentrix_media::library::waiting(&pool, site, Some("move"))` is above 0, linking `library::pictures_url(site)` | W11, W4 | `crates/agentrix-node/src/launch/` (go_live) |
+| # | Change | From | Files | Applied |
+|---|---|---|---|---|
+| 1.1 | Assess renders W4's pages; `GET /assess` beside `POST` | W4 | `specs/platform/patches/w4-assess-wiring.patch` (assess/, claim/, app.rs) | `d25b510` on `platform` (ported by hand); test pinning W4's Start at `GET /assess` and on a refused address: `351360a` |
+| 1.2 | The home page becomes `/`: drop `.route("/", get(start_page))` from `assess::router`, call `agentrix_home::mount_with_front_door` instead of `mount` | W10 | `crates/agentrix-node/src/assess/`, `wiring/host.rs` | `d25b510` on `platform` |
+| 1.3 | Pictures for bare pages at go-live: right after `go_live` moves the pointer (beside W3's `Billing::went_live`, same moment), spawn in the background `agentrix_media::fill::fill(&agentrix_media::routes::MediaState::new(&ctx), site, "", &pages, 5)` with `pages` from the new release (`fill::Page { path, title, summary, has_picture }`). At most 5 drafts a site per go-live (about $0.10, inside the site's budget and W12's daily caps); go-live never waits on it and a page view never starts it. W4's "you're live" card then shows "Pictures for pages that had none wait for you in Pictures" when `agentrix_media::library::waiting(&pool, site, Some("move"))` is above 0, linking `library::pictures_url(site)` | W11, W4 | `crates/agentrix-node/src/launch/` (go_live) | `96fbc43`: `launch::after_live::AfterLive`, spawned once the first probe passes, with the release's pages (title and summary from each Markdown twin); `NodeAfterLive` runs billing, then the fill. The card's line is `MovePage.pictures_href`, set by `pages/` from `ConsoleReads::pictures_waiting`. Node now depends on `agentrix-billing` |
 
 ## 2. Living marks that move
 
-| # | Change | From | Files |
-|---|---|---|---|
-| 2.1 | `presence::global().on_move(site, &event)` in `MoveEvents::emit` | W1 | `crates/agentrix-node/src/launch/ports.rs` |
-| 2.2 | `on_ask(site, "concierge", event, data)` in Ask's send closure and refusal loop | W1 | `crates/agentrix-node/src/site/mod.rs` |
-| 2.3 | `on_decision(...)` when a held order's card is inserted, approved or declined | W1 | `crates/agentrix-node/src/decisions/mod.rs` |
-| 2.4 | `on_brief(site, true/false)` around a brief refresh that writes | W1 | `crates/agentrix-node/src/brief/mod.rs` |
+| # | Change | From | Files | Applied |
+|---|---|---|---|---|
+| 2.1 | `presence::global().on_move(site, &event)` in `MoveEvents::emit` | W1 | `crates/agentrix-node/src/launch/ports.rs` | `642088f` |
+| 2.2 | `on_ask(site, "concierge", event, data)` in Ask's send closure and refusal loop | W1 | `crates/agentrix-node/src/site/mod.rs` | `642088f`; the resting replies added later (2a.3, 2b.1, 3.2) call it too |
+| 2.3 | `on_decision(...)` when a held order's card is inserted, approved or declined | W1 | `crates/agentrix-node/src/decisions/mod.rs` | `642088f`; approve, decline and expiry call it for every card kind, so a go-live or restore card lets its raiser rest too |
+| 2.4 | `on_brief(site, true/false)` around a brief refresh that writes | W1 | `crates/agentrix-node/src/brief/mod.rs` | `642088f` |
 
 ## 2a. Dials that bite (W1)
 
 In node: `let rosters = agentrix_kernel::Rosters::new(pool, blobs)`.
 
-| # | Change | Files |
-|---|---|---|
-| 2a.1 | Held order, before raising the card: `rosters.check(site_id, &Action::new("agent-desk", "held-orders", Effect::Financial))`; on Refuse the door says the shop isn't taking orders through agents right now | `crates/agentrix-node/src/decisions/mod.rs` |
-| 2a.2 | Before writing a new brief: `Action::new("coordinator", "morning-brief", Effect::Draft)`; on Refuse (Watch) write nothing and call no model | `crates/agentrix-node/src/brief/mod.rs` |
-| 2a.3 | Ask: `Action::new("concierge", "presentations", Effect::Read)`; on Refuse (off duty) send the resting frame | `crates/agentrix-node/src/site/mod.rs` |
+| # | Change | Files | Applied |
+|---|---|---|---|
+| 2a.1 | Held order, before raising the card: `rosters.check(site_id, &Action::new("agent-desk", "held-orders", Effect::Financial))`; on Refuse the door says the shop isn't taking orders through agents right now | `crates/agentrix-node/src/decisions/mod.rs` | `2ac798d`, in `door/mod.rs` before `HeldCalls::raise` (the door words the refusal: "This shop isn't taking orders through agents right now. Nothing was sent.") |
+| 2a.2 | Before writing a new brief: `Action::new("coordinator", "morning-brief", Effect::Draft)`; on Refuse (Watch) write nothing and call no model | `crates/agentrix-node/src/brief/mod.rs` | `2ac798d` |
+| 2a.3 | Ask: `Action::new("concierge", "presentations", Effect::Read)`; on Refuse (off duty) send the resting frame | `crates/agentrix-node/src/site/mod.rs` | `2ac798d` |
+
+The checks live in `crates/agentrix-node/src/guards.rs` (`Guards::for_node`, handed to the site
+state, the brief, decisions and the Move routes). A dial check that fails to read is logged and
+the path runs as before.
 
 ## 2b. Freeze that stops what it says
 
-| # | Change | From | Files |
-|---|---|---|---|
-| 2b.1 | `agentrix_shell::freeze_gate(&ctx).is_frozen(site)` checked in the brief timer, Ask, the agent door and the Move (skip or refuse while frozen); until then the console hides the Freeze pill | W5 | `brief/`, `site/`, `door/`, `launch/` |
-| 2b.2 | `/console` points at the new shell (`/os`) | W5 | `pages/` |
+| # | Change | From | Files | Applied |
+|---|---|---|---|---|
+| 2b.1 | `agentrix_shell::freeze_gate(&ctx).is_frozen(site)` checked in the brief timer, Ask, the agent door and the Move (skip or refuse while frozen); until then the console hides the Freeze pill | W5 | `brief/`, `site/`, `door/`, `launch/` | `4abb00a`: the brief writes nothing; Ask rests; the door's `tools/call` is refused (discovery and held-call status still answer); a Move doesn't start, resume or take accepted pages, and a go-live approval is refused before it is recorded (in `decisions/`, so the card keeps waiting). Undo stays available. A Move already running in its sealed rooms finishes them, since they change nothing visitors see; stopping it mid-step needs a pause port in `agentrix-move`. The console offers Freeze once node runs with `AGENTRIX_FREEZE_ENFORCED=1` (4.10) |
+| 2b.2 | `/console` points at the new shell (`/os`) | W5 | `pages/` | `0698aa7` on `platform` |
 
 ## 3. Sites and the edge
 
-| # | Change | From | Files |
-|---|---|---|---|
-| 3.1 | The visit beacon (`agentrix_store::visits::beacon_routes`) in the site router, and `visits::BEACON_SCRIPT` in releases | W8 | `app.rs` site router; the release builder (`agentrix-move`, with the Move builder) |
-| 3.2 | Platform holds enforced per request (`agentrix_operator::holds::active`) | W3 | `crates/agentrix-node/src/site/` |
+| # | Change | From | Files | Applied |
+|---|---|---|---|---|
+| 3.1 | The visit beacon (`agentrix_store::visits::beacon_routes`) in the site router, and `visits::BEACON_SCRIPT` in releases | W8 | `app.rs` site router; the release builder (`agentrix-move`, with the Move builder) | `02c98c3`: the beacon finds the site by its live release (`wiring::ServedSites`, own domain or platform address). The crate's API is `visits::script_tag(seq)`, carried by the Move's pages with the samples' footer line and the visitor's "Don't count my visits" switch (`agentrix-console/templates/site/page.html`). Only releases built from now on count; a live release is unchanged until its next Move. `agentrix-move` now depends on `agentrix-store` |
+| 3.2 | Platform holds enforced per request (`agentrix_operator::holds::active`) | W3 | `crates/agentrix-node/src/site/` | `8bc8771`: a middleware on the site router serves only "This site isn't available right now." under a `notice` hold; under `read-only` the pages serve and Ask, passed questions and the door's tools pause ("Answers and forms are paused right now. You can still read the site."). A hold that can't be read is logged and the site serves as usual |
 
 ## 4. Deploy changes (the control-plane session)
 
@@ -80,6 +88,7 @@ In node: `let rosters = agentrix_kernel::Rosters::new(pool, blobs)`.
 | 4.7 | Telegram: `AGENTRIX_TELEGRAM_FILE` naming a 0600 JSON file (`{"bots":[{"site":…,"token":…}]}`) for the Agentrix bot, @agentrix_websites_bot. One process polls a bot: only the live node, never a local one at the same time | W13 |
 | 4.8 | The home page: `AGENTRIX_HOME_WHATSAPP=+254721490933`, `AGENTRIX_HOME_WHATSAPP_HOURS="6am to 11pm EAT"` (James, 8 Nov), and `AGENTRIX_HOME_FILM_DIR` holding hero, film, classy, tana and salon `.mp4` (about 39 MB, rendered by `crates/agentrix-home/film/render.py`) | W10 |
 | 4.9 | `AGENTRIX_MODELS_URL` set for node (the gateway on loopback); the gateway rebuilt with W8's `x-agentrix-webagent` and `x-agentrix-job` usage columns | W8, W1 |
+| 4.10 | `AGENTRIX_FREEZE_ENFORCED=1` in node's environment once 2b.1 is deployed, so the console and gestures offer Freeze | W5, W0 |
 
 ## 4a. Fixes in Brick 1 files (found on the platform walk, Sun 8 Nov)
 

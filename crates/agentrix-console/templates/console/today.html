@@ -46,9 +46,9 @@
 
 {% if meter %}
 <section class="card" aria-labelledby="meter-h">
-  <div class="spread"><h2 id="meter-h">Model spend</h2><b>{{ meter.today_words }}</b></div>
+  <div class="spread"><h2 id="meter-h">AI spend</h2><b>{{ meter.today_words }}</b></div>
   <div class="meter" role="img" aria-label="{{ meter.today_pct }}% of today's limit used"><i style="width:{{ meter.today_pct }}%"></i></div>
-  <p class="hint">{{ meter.month_words }}{% if meter.refused_words %} · {{ meter.refused_words }}{% endif %}. Every call goes through the Model Gateway, which stops at the limit before asking a model.</p>
+  <p class="hint">{{ meter.month_words }}{% if meter.refused_words %} · {{ meter.refused_words }}{% endif %}. Every AI call is checked against your limit first, and refused once you reach it.</p>
   {% if meter.by_purpose %}<dl class="kv small">{% for l in meter.by_purpose %}<dt>{{ l.label }}</dt><dd>{{ l.amount }}</dd>{% endfor %}</dl>{% endif %}
   {% if meter.by_provider %}<p class="small muted">Today by provider: {% for l in meter.by_provider %}{{ l.label }} {{ l.amount }}{% if not loop.last %} · {% endif %}{% endfor %}</p>{% endif %}
 </section>

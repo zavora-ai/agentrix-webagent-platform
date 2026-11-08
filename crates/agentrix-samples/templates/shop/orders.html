@@ -10,7 +10,7 @@
     <div class="k-head"><b class="k-oname">{{ lookup.id }}</b>{% if lookup.found %}<span class="k-pill {{ lookup.tone }}">{{ lookup.pill }}</span>{% endif %}</div>
     <div class="k-deskline">{{ mark(desk, 28, shell.site) }}<span><b>{{ desk.name }}</b><br>{{ lookup.line }}{% if lookup.waiting and confirmations %} {{ confirmations }}{% endif %}</span></div>
     {% if lookup.found %}
-    <p class="k-small">For your privacy I've shown only the status. {% if signed_in %}This order was placed with another account.{% else %}Sign in with the account on the order to see the details.{% endif %}</p>
+    <p class="k-small">This page shows only the status, to keep the order private. {% if signed_in %}This order belongs to another account.{% else %}Sign in with the account on the order to see the details.{% endif %}</p>
     {% if not signed_in %}<div class="k-acts"><a class="k-btn" href="{{ sign_in }}">Sign in to see details</a></div>{% endif %}
     {% endif %}
   </div>

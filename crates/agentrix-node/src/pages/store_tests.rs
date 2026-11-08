@@ -863,3 +863,29 @@ async fn uploads_list_the_newest_of_each_export() {
     );
     assert_eq!(ups[1].name, "dump.sql.gz");
 }
+
+#[tokio::test]
+async fn pictures_waiting_counts_only_the_moves_drafts() {
+    let seeded = seed().await;
+    let r = reads(&seeded);
+    assert_eq!(r.pictures_waiting(&k1()).await.unwrap(), 0);
+    for (id, status, asked_by) in [
+        ("img_1", "draft", "move"),
+        ("img_2", "draft", "move"),
+        ("img_3", "approved", "move"),
+        ("img_4", "draft", "owner"),
+    ] {
+        sqlx::query(
+            "INSERT INTO media_images (image_id, site_id, slot, kind, status, origin, digest, media_type, bytes, alt, photographic, shows_person, shows_text, asked_by, created_at) \
+             VALUES (?, 'site_k1', 'page:home', 'fill', ?, 'generated', '', 'image/webp', 0, '', 0, 0, 0, ?, ?)",
+        )
+        .bind(id)
+        .bind(status)
+        .bind(asked_by)
+        .bind(at(10))
+        .execute(&seeded.pool)
+        .await
+        .unwrap();
+    }
+    assert_eq!(r.pictures_waiting(&k1()).await.unwrap(), 2);
+}

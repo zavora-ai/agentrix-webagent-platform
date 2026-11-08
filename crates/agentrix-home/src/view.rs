@@ -561,7 +561,7 @@ fn team(
     let sales = match kept {
         KeptCounts { asked: 0, .. } => "Idle. Nobody has asked for a report yet.".to_owned(),
         KeptCounts { asked, sent: 0 } => {
-            format!("{asked} asked for. Sending isn't switched on yet.")
+            format!("{asked} asked for. None sent yet.")
         }
         KeptCounts { asked, sent } => format!("{sent} of {asked} reports sent."),
     };

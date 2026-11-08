@@ -7,8 +7,9 @@
 # Contract (move lane, agentrix-move pipeline.rs, Build job):
 #   /in/job.json   {step: "legacy-theme"|"site", theme}
 #   /in/<hex>      the old site's wp-content.tar.gz (one input)
-#   /out/build.log the hook's output, cut at 64 KB
+#   /out/build.log the hook's stdout, cut at 64 KB
 #   stdout         {"event":"note","text":...}
+#   stderr         the hook's stderr, read by the runner for cap hits
 set -u
 J=/in/job.json
 step=$(jq -r '.step // "site"' "$J")
@@ -35,7 +36,11 @@ done
 [ -n "$hook" ] || { note "theme $theme has no build hook"; exit 0; }
 
 note "running $theme's build hook"
-cd "$(dirname "$hook")" && sh "$hook" 2>&1 | head -c 65536 >/out/build.log
+# The hook's stderr stays the room's stderr, never folded into build.log: when the room's pids or
+# memory cap stops a process from starting, the shell says so there ("sh: sleep: Out of
+# memory" under gVisor), and that line is how the runner records the kill. Folded into the log,
+# the room died with exit 2 and its receipt couldn't show why (gauntlet attack 9).
+cd "$(dirname "$hook")" && sh "$hook" | head -c 65536 >/out/build.log
 status=$?
 note "build hook exited $status"
 exit "$status"

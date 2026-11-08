@@ -455,6 +455,9 @@ pub struct MovePage {
     pub card: Option<CardRef>,
     pub spend_words: Option<String>,
     pub uploads: Vec<console::UploadRow>,
+    /// Once live, where the pictures drafted for pages that had none wait for the owner (W11's
+    /// Pictures app), when any wait. Node sets it; `None` hides the line.
+    pub pictures_href: Option<String>,
 }
 
 /// A chip: its class and words.
@@ -711,6 +714,7 @@ impl From<console::MoveView> for MovePage {
             }),
             spend_words: v.spend_words,
             uploads: v.uploads,
+            pictures_href: None,
         }
     }
 }

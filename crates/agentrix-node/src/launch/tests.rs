@@ -75,6 +75,7 @@ impl World {
             events,
             logs: Arc::new(SiteLogs::new(ReleaseKeys::new([9; 32]))),
             probes: (0, Duration::ZERO),
+            after_live: None,
         };
         Self {
             pool,
@@ -434,4 +435,145 @@ async fn a_room_whose_first_call_fails_in_transit_is_tried_once_more() {
         .await
         .expect("the second try reaches the runner");
     assert!(run.succeeded());
+}
+
+/// Each site handed over and its pages.
+type Handed = Arc<std::sync::Mutex<Vec<(SiteId, Vec<agentrix_media::fill::Page>)>>>;
+
+/// What go-live hands over, recorded once the test lets it through.
+struct Recorder {
+    release: Arc<tokio::sync::Notify>,
+    seen: Handed,
+}
+
+#[async_trait::async_trait]
+impl super::after_live::AfterLive for Recorder {
+    async fn went_live(
+        &self,
+        site: &SiteId,
+        _at: chrono::DateTime<Utc>,
+        pages: Vec<agentrix_media::fill::Page>,
+    ) {
+        self.release.notified().await;
+        self.seen.lock().unwrap().push((site.clone(), pages));
+    }
+}
+
+#[tokio::test]
+async fn go_live_hands_the_new_pages_to_after_live_without_waiting_for_it() {
+    let mut world = World::new().await;
+    let release = Arc::new(tokio::sync::Notify::new());
+    let seen: Handed = Arc::default();
+    world.gate.after_live = Some(Arc::new(Recorder {
+        release: release.clone(),
+        seen: seen.clone(),
+    }));
+    let card = world.card().await;
+    let receipt = world.approve(&card).await;
+    let live = world.gate.go_live(&card, &receipt, OWNER).await.unwrap();
+    assert_eq!(live.seq, 1);
+    assert!(
+        seen.lock().unwrap().is_empty(),
+        "go-live returned while the after-live work still waited"
+    );
+    release.notify_one();
+    let mut handed = None;
+    for _ in 0..500 {
+        if let Some(first) = seen.lock().unwrap().first().cloned() {
+            handed = Some(first);
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    let (site, pages) = handed.expect("the after-live work ran");
+    assert_eq!(site, world.site);
+    assert_eq!(pages[0].path, "/", "the home page comes first");
+    assert!(pages.iter().all(|p| !p.title.is_empty()), "{pages:?}");
+    assert!(pages.iter().any(|p| p.path == "/about/"), "{pages:?}");
+}
+
+#[tokio::test]
+async fn after_live_on_the_node_records_go_live_day_for_billing() {
+    let world = World::new().await;
+    let billing = agentrix_billing::Billing::new(world.pool.clone());
+    billing
+        .start(world.site.as_str(), "essential", "I-TEST", None)
+        .await
+        .unwrap();
+    let ctx = agentrix_host::NodeContext {
+        pool: world.pool.clone(),
+        // Nothing answers here, so the fill draws nothing and costs nothing.
+        models_url: "http://127.0.0.1:9".into(),
+        ..agentrix_host::testing::context().await.unwrap()
+    };
+    let at = Utc::now();
+    let page = agentrix_media::fill::Page {
+        path: "/".into(),
+        title: "Kilele Bakery".into(),
+        summary: "Sourdough and cakes.".into(),
+        has_picture: false,
+    };
+    super::after_live::AfterLive::went_live(
+        &super::after_live::NodeAfterLive::new(ctx),
+        &world.site,
+        at,
+        vec![page],
+    )
+    .await;
+    let sub = billing
+        .for_site(world.site.as_str())
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(sub.starts_at.is_some(), "{sub:?}");
+    assert_eq!(
+        agentrix_media::library::waiting(&world.pool, world.site.as_str(), Some("move"))
+            .await
+            .unwrap(),
+        0,
+        "no gateway, no drafts"
+    );
+}
+
+#[tokio::test]
+async fn move_events_move_the_movers_mark() {
+    let world = World::new().await;
+    let events = MoveEvents::new(world.pool.clone());
+    let move_id = agentrix_types::MoveId::new("move_presence");
+    let mark = || {
+        agentrix_kernel::presence::global()
+            .current(world.site.as_str(), "mover")
+            .unwrap()
+    };
+    events
+        .emit(
+            &world.site,
+            &move_id,
+            UiEvent::Step(StepEvent::new(
+                StepName::Replay,
+                StepState::Running,
+                0,
+                "Replaying your WordPress",
+                Utc::now(),
+            )),
+        )
+        .await
+        .unwrap();
+    assert_eq!(mark().state.key(), "working");
+    assert_eq!(mark().label.as_deref(), Some("Replaying your WordPress"));
+    events
+        .emit(
+            &world.site,
+            &move_id,
+            UiEvent::Step(StepEvent::new(
+                StepName::GoLive,
+                StepState::Waiting,
+                0,
+                "Waiting for you",
+                Utc::now(),
+            )),
+        )
+        .await
+        .unwrap();
+    assert_eq!(mark().state.key(), "waiting");
 }

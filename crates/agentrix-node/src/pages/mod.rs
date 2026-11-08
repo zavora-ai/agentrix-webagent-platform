@@ -250,8 +250,24 @@ async fn move_page(State(state): State<PagesState>, headers: HeaderMap, uri: Uri
         })
         .collect();
     if let Some(p) = &state.onboarding {
+        let live = view.run.state == view::MoveState::Live;
+        let mut page = agentrix_onboarding::view::MovePage::from(view);
+        // Pictures the fill drafted after go-live wait in Pictures (1.3). A failed count only
+        // hides the line.
+        if live {
+            match state.reads.pictures_waiting(&site.id).await {
+                Ok(n) if n > 0 => {
+                    page.pictures_href =
+                        Some(agentrix_media::library::pictures_url(site.id.as_str()));
+                }
+                Ok(_) => {}
+                Err(e) => {
+                    tracing::warn!(error = %format!("{e:#}"), "counting waiting pictures failed")
+                }
+            }
+        }
         let html = p
-            .render_move(&agentrix_onboarding::view::MovePage::from(view))
+            .render_move(&page)
             .map_err(|e| PageError::Internal(e.into()))?;
         return Ok(Html(html).into_response());
     }

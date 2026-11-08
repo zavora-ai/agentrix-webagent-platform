@@ -402,6 +402,82 @@ impl Outbox {
         Ok(done.rows_affected())
     }
 
+    /// Takes a row that never left (`not_sent`, or `failed` at the provider) back for another
+    /// try, with the copy from this request, so the console shows what goes out now. Returns
+    /// `false` when the row has moved on meanwhile (another request took it, or it was sent).
+    pub async fn requeue(
+        &self,
+        id: &str,
+        new: &NewEntry,
+        now: DateTime<Utc>,
+    ) -> Result<bool, sqlx::Error> {
+        let done = sqlx::query(
+            "UPDATE message_outbox SET status = 'queued', status_reason = NULL, reason = ?, from_name = ?,
+                subject = ?, body_text = ?, body_html = ?, payload = ?, consent = COALESCE(?, consent),
+                updated_at = ?
+             WHERE id = ? AND status IN ('not_sent', 'failed')",
+        )
+        .bind(&new.reason)
+        .bind(&new.from_name)
+        .bind(&new.subject)
+        .bind(&new.body_text)
+        .bind(&new.body_html)
+        .bind(new.payload.as_ref().map(|p| p.to_string()))
+        .bind(&new.consent)
+        .bind(ts(now))
+        .bind(id)
+        .execute(&self.pool)
+        .await?;
+        Ok(done.rows_affected() == 1)
+    }
+
+    /// Emails of `messages` kept as not sent for `reason` since `since`, oldest first, each the
+    /// newest row for its message and address: an older copy, or one followed by another try,
+    /// stays as it was.
+    pub async fn waiting_email(
+        &self,
+        messages: &[&str],
+        reason: &str,
+        since: DateTime<Utc>,
+        limit: i64,
+    ) -> Result<Vec<Entry>, sqlx::Error> {
+        if messages.is_empty() {
+            return Ok(Vec::new());
+        }
+        // Only `?` marks are formatted in; every value is bound.
+        let marks = vec!["?"; messages.len()].join(", ");
+        let sql = format!(
+            "SELECT * FROM message_outbox o
+             WHERE o.status = 'not_sent' AND o.channel = 'email' AND o.status_reason = ?
+               AND o.created_at >= ? AND o.message IN ({marks})
+               AND NOT EXISTS (SELECT 1 FROM message_outbox n WHERE n.channel = 'email'
+                   AND n.message = o.message AND n.recipient = o.recipient
+                   AND n.created_at > o.created_at)
+             ORDER BY o.created_at LIMIT ?"
+        );
+        let mut q = sqlx::query(sqlx::AssertSqlSafe(sql))
+            .bind(reason)
+            .bind(ts(since));
+        for m in messages {
+            q = q.bind(*m);
+        }
+        let rows = q.bind(limit).fetch_all(&self.pool).await?;
+        rows.iter().map(from_row).collect()
+    }
+
+    /// Takes a waiting row for delivery. Returns `false` when something else already did.
+    pub async fn claim(&self, id: &str, now: DateTime<Utc>) -> Result<bool, sqlx::Error> {
+        let done = sqlx::query(
+            "UPDATE message_outbox SET status = 'queued', status_reason = NULL, updated_at = ?
+             WHERE id = ? AND status = 'not_sent'",
+        )
+        .bind(ts(now))
+        .bind(id)
+        .execute(&self.pool)
+        .await?;
+        Ok(done.rows_affected() == 1)
+    }
+
     /// Held rows whose time has come.
     pub async fn due(&self, now: DateTime<Utc>, limit: i64) -> Result<Vec<Entry>, sqlx::Error> {
         let rows = sqlx::query(

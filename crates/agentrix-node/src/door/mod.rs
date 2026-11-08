@@ -22,6 +22,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use agentrix_kernel::{Action, Effect};
 use async_trait::async_trait;
 use awp_types::{
     ApprovalHint, CapabilityEffect, CapabilityManifestV2, CapabilityV2, HeldCall,
@@ -40,6 +41,13 @@ use crate::site::{ReceiptDraft, SiteState, ask, normalise_host, policy};
 
 /// The MCP protocol versions the door speaks, newest first.
 pub const MCP_VERSIONS: &[&str] = &["2025-06-18", "2025-03-26"];
+
+/// What an agent is told while the owner's Freeze or a platform hold is in force.
+pub const PAUSED: &str = "Answers and orders are paused right now. Nothing was sent.";
+
+/// What an agent is told when the owner's dials stop the agent desk holding orders.
+pub const NOT_TAKING_ORDERS: &str =
+    "This shop isn't taking orders through agents right now. Nothing was sent.";
 
 /// Where held capability calls live: the move lane's decisions module raises the owner's card
 /// and records the outcome.
@@ -248,6 +256,14 @@ async fn mcp(
                 .collect();
             Json(rpc_result(&id, json!({"tools": tools}))).into_response()
         }
+        "tools/call"
+            if state.site.guards.frozen(&site_id).await
+                || state.site.guards.held(&site_id).await =>
+        {
+            // The owner's Freeze stops the door's WebAgents too (W5, handover-wiring 2b.1), and
+            // so does a platform hold (W3, 3.2).
+            Json(tool_error(&id, PAUSED)).into_response()
+        }
         "tools/call" => {
             let name = params
                 .get("name")
@@ -328,6 +344,12 @@ async fn request_custom_order(
         Ok(v) => v,
         Err(message) => return tool_error(id, &message),
     };
+    // The agent desk holds orders only while the owner's dials let it (W1, handover-wiring
+    // 2a.1): a refusal raises no card.
+    let holding = Action::new("agent-desk", "held-orders", Effect::Financial);
+    if state.site.guards.refusal(site_id, &holding).await.is_some() {
+        return tool_error(id, NOT_TAKING_ORDERS);
+    }
     // Repeating the call must not repeat the order: the agent's key, else one derived from
     // the site and the order itself.
     let key = meta

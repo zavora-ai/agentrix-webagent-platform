@@ -78,7 +78,13 @@ pub struct MovesState {
     pub sessions: Arc<dyn Sessions>,
     /// The fixture's exports (`fixtures/wordpress-infected/exports/demo`), for the fixture site.
     pub fixture_exports: Option<PathBuf>,
+    /// The platform's checks (the owner's Freeze pauses the Move).
+    pub guards: crate::guards::Guards,
 }
+
+/// Why the Move waits while the owner's Freeze is in force.
+pub const FROZEN_MOVE: &str =
+    "Your site is frozen, so the Move is paused. Unfreeze it from your console to carry on.";
 
 /// The routes, for `app.rs` to merge into the platform router.
 pub fn router(state: MovesState) -> Router {
@@ -184,6 +190,10 @@ impl MovesState {
     async fn start(&self, headers: &HeaderMap, site: &str) -> Result<String, Fail> {
         let site = SiteId::new(site);
         self.owner(headers, &site).await?;
+        // While the owner's Freeze is in force no Move starts or resumes (W5, 2b.1).
+        if self.guards.frozen(site.as_str()).await {
+            return Err(fail(StatusCode::CONFLICT, FROZEN_MOVE));
+        }
         if let Some(latest) = self.store().latest_move(&site).await.map_err(internal)?
             && matches!(
                 latest.state,
@@ -295,6 +305,9 @@ impl MovesState {
             .map_err(internal)?
             .ok_or_else(|| fail(StatusCode::NOT_FOUND, "We couldn't find that Move."))?;
         self.owner(headers, &mv.site).await?;
+        if self.guards.frozen(mv.site.as_str()).await {
+            return Err(fail(StatusCode::CONFLICT, FROZEN_MOVE));
+        }
         let pages: Vec<String> = if wants_json(headers) {
             serde_json::from_slice::<serde_json::Value>(body)
                 .ok()

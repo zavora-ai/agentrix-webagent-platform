@@ -181,6 +181,15 @@ impl ResendTransport {
     }
 }
 
+/// Resend's `Idempotency-Key`: the outbox row, and the attempt after the first, so a second try
+/// (the same thing asked for again) isn't answered from the first one's record.
+fn idempotency_key(envelope: &Envelope) -> String {
+    match envelope.attempt {
+        0 => envelope.outbox_id.clone(),
+        n => format!("{}-{n}", envelope.outbox_id),
+    }
+}
+
 /// `"Kilele Bakery (sample)" <messages@…>`, with the name cleaned for a header.
 fn from_header(name: &str, address: &str) -> String {
     let clean: String = name
@@ -226,7 +235,7 @@ impl Transport for ResendTransport {
             .http
             .post(self.endpoint())
             .bearer_auth(&self.cfg.api_key)
-            .header("Idempotency-Key", &envelope.outbox_id)
+            .header("Idempotency-Key", idempotency_key(envelope))
             .json(&body)
             .timeout(std::time::Duration::from_secs(15))
             .send()
@@ -262,7 +271,7 @@ impl Transport for ResendTransport {
                 .unwrap_or_else(|| status.to_string());
             tracing::warn!(status = status.as_u16(), provider_said = %why, outbox = %envelope.outbox_id, "email provider refused a message");
             Delivery::Failed {
-                reason: "The email provider refused it, so it wasn't delivered. It isn't retried."
+                reason: "The email provider refused it, so it wasn't delivered. Asking for it again tries once more."
                     .into(),
             }
         }

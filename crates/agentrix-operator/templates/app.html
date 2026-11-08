@@ -4,7 +4,7 @@
 {% block title %}{{ {"rollouts": "Rollouts", "incidents": "Incidents", "money": "Money", "partners": "Partners", "holds": "Platform holds", "missing-site": "Site not found", "missing-incident": "Incident not found", "missing-partner": "Partner not found"}[which] }}{% endblock %}
 {% block field %}
 {%- if which == "rollouts" %}
-<div class="field-head"><div><h2>Rollouts</h2><div class="sub">Release trains, rings and waves (08 §3.5)</div></div></div>
+<div class="field-head"><div><h2>Rollouts</h2><div class="sub">Release trains, rings and waves</div></div></div>
 <article class="card tight"><div class="empty"><b>No release train has run yet.</b> Platform versions reach the one cell today through a deploy, and every deploy re-runs the gauntlet on live sites. Trains with rings, canary comparison and two-person promotion arrive with the fleet profile; their first ring is Zavora's own sites.</div></article>
 {%- elif which == "missing-partner" %}
 <div class="field-head"><div><div class="crumbs"><a href="/partners">Partners</a> /</div><h2>Partner not found</h2></div></div>
@@ -13,13 +13,13 @@
 <div class="field-head"><div><div class="crumbs"><a href="/incidents">Incidents</a> /</div><h2>Incident not found</h2></div></div>
 <article class="card tight"><div class="empty"><b>No incident is called <span class="mono">{{ site_id }}</span>.</b> See <a href="/incidents">every incident</a>.</div></article>
 {%- elif which == "money" %}
-<div class="field-head"><div><h2>Money</h2><div class="sub">Plans, usage, invoices and payments in USD (08 §4.2)</div></div></div>
+<div class="field-head"><div><h2>Money</h2><div class="sub">Plans, usage, invoices and payments in USD</div></div></div>
 <article class="card tight"><div class="empty"><b>No subscription has started yet.</b> Plans, usage per site, invoices and PayPal Subscriptions show here as soon as the first owner picks a plan. Model spend per site is already on <a href="/customers">Customers</a>.</div></article>
 {%- elif which == "partners" %}
-<div class="field-head"><div><h2>Partners</h2><div class="sub">Agencies, resellers and referral partners (08 §2.2, §4.4)</div></div></div>
+<div class="field-head"><div><h2>Partners</h2><div class="sub">Agencies, resellers and referral partners</div></div></div>
 <article class="card tight"><div class="empty"><b>No partners yet.</b> When an agency or reseller signs up, it appears here with its clients, tier and payouts, and gets its own portfolio view.</div></article>
 {%- elif which == "holds" %}
-<div class="field-head"><div><h2>Platform holds</h2><div class="sub">The operator's switch, separate from an owner's freeze (08 §2.4)</div></div></div>
+<div class="field-head"><div><h2>Platform holds</h2><div class="sub">The operator's switch, separate from an owner's freeze</div></div></div>
 <article class="card tight"><div class="empty"><b>No site is on hold.</b> A hold serves the last signed release with answers and forms paused, and tells the owner why. Place one from a site's page.</div></article>
 {%- else %}
 <div class="field-head"><div><div class="crumbs"><a href="/customers">Customers</a> /</div><h2>Site not found</h2></div></div>

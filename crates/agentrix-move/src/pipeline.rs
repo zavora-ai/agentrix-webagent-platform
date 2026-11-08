@@ -798,13 +798,16 @@ impl Mover {
     // ---------- Prove (R6.2, R6.4) ----------
 
     /// The release's files: each page in the site theme and its Markdown twin, the theme's
-    /// stylesheet, and the clean uploads.
+    /// stylesheet, and the clean uploads. Pages carry W8's visit counter, naming release `seq`
+    /// once it is known (the parity renders before it don't count anything: their room has no
+    /// network).
     async fn site_files(
         &self,
         mv: &MoveRecord,
         inputs: &MoveInputs,
         site: &CleanSite,
         built: &BuiltSite,
+        seq: Option<u64>,
     ) -> anyhow::Result<BTreeMap<String, Vec<u8>>> {
         let contact = site
             .pages
@@ -819,7 +822,10 @@ impl Mover {
             nav: site.nav.clone(),
             contact_href: contact,
             fixture: inputs.fixture,
-            counting: false,
+            counting: true,
+            counter: Some(agentrix_store::visits::script_tag(
+                seq.and_then(|s| i64::try_from(s).ok()),
+            )),
         };
         let mut files = BTreeMap::new();
         for page in &site.pages {
@@ -1074,7 +1080,7 @@ impl Mover {
         };
         let mut check = site_paths.clone();
         loop {
-            let files = self.site_files(mv, &inputs, &site, &built).await?;
+            let files = self.site_files(mv, &inputs, &site, &built, None).await?;
             self.render_and_score(mv, &old, &site, &built, &files, &check, &mut report)
                 .await?;
             let retry: Vec<PageParity> = report
@@ -1152,7 +1158,7 @@ impl Mover {
             let signed = self.store.signed_releases(&mv.site).await?;
             let seq = signed.iter().map(|r| r.seq).max().unwrap_or(0) + 1;
             let previous = self.store.pointer(&mv.site).await?.map(|(_, d)| d);
-            let files = self.site_files(mv, inputs, site, &built).await?;
+            let files = self.site_files(mv, inputs, site, &built, Some(seq)).await?;
             let staged = candidate::stage(
                 self.blobs.as_ref(),
                 &mv.site,

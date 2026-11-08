@@ -4,7 +4,7 @@
 <section class="nf" id="not-found">
   <span class="nf-code">404 · Not on this site</span>
   <h1>That page isn't on this site.</h1>
-  <p>Nothing lives at <code>{{ path }}</code>. It may be an old link from before the site moved. Pick a page below, or ask in the bar at the bottom of the screen and a desk will point you to the right place.</p>
+  <p>There's no page at <code>{{ path }}</code>. It may be an old link from before the site moved. Pick a page below, or ask in the bar at the bottom of the screen and a desk will point you to the right place.</p>
   <div class="nf-desks">
     {% for d in shell.desks %}
     <a href="{{ d.href }}">{{ mark(d, 28, shell.site) }}<b>{{ d.name }}</b><span class="m">{{ d.mandate }}</span></a>

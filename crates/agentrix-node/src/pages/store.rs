@@ -411,6 +411,10 @@ impl<D: Delegates> ConsoleReads for SqliteReads<D> {
         }))
     }
 
+    async fn pictures_waiting(&self, site: &SiteId) -> ReadResult<i64> {
+        agentrix_media::library::waiting(&self.pool, site.as_str(), Some("move")).await
+    }
+
     async fn uploads(&self, site: &SiteId) -> ReadResult<Vec<UploadInfo>> {
         let rows: Vec<(String, i64, String)> = sqlx::query_as(
             "SELECT kind, size, created_at FROM artifacts WHERE site_id = ? AND kind LIKE 'upload:%' \

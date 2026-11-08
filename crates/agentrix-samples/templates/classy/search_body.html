@@ -16,7 +16,7 @@
 
     {% if plain %}
     <div class="pages plain" id="plain" style="margin-top:0">
-      <h4>{{ plain_count }} result{% if plain_count != 1 %}s{% endif %} · static index, no AI</h4>
+      <h4>{{ plain_count }} result{% if plain_count != 1 %}s{% endif %} · plain search, no AI</h4>
       {% for h in plain_hits %}<a class="page-hit" href="{{ h.s.href }}">{{ pic(h.s, "thumb") }}<b>{{ seg(h.name) }}</b><div class="path">{{ h.s.price }} · {{ h.s.size }} · {{ h.s.stock }}</div><p>{{ seg(h.notes) }}</p></a>{% endfor %}
       {% for h in plain_pages %}<a class="page-hit" href="{{ h.href }}"><b>{{ h.label }}</b><div class="path">{{ shell.site.host }}{{ h.href }}</div><p>{{ seg(h.text) }}</p></a>{% endfor %}
       {% if plain_count == 0 %}<p class="page-hit">Nothing on this site matches those words. Try a family such as amber or citrus, or <a href="/fragrances">browse every scent</a>.</p>{% endif %}
@@ -71,8 +71,8 @@
   <aside class="side">
     <div class="panel"><h4>How I read your question</h4>
       {% if chips %}<div class="intent">{% for c in chips %}{% if c.na %}<span class="chip-na" title="The site doesn't publish this, so search can't filter by it"><i>{{ c.label }}</i>{{ c.value }} · not published</span>{% else %}<a href="{{ c.remove }}" title="Search again without this"><i>{{ c.label }}</i>{{ c.value }}<span aria-hidden="true"> ×</span><span class="sr-only"> (remove)</span></a>{% endif %}{% endfor %}</div>
-      <p class="small" style="margin-top:8px">{% if read_by_ai %}Read by AI from your words, then checked against the catalogue. {% endif %}Tap a part to drop it. Results re-rank from the catalogue, without a model.</p>
-      {% else %}<p class="small">{% if q %}No budget, family, size or product found in the words. Results match the words themselves.{% else %}Ask something and the parts of your question appear here.{% endif %}</p>{% endif %}
+      <p class="small" style="margin-top:8px">{% if read_by_ai %}Read by AI from your words, then checked against the catalogue. {% endif %}Tap a part to drop it, and the list re-sorts from the catalogue without AI.</p>
+      {% else %}<p class="small">{% if q %}No budget, family, size or product in your words, so the results match the words as typed.{% else %}Type a request, such as a budget or a scent family, and its parts show here.{% endif %}</p>{% endif %}
     </div>
     {% if refine %}
     <div class="panel"><h4>Refine</h4><div class="refine">{% for r in refine %}{% if r.na %}<span class="na" aria-disabled="true" title="The site doesn't publish this, so search can't filter by it">{{ r.label }}</span>{% else %}<a href="{{ r.href }}">{{ r.label }}</a>{% endif %}{% endfor %}</div>

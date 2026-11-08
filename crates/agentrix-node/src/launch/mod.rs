@@ -16,6 +16,10 @@
 //!    failure, the Guardian rolls back (its charter v1 level, "Undo only");
 //! 5. a `release.signed` receipt links the decision's fingerprint to the manifest digest.
 //!
+//! Once the first probe passes, [`after_live::AfterLive`] runs in the background with the new
+//! release's pages: billing's go-live day and pictures for pages that had none (handover-wiring
+//! 1.3). Go-live never waits on it.
+//!
 //! **Rollback** ([`LaunchGate::roll_back`]): one atomic pointer switch to the previous signed
 //! release, or off the platform back to the old site, for 30 days, with a `release.rollback`
 //! receipt.
@@ -27,6 +31,7 @@
 //! entries and key give the same tree and the same signed checkpoint), so it needs no tables
 //! of its own. Each site's release key is derived from the node's release master key.
 
+pub mod after_live;
 pub mod ports;
 #[cfg(test)]
 pub(crate) mod tests;
@@ -386,6 +391,8 @@ pub struct LaunchGate {
     pub logs: Arc<SiteLogs>,
     /// Background probes after go-live: how many, and how far apart.
     pub probes: (u32, Duration),
+    /// What follows a go-live in the background (billing, pictures), when wired.
+    pub after_live: Option<Arc<dyn after_live::AfterLive>>,
 }
 
 impl LaunchGate {
@@ -500,6 +507,19 @@ impl LaunchGate {
             bail!(
                 "The new release didn't pass its first check, so your site was switched straight back. Nothing changed for visitors."
             );
+        }
+        // Live and serving: billing and pictures follow in the background (1.3).
+        if let Some(after) = self.after_live.clone() {
+            let (site_id, cas, files, at) = (
+                card.site.clone(),
+                self.cas.clone(),
+                manifest.files.clone(),
+                Utc::now(),
+            );
+            tokio::spawn(async move {
+                let pages = after_live::release_pages(&cas, &files).await;
+                after.went_live(&site_id, at, pages).await;
+            });
         }
         self.store
             .sign_charter(&card.site, 1, approver, &decision_receipt.to_string())

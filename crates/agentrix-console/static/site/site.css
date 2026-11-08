@@ -33,6 +33,7 @@ p, ul, ol { margin: 0 0 1em; }
 .s-article th, .s-article td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--wa-line); }
 .s-updated { font-size: 13px; color: var(--wa-ink-2); }
 .s-foot { max-width: 1080px; margin: 0 auto; padding: 24px 16px 120px; border-top: 1px solid var(--wa-line); font-size: 14px; color: var(--wa-ink-2); }
+.s-visits button { font: inherit; color: var(--wa-accent); background: none; border: 0; padding: 0; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 @media (prefers-color-scheme: dark) {
   :root { color-scheme: dark; }
 }

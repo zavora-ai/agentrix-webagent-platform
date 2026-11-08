@@ -12,7 +12,7 @@
 ::fact Decisions you made | {{ review.decided }}
 {% if review.offers %}
 
-Your WebAgents earned these. Each one is a suggestion; nothing changes until you sign it in the console:
+Your WebAgents could do more without asking. Each is only a suggestion; nothing changes until you approve it in the console:
 
 {% for offer in review.offers %}
 - {{ offer }}

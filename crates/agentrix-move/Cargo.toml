@@ -10,6 +10,9 @@ authors.workspace = true
 
 [dependencies]
 agentrix-types.workspace = true
+# W8's visit counter: releases carry its script tag (visits::script_tag), so the edge counts visits
+# without cookies (specs/platform/handover-wiring.md 3.1).
+agentrix-store.workspace = true
 # migrate: the WXR source, the sanitiser, the detectors and parity helpers (design §3).
 adk-site = { workspace = true, features = ["migrate"] }
 adk-core.workspace = true

@@ -266,11 +266,24 @@ async fn the_infected_fixture_reaches_a_candidate_with_the_infection_left_behind
         ] {
             assert!(!text.contains(bad), "{path} carries {bad}");
         }
+        // Only the platform's scripts: the Ask island and W8's visit counter, both same-origin.
+        let scripts: Vec<&str> = text
+            .match_indices("<script")
+            .map(|(i, _)| &text[i..text[i..].find('>').map_or(text.len(), |e| i + e)])
+            .collect();
+        let platform: &[&str] = if path.ends_with(".html") {
+            &["/_agentrix/ask.js", "/_agx/visit.js"]
+        } else {
+            &[]
+        };
         assert_eq!(
-            text.matches("<script").count(),
-            usize::from(path.ends_with(".html")),
-            "{path}: only the Ask island's script"
+            scripts.len(),
+            platform.len(),
+            "{path}: only the platform's scripts: {scripts:?}"
         );
+        for (tag, src) in scripts.iter().zip(platform) {
+            assert!(tag.contains(&format!("src=\"{src}\"")), "{path}: {tag}");
+        }
     }
 
     // The builder's refused first try was fed back (R6.3).

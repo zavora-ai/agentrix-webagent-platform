@@ -640,6 +640,101 @@ impl agentrix_home::keep::ReportSender for Sender {
     }
 }
 
+/// An email provider for tests: refuses everything when asked to, else keeps what it got.
+#[derive(Default)]
+struct Inbox {
+    refuse: std::sync::atomic::AtomicBool,
+    got: std::sync::Mutex<Vec<agentrix_messages::Envelope>>,
+}
+
+#[async_trait]
+impl agentrix_messages::Transport for Inbox {
+    fn readiness(&self, _channel: agentrix_messages::Channel) -> agentrix_messages::Readiness {
+        agentrix_messages::Readiness::Ready
+    }
+    async fn deliver(&self, envelope: &agentrix_messages::Envelope) -> agentrix_messages::Delivery {
+        if self.refuse.load(std::sync::atomic::Ordering::SeqCst) {
+            return agentrix_messages::Delivery::Failed {
+                reason: "refused".into(),
+            };
+        }
+        self.got.lock().unwrap().push(envelope.clone());
+        agentrix_messages::Delivery::Sent {
+            provider: "Resend".into(),
+            provider_ref: format!("re_{}", envelope.outbox_id),
+        }
+    }
+}
+
+/// The newsletter sign-up through W9's own outbox, as node wires it: with email off the
+/// visitor is told so, and their confirm link goes once node starts with email on; with it on
+/// they're told to check their inbox, and signing up twice never sends a second link.
+#[tokio::test]
+async fn the_newsletter_sign_up_sends_its_confirm_link_through_w9s_outbox() {
+    use agentrix_home::keep::{Keep, OutboxSender};
+    use agentrix_messages::{Messages, Outbox, directory::Fixed};
+    let ctx = agentrix_host::testing::context().await.unwrap();
+    let pool = ctx.pool.clone();
+    agentrix_messages::migrate(&pool).await.unwrap();
+    agentrix_home::migrate(&pool).await.unwrap();
+    let now = chrono::Utc::now();
+    let off = Messages::new(Outbox::new(pool.clone()), Arc::new(Fixed::default()));
+    let keep =
+        |m: &Messages| Keep::new(Some(pool.clone()), Some(Arc::new(OutboxSender(m.clone()))));
+
+    let saved = keep(&off).join("amina@gmail.com", now).await;
+    assert_eq!(saved.status, "saved");
+    assert_eq!(
+        saved.message,
+        "Saved for amina@gmail.com. Email isn't switched on yet; we'll ask you to confirm when it is."
+    );
+
+    // Node restarts with Resend's key: the link that waited goes.
+    let inbox = Arc::new(Inbox::default());
+    let on = off.with_transport(inbox.clone());
+    assert_eq!(on.send_waiting().await.unwrap(), 1);
+    // Signing up again finds it sent: told to check their inbox, and nothing more goes.
+    let again = keep(&on).join("Amina@gmail.com", now).await;
+    assert_eq!(again.status, "sent");
+    assert_eq!(again.message, "Check amina@gmail.com for a confirm link.");
+    assert_eq!(inbox.got.lock().unwrap().len(), 1);
+
+    // A new reader once email is on gets theirs straight away, with a working confirm link.
+    let joined = keep(&on).join("baraka@gmail.com", now).await;
+    assert_eq!(joined.status, "sent");
+    let link = {
+        let got = inbox.got.lock().unwrap();
+        assert_eq!(got.len(), 2);
+        let e = got.last().unwrap();
+        assert_eq!(e.to, "baraka@gmail.com");
+        assert_eq!(e.subject, "Confirm the weekly fix from Agentrix");
+        let at = e
+            .text
+            .find("/_home/fix/confirm?token=")
+            .expect("the confirm link");
+        e.text[at..]
+            .split_whitespace()
+            .next()
+            .unwrap()
+            .trim_end_matches([')', '.'])
+            .to_owned()
+    };
+    let token = link.split("token=").nth(1).unwrap();
+    assert!(
+        keep(&on).confirm(token, now).await,
+        "the link confirms the reader"
+    );
+
+    // The provider refusing it: told to try again, never told to check their inbox.
+    inbox
+        .refuse
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+    let refused = keep(&on).join("chebet@gmail.com", now).await;
+    assert_eq!(refused.status, "saved");
+    assert!(refused.message.contains("Try again in a minute"));
+    assert!(!refused.message.contains("Check"));
+}
+
 #[tokio::test]
 async fn keeping_a_report_stores_the_words_agreed_to_and_says_what_happens() {
     use agentrix_home::keep::{Keep, KeepForm, REPORT_WORDS, WEEKLY_WORDS};

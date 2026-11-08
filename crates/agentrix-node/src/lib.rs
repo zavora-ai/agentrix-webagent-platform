@@ -13,6 +13,7 @@ pub mod claim;
 pub mod db;
 pub mod decisions;
 pub mod door;
+pub mod guards;
 pub mod launch;
 pub mod objects;
 pub mod pages;

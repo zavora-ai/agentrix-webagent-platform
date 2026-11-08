@@ -138,6 +138,22 @@ fn expand_home(p: PathBuf) -> PathBuf {
     }
 }
 
+/// Whether `path` is in systemd's credentials folder for this service (`$CREDENTIALS_DIRECTORY`,
+/// where the node unit's `LoadCredential=telegram.json` puts the file).
+fn in_credentials_dir(path: &Path) -> bool {
+    std::env::var_os("CREDENTIALS_DIRECTORY")
+        .filter(|d| !d.is_empty())
+        .is_some_and(|d| path.starts_with(PathBuf::from(d)))
+}
+
+/// Whether a file with `mode` is readable by more than its owner. In systemd's credentials
+/// folder, which only the service can open, systemd mounts files 0440, so group read is fine
+/// there; anywhere else the file must be 0600.
+fn too_open(mode: u32, in_credentials: bool) -> bool {
+    let others = if in_credentials { 0o007 } else { 0o077 };
+    mode & others != 0
+}
+
 /// Reads the bots from `path`. `Ok(None)` when the file lists no bot.
 ///
 /// # Errors
@@ -149,7 +165,7 @@ pub fn load(path: &Path) -> Result<Option<Config>, ConfigError> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt as _;
-        if meta.permissions().mode() & 0o077 != 0 {
+        if too_open(meta.permissions().mode(), in_credentials_dir(path)) {
             return Err(ConfigError::Readable(path.into()));
         }
     }
@@ -235,6 +251,19 @@ mod tests {
         let err = load(&p).unwrap_err().to_string();
         assert!(err.contains("chmod 600"), "{err}");
         assert!(!err.contains("SECRET"));
+    }
+
+    #[test]
+    fn systemd_credentials_may_be_group_readable_nothing_else_may() {
+        // LoadCredential= mounts the file 0440 in a folder only the service can open.
+        assert!(!too_open(0o440, true));
+        assert!(!too_open(0o400, true));
+        assert!(too_open(0o444, true));
+        // Anywhere else, 0600 or tighter.
+        assert!(too_open(0o440, false));
+        assert!(too_open(0o640, false));
+        assert!(!too_open(0o600, false));
+        assert!(!too_open(0o400, false));
     }
 
     #[test]

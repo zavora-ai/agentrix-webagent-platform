@@ -361,6 +361,7 @@ async fn bakeoff() {
         contact_href: Some("/contact/".into()),
         fixture: true,
         counting: false,
+        counter: None,
     };
     let mut shots = Vec::new();
     for page in &site.pages {

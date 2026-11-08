@@ -17,6 +17,7 @@ use serde_json::{Value as Json, json};
 use agentrix_identity::mailer::{CodeMailer, CodePurpose, Mail, MailKind};
 
 use crate::catalogue::Channel;
+use crate::outbox::Status;
 use crate::send::{Messages, Outgoing, Readiness, Recipient};
 
 /// The site id identity uses for the platform host (owner mail).
@@ -272,10 +273,21 @@ impl CodeMailer for IdentityMailer {
                 })
                 .await
         };
-        result.map(|_| ()).map_err(|e| {
+        let sent = result.map_err(|e| {
             tracing::error!(error = %e, "couldn't record a sign-in email");
             "We couldn't send the email. Try again in a minute.".to_string()
-        })
+        })?;
+        // The provider refusing it (a limit reached, an address it won't take): the person is
+        // told, rather than waiting for a code that isn't coming.
+        if let Some(e) = sent
+            .entries
+            .iter()
+            .find(|e| e.channel == Channel::Email && e.status == Status::Failed)
+        {
+            tracing::warn!(outbox = %e.id, "the email provider refused a sign-in email");
+            return Err("We couldn't send the email. Try again in a minute.".to_string());
+        }
+        Ok(())
     }
 
     fn delivers(&self) -> bool {
@@ -338,6 +350,41 @@ mod tests {
                 method: "an email code".into(),
             },
         ]
+    }
+
+    struct Refuses;
+
+    #[async_trait]
+    impl crate::send::Transport for Refuses {
+        fn readiness(&self, _channel: Channel) -> Readiness {
+            Readiness::Ready
+        }
+        async fn deliver(&self, _envelope: &crate::send::Envelope) -> crate::send::Delivery {
+            crate::send::Delivery::Failed {
+                reason: "refused".into(),
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn a_code_the_provider_refuses_is_reported_not_announced() {
+        let messages = Messages::new(
+            Outbox::new(crate::outbox::tests::pool().await),
+            Arc::new(Fixed::default()),
+        )
+        .with_transport(Arc::new(Refuses));
+        let mailer = IdentityMailer::new(messages);
+        let refused = mailer
+            .send(Mail {
+                site: site("kilele-bakery-sample", "Kilele Bakery"),
+                to: "amina@gmail.com".into(),
+                kind: kinds().remove(0),
+            })
+            .await;
+        assert_eq!(
+            refused,
+            Err("We couldn't send the email. Try again in a minute.".to_string())
+        );
     }
 
     #[tokio::test]

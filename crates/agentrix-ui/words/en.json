@@ -66,7 +66,7 @@
     "offline_banner": "You're offline. You're seeing what was saved at {time}. Approvals wait until you're back online.",
     "offline_action": "You're offline. This waits until you're back online.",
     "read_only": "Read-only. {reason} You can still read and export everything.",
-    "frozen_owner": "Frozen. Every WebAgent stopped at its next safe point. Your site keeps serving signed release {release}. Unfreeze needs your passkey.",
+    "frozen_owner": "Frozen. Every WebAgent stopped at its next safe point. Your site keeps serving signed release {release}. Unfreezing needs your passkey or an authenticator code.",
     "hold": "Platform hold. {reason}",
     "models_resting": "AI answers are resting: {reason}. Your site still serves its pages, and you can still edit by hand."
   },

@@ -40,6 +40,8 @@ agentrix-samples.workspace = true
 agentrix-effects.workspace = true
 agentrix-decisions.workspace = true
 agentrix-channels.workspace = true
+# W3's billing: the subscription's first charge is go-live day (handover-wiring 1.3).
+agentrix-billing.workspace = true
 # Releases: awp-types' ReleaseManifest, adk-site's manifest digest, content types and the
 # site log whose signed checkpoints `awp verify` checks.
 adk-site.workspace = true

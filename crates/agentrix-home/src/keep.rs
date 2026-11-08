@@ -24,6 +24,8 @@ pub const WEEKLY_WORDS: &str = "Also send me one website fix a week. Stop any ti
 pub const REPORT_MESSAGE: &str = "lead.report";
 /// The double opt-in for the weekly fix (W9).
 pub const CONFIRM_MESSAGE: &str = "newsletter.confirm";
+/// One week's fix, to a confirmed reader (W9).
+pub const ISSUE_MESSAGE: &str = "newsletter.issue";
 /// Where the words above were agreed to, as the message's consent record says.
 pub const SOURCE: &str = "agentrix.website check";
 /// The words beside screen 7's sign-up, stored with every reader who joins there.
@@ -47,8 +49,9 @@ pub fn migrate(pool: &SqlitePool) -> futures::future::BoxFuture<'_, anyhow::Resu
 /// Sends one of W9's messages, or says sending isn't switched on yet.
 #[async_trait]
 pub trait ReportSender: Send + Sync {
-    /// `Ok(true)` once `message` is in the outbox for `email`; `Ok(false)` while the catalogue
-    /// doesn't have it yet.
+    /// `Ok(true)` once the email has gone to `email` (now, or the first time it was asked for);
+    /// `Ok(false)` while email isn't switched on (or the catalogue doesn't have `message`); an
+    /// error when it couldn't be sent, such as the provider refusing it.
     async fn send(
         &self,
         message: &str,
@@ -73,7 +76,8 @@ impl ReportSender for OutboxSender {
         if agentrix_messages::catalogue::get(message).is_none() {
             return Ok(false);
         }
-        self.0
+        let sent = self
+            .0
             .send(agentrix_messages::send::Outgoing {
                 message: message.into(),
                 site_id: None,
@@ -81,12 +85,30 @@ impl ReportSender for OutboxSender {
                 context,
                 reason: match message {
                     CONFIRM_MESSAGE => "A visitor ticked the weekly fix on agentrix.website; nothing more is sent until they confirm".into(),
+                    ISSUE_MESSAGE => "A reader confirmed the weekly fix and James approved this issue".into(),
                     _ => "A visitor asked agentrix.website to send them their free check".into(),
                 },
                 dedupe_key: Some(format!("{message}:{key}")),
             })
             .await?;
-        Ok(true)
+        // The page tells the visitor to check their inbox, so only the email counts.
+        let email_rows = || {
+            sent.entries
+                .iter()
+                .filter(|e| e.channel == agentrix_messages::Channel::Email)
+        };
+        if email_rows().any(|e| e.status == agentrix_messages::Status::Sent) {
+            return Ok(true);
+        }
+        if let Some(e) = email_rows().find(|e| e.status == agentrix_messages::Status::Failed) {
+            anyhow::bail!(
+                "{message} to a visitor wasn't sent: {}",
+                e.status_reason
+                    .as_deref()
+                    .unwrap_or("the provider refused it")
+            );
+        }
+        Ok(false)
     }
 }
 
@@ -304,15 +326,15 @@ impl Keep {
                     Some(s) => s
                         .send(message, &email, context, &key)
                         .await
-                        .unwrap_or_else(|e| {
-                            tracing::error!(error = %e, message, "home: sending a kept report");
-                            false
+                        .map_err(|e| {
+                            tracing::error!(error = %format!("{e:#}"), message, "home: sending a kept report");
                         }),
-                    None => false,
+                    None => Ok(false),
                 }
             }
         };
-        let sent = send(REPORT_MESSAGE, report).await;
+        let outcome = send(REPORT_MESSAGE, report).await;
+        let sent = outcome == Ok(true);
         if sent {
             let _ = sqlx::query(
                 "UPDATE home_contacts SET report_status = 'sent' WHERE assessment_id = ? AND contact = ?",
@@ -335,7 +357,8 @@ impl Keep {
                     "consent": { "words": WEEKLY_WORDS, "given_at": given_at, "source": SOURCE },
                 }),
             )
-            .await;
+            .await
+                == Ok(true);
         let weekly_line = match (weekly, confirm_sent) {
             (true, true) => " Check your email to confirm the weekly fix.",
             (true, false) => " You'll get the weekly fix only after you confirm it.",
@@ -343,12 +366,14 @@ impl Keep {
         };
         Kept {
             status: if sent { "sent" } else { "saved" },
-            message: if sent {
-                format!("Sent to {email}. We keep it for 30 days.{weekly_line}")
-            } else {
-                format!(
+            message: match outcome {
+                Ok(true) => format!("Sent to {email}. We keep it for 30 days.{weekly_line}"),
+                Ok(false) => format!(
                     "Saved for {email}. Email isn't switched on yet, so keep this link for now.{weekly_line}"
-                )
+                ),
+                Err(()) => format!(
+                    "Saved for {email}. We couldn't email it just now, so keep this link for now.{weekly_line}"
+                ),
             },
             report_url,
         }
@@ -360,7 +385,9 @@ impl Keep {
             return crate::view::KeptCounts::default();
         };
         let row: Result<(i64, i64), _> = sqlx::query_as(
-            "SELECT COUNT(*), COALESCE(SUM(report_status = 'sent'), 0) FROM home_contacts",
+            // Newsletter sign-ups (screen 7) keep a row here too, but they asked for no report.
+            "SELECT COUNT(*), COALESCE(SUM(report_status = 'sent'), 0) FROM home_contacts \
+             WHERE assessment_id <> 'newsletter'",
         )
         .fetch_one(pool)
         .await;
@@ -460,7 +487,7 @@ impl Keep {
             "forget_after": "30 days",
             "consent": { "words": JOIN_WORDS, "given_at": eat(now), "source": "agentrix.website sign-up" },
         });
-        let sent = match &self.sender {
+        let outcome = match &self.sender {
             Some(s) => s
                 .send(
                     CONFIRM_MESSAGE,
@@ -469,17 +496,22 @@ impl Keep {
                     &format!("newsletter:{email}"),
                 )
                 .await
-                .unwrap_or(false),
-            None => false,
+                .map_err(|e| {
+                    tracing::error!(error = %format!("{e:#}"), "home: a newsletter confirm link");
+                }),
+            None => Ok(false),
         };
         Kept {
-            status: if sent { "sent" } else { "saved" },
-            message: if sent {
-                format!("Check {email} for a confirm link. Nothing comes until you use it.")
-            } else {
-                format!(
+            status: if outcome == Ok(true) { "sent" } else { "saved" },
+            message: match outcome {
+                Ok(true) => format!("Check {email} for a confirm link."),
+                // Messages::send_waiting sends it once email is switched on.
+                Ok(false) => format!(
                     "Saved for {email}. Email isn't switched on yet; we'll ask you to confirm when it is."
-                )
+                ),
+                Err(()) => format!(
+                    "Saved for {email}. We couldn't send the confirm link just now. Try again in a minute."
+                ),
             },
             report_url: "/".into(),
         }

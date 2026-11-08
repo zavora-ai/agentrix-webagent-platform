@@ -241,3 +241,95 @@ impl Delegates for NodeDelegates {
         }))
     }
 }
+
+/// The sites the edge serves, for W8's visit beacon (handover-wiring 3.1): a host's live
+/// release names its site, at its own domain or its platform address, and the site's record
+/// its time zone, so a day's visits are counted on the owner's calendar.
+pub struct ServedSites {
+    /// Live releases by host.
+    pub releases: Arc<dyn ReleaseSource>,
+    /// `control.db`, for the site's UTC offset.
+    pub pool: SqlitePool,
+}
+
+#[async_trait]
+impl agentrix_store::visits::HostSites for ServedSites {
+    async fn site_for_host(&self, host: &str) -> Option<(SiteId, i32)> {
+        let pointer = self.releases.live(host).await.ok()??;
+        let (offset,): (i64,) =
+            sqlx::query_as("SELECT utc_offset_minutes FROM sites WHERE site_id = ?")
+                .bind(&pointer.site_id)
+                .fetch_optional(&self.pool)
+                .await
+                .ok()??;
+        Some((SiteId::new(pointer.site_id), i32::try_from(offset).ok()?))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use axum::body::Body;
+    use axum::http::{Request, StatusCode, header};
+    use tower::ServiceExt as _;
+
+    use super::ServedSites;
+    use crate::launch::tests::World;
+
+    #[tokio::test]
+    async fn a_live_sites_visits_are_counted_at_its_domain_and_platform_address() {
+        let world = World::new().await;
+        let card = world.card().await;
+        let receipt = world.approve(&card).await;
+        world
+            .gate
+            .go_live(&card, &receipt, "01930000-0000-7000-8000-000000000001")
+            .await
+            .unwrap();
+        agentrix_store::migrate(&world.pool).await.unwrap();
+        let releases = world
+            .gate
+            .releases()
+            .with_platform_host(Some("agentrix.website"));
+        let beacon = agentrix_store::visits::beacon_routes(
+            agentrix_store::visits::VisitStore::new(world.pool.clone()),
+            Arc::new(ServedSites {
+                releases: Arc::new(releases),
+                pool: world.pool.clone(),
+            }),
+        );
+        for host in [
+            "kilele-bakery.example",
+            "kilele-bakery-example.agentrix.website",
+            "elsewhere.example",
+        ] {
+            let response = beacon
+                .clone()
+                .oneshot(
+                    Request::post(agentrix_store::visits::BEACON_PATH)
+                        .header(header::HOST, host)
+                        .header(header::ORIGIN, format!("https://{host}"))
+                        .header(
+                            header::USER_AGENT,
+                            "Mozilla/5.0 (Linux; Android 14) Mobile Safari/537.36",
+                        )
+                        .body(Body::from(r#"{"r":"/about/","seq":1}"#))
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(response.status(), StatusCode::NO_CONTENT);
+        }
+        let (counted,): (i64,) =
+            sqlx::query_as("SELECT COALESCE(SUM(visits), 0) FROM visit_counts WHERE site_id = ?")
+                .bind(world.site.as_str())
+                .fetch_one(&world.pool)
+                .await
+                .unwrap();
+        assert_eq!(
+            counted, 2,
+            "the domain and the platform address; not a stranger"
+        );
+    }
+}

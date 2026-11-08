@@ -6,12 +6,15 @@
       rail: [{key, name, class, words, anchor}], rooms: [{key, title, what, network, summary, state,
       state_words, took_words, receipt?, receipt_short?}], tick, frame?, parity? {score_words,
       score_pct, ok, pages_words, pages: [{url, chip, score_words, verdict, flagged}]},
-      quarantine {count, items: [{title, reason, where}]}, card? {title, href}, spend_words?, uploads }
+      quarantine {count, items: [{title, reason, where}]}, card? {title, href}, spend_words?, uploads,
+      pictures_href? }
     concept/move.html (O5.2 to O5.5) with owner-golive.html's "you're live" and undo (O6.2).
     The go-live card itself is the console's decision page (card.href), approved with a passkey
     or a code under the frozen approve contract. static/onboarding/move.js follows the Move live.
     Once live, and only when W13's Channels app is registered (Pages::with_channels), an optional
-    step asks where the WebAgents should reach the owner; email is always on, Not now always there. -#}
+    step asks where the WebAgents should reach the owner; email is always on, Not now always there.
+    Once live, when pictures drafted for pages that had none wait (pictures_href, set by node from
+    W11's library), the live card says so and links Pictures. -#}
 {% block title %}{{ title }}{% endblock %}
 {% block body_class %}page-move{% endblock %}
 {% block topright %}<span class="chip chip-outline">{{ host }}</span><a class="btn btn-ghost btn-sm" href="/console/today">Console</a>{% endblock %}
@@ -185,6 +188,7 @@
       <h3 id="golive-title">{{ host }} is live</h3>
       {% if live_url %}<p class="small">Your new site answers at <a href="{{ live_url }}" rel="noopener">{{ live_url }}</a>.</p>{% endif %}
       <p class="small">For 30 days you can undo in one step. Nothing is deleted: this release stays in your history and can go live again.</p>
+      {% if pictures_href %}<p class="small" id="pictures-waiting">Pictures for pages that had none wait for you in <a href="{{ pictures_href }}">Pictures</a>.</p>{% endif %}
       <form method="post" action="/sites/{{ site_id }}/rollback"><input type="hidden" name="to" value="previous"><button class="btn" type="submit">Undo: the release before this one</button></form>
       <form method="post" action="/sites/{{ site_id }}/rollback"><input type="hidden" name="to" value="old-site"><button class="btn btn-ghost" type="submit">Undo: back to your old site</button></form>
       <p class="small muted">On your first release both go back to your old site. Each undo is written as a receipt.</p>

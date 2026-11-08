@@ -56,11 +56,11 @@
   <div class="rail-foot">
     <div class="memory-chip"><span>This conversation is forgotten when you close the tab.</span></div>
     <form class="wa-input" id="railForm"><label class="sr-only" for="railQ">Message</label><input id="railQ" autocomplete="off" placeholder="Ask a follow-up…"><button class="wa-mic" type="button" aria-disabled="true" aria-label="Voice (later)" title="Voice: later"></button><button class="wa-send" type="submit" aria-label="Send"></button></form>
-    <div class="wa-disclose rail-disclose"><span>You're talking to <b>AI</b>. It never guesses prices, dates or allergens.</span><a class="wa-person" href="/delivery#contact" data-person><span class="ph">{{ shell.site.owner_initial }}</span>{{ shell.site.owner }} <i>· person · {{ shell.site.owner_channel }}, usually within {{ shell.site.owner_wait | replace("~", "") }}</i></a></div>
+    <div class="wa-disclose rail-disclose"><span>You're talking to <b>AI</b>. It never guesses prices, stock or delivery dates.</span><a class="wa-person" href="/delivery#contact" data-person><span class="ph">{{ shell.site.owner_initial }}</span>{{ shell.site.owner }} <i>· person · {{ shell.site.owner_channel }}, usually within {{ shell.site.owner_wait | replace("~", "") }}</i></a></div>
   </div>
 </aside>
 <div class="team-sheet" id="teamSheet" role="dialog" aria-label="{{ shell.site.name }}'s WebAgents">
-  <div class="spread sheet-top"><b class="sheet-title">{{ shell.site.name }}'s WebAgents</b><button class="icon-btn" id="sheetClose" type="button" aria-label="Close menu"></button></div>
+  <div class="spread sheet-top"><b class="sheet-title">The WebAgents at {{ shell.site.name }}</b><button class="icon-btn" id="sheetClose" type="button" aria-label="Close menu"></button></div>
   {% for d in shell.desks %}
   <div class="team-row">{{ mark(d, 40, shell.site, "lg") }}<div><b>{{ d.name }}</b><p>{{ d.mandate }}</p>
     <div class="acts"><button class="act primary" type="button" data-ask="{{ d.id }}">Ask {{ d.name }}</button><a class="act" href="{{ d.href }}">Open page</a></div></div></div>

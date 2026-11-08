@@ -28,7 +28,7 @@ use crate::App;
 use crate::shell::{Desk, Shell};
 use crate::web::{Ctx, Fail, Page, html};
 
-mod desk;
+pub(crate) mod desk;
 
 /// Days the calendar shows, from today.
 const CALENDAR_DAYS: i64 = 21;

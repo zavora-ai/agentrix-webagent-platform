@@ -16,7 +16,7 @@
     <input type="hidden" name="next" value="{{ next }}">
     <input type="hidden" name="plan_id" id="plan-id" value="{{ chosen }}">
     <div>
-      <h1 class="h2" id="plan-h">{% if host %}{{ host }} · site in setup{% else %}Choose a plan{% endif %}</h1>
+      <h1 class="h2" id="plan-h">{% if host %}Choose a plan for {{ host }}{% else %}Choose a plan{% endif %}</h1>
       <p class="sub">Your old site is untouched. The Move starts after you prove the domain is yours.</p>
     </div>
     <div class="o-chief">

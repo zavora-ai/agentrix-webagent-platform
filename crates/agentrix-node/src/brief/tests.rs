@@ -16,6 +16,8 @@ use crate::db::{open_in_memory, sites};
 struct Fake {
     reply: anyhow::Result<String>,
     seen: Mutex<Vec<Value>>,
+    /// The Chief's mark while the headline was being written.
+    chief: Mutex<Vec<Option<agentrix_kernel::PresenceFrame>>>,
 }
 
 impl Fake {
@@ -23,20 +25,26 @@ impl Fake {
         Arc::new(Self {
             reply: Ok(text.to_owned()),
             seen: Mutex::new(Vec::new()),
+            chief: Mutex::new(Vec::new()),
         })
     }
     fn fails() -> Arc<Self> {
         Arc::new(Self {
             reply: Err(anyhow::anyhow!("budget refused")),
             seen: Mutex::new(Vec::new()),
+            chief: Mutex::new(Vec::new()),
         })
     }
 }
 
 #[async_trait]
 impl HeadlineModel for Fake {
-    async fn headline(&self, _site: &SiteId, facts: &Value) -> anyhow::Result<String> {
+    async fn headline(&self, site: &SiteId, facts: &Value) -> anyhow::Result<String> {
         self.seen.lock().unwrap().push(facts.clone());
+        self.chief
+            .lock()
+            .unwrap()
+            .push(agentrix_kernel::presence::global().current(site.as_str(), "coordinator"));
         match &self.reply {
             Ok(t) => Ok(t.clone()),
             Err(e) => Err(anyhow::anyhow!("{e}")),
@@ -313,4 +321,79 @@ async fn questions_passed_to_the_owner_are_counted_never_quoted() {
     let facts = model.seen.lock().unwrap()[0].to_string();
     assert!(facts.contains("\"questions_passed_to_owner\":1"), "{facts}");
     assert!(!facts.contains("Ignore your rules"), "{facts}");
+}
+
+#[tokio::test]
+async fn the_chiefs_mark_works_while_the_brief_is_written_then_sleeps() {
+    let (pool, store, site) = setup().await;
+    the_move(&store, &site).await;
+    let model = Fake::says("A quiet day.");
+    ChiefBrief::new(pool, store, model.clone())
+        .refresh(&site)
+        .await
+        .unwrap();
+    let during = model.chief.lock().unwrap()[0].clone().expect("a frame");
+    assert_eq!(during.state.key(), "working");
+    assert_eq!(during.label.as_deref(), Some("Writing your brief"));
+    let after = agentrix_kernel::presence::global()
+        .current(site.as_str(), "coordinator")
+        .unwrap();
+    assert_eq!(after.state.key(), "asleep");
+}
+
+#[tokio::test]
+async fn at_watch_the_chief_writes_no_brief_and_calls_no_model() {
+    let (pool, store, site) = setup().await;
+    the_move(&store, &site).await;
+    agentrix_kernel::migrate(&pool).await.unwrap();
+    let rosters = agentrix_kernel::Rosters::new(
+        pool.clone(),
+        Arc::new(agentrix_host::testing::MemoryBlobs::default()),
+    );
+    let roster = rosters.roster(site.as_str()).await.unwrap().unwrap();
+    let mut chief = roster.get("coordinator").unwrap().spec.clone();
+    chief
+        .jobs
+        .iter_mut()
+        .find(|j| j.id == "morning-brief")
+        .unwrap()
+        .start = agentrix_kernel::Level::Watch;
+    rosters
+        .save_spec(
+            site.as_str(),
+            &chief,
+            "The owner set the brief to Watch",
+            None,
+        )
+        .await
+        .unwrap();
+    let model = Fake::says("Never written.");
+    let brief = ChiefBrief::new(pool.clone(), store, model.clone())
+        .with_guards(crate::guards::Guards::default().with_rosters(rosters))
+        .refresh(&site)
+        .await
+        .unwrap();
+    assert!(brief.headline.is_none() && brief.lines.is_empty());
+    assert!(model.seen.lock().unwrap().is_empty(), "no model call");
+    let (n,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM briefs")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(n, 0, "nothing written");
+}
+
+#[tokio::test]
+async fn while_frozen_the_chief_writes_nothing() {
+    let (pool, store, site) = setup().await;
+    the_move(&store, &site).await;
+    let guards = crate::guards::testing::frozen(&pool, site.as_str()).await;
+    let model = Fake::says("Never written.");
+    let chief = ChiefBrief::new(pool.clone(), store, model.clone()).with_guards(guards);
+    chief.refresh_all().await.unwrap();
+    assert!(model.seen.lock().unwrap().is_empty(), "no model call");
+    let (n,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM briefs")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(n, 0);
 }

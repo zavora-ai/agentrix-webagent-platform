@@ -125,6 +125,9 @@ pub enum SendError {
 pub struct Envelope {
     /// The outbox row.
     pub outbox_id: String,
+    /// Delivery attempts on this row before this one (0 the first time). A provider's
+    /// idempotency key carries it, so another try isn't answered from the first one's record.
+    pub attempt: i64,
     /// The catalogue id.
     pub message: String,
     /// The site it's about.
@@ -625,6 +628,7 @@ impl Messages {
             };
 
         let (subject, body_text, body_html, payload, from_name) = stored_parts(stored, channel);
+        let fresh_status = status;
         let new = NewEntry {
             site_id: out.site_id.clone(),
             account_id: out.to.account_id.clone(),
@@ -650,12 +654,22 @@ impl Messages {
                 .filter(|c| !c.is_null())
                 .map(|c| c.to_string()),
         };
-        let (entry, fresh) = self.inner.outbox.record(new, now).await?;
-        if !fresh || entry.status != Status::Queued {
+        let (entry, fresh) = self.inner.outbox.record(new.clone(), now).await?;
+        let go = if fresh {
+            entry.status == Status::Queued
+        } else {
+            // Asked for again (a visitor signing up twice) after a try that never left: email
+            // was off then, or the provider refused it. It goes now if it can.
+            fresh_status == Status::Queued
+                && matches!(entry.status, Status::NotSent | Status::Failed)
+                && self.inner.outbox.requeue(&entry.id, &new, now).await?
+        };
+        if !go {
             return Ok(entry);
         }
 
-        let envelope = envelope_from(def, out, context, live, channel, destination, &entry.id);
+        let mut envelope = envelope_from(def, out, context, live, channel, destination, &entry.id);
+        envelope.attempt = entry.attempts;
         let delivery = self.inner.transport.deliver(&envelope).await;
         self.apply(&entry.id, delivery).await?;
         Ok(self.inner.outbox.get(&entry.id).await?.unwrap_or(entry))
@@ -727,7 +741,46 @@ impl Messages {
         }
         Ok(n)
     }
+
+    /// Once email is switched on, sends what people asked agentrix.website for while it was
+    /// off: the report of their check and the weekly fix's confirm link, from the last week.
+    /// The page told them it would come. The newest row per message and address goes, from its
+    /// stored copy (neither message holds a secret); older copies stay as they were. Returns
+    /// how many went to the provider.
+    pub async fn send_waiting(&self) -> Result<usize, sqlx::Error> {
+        if self.inner.transport.readiness(Channel::Email) != Readiness::Ready {
+            return Ok(0);
+        }
+        let now = (self.inner.clock)();
+        let off = match Undelivered.readiness(Channel::Email) {
+            Readiness::NotReady(reason) => reason,
+            Readiness::Ready => return Ok(0),
+        };
+        let waiting = self
+            .inner
+            .outbox
+            .waiting_email(&WAITING, &off, now - chrono::Duration::days(7), 100)
+            .await?;
+        let mut n = 0;
+        for entry in waiting {
+            if !self.inner.outbox.claim(&entry.id, now).await? {
+                continue;
+            }
+            let delivery = self
+                .inner
+                .transport
+                .deliver(&envelope_from_entry(&entry))
+                .await;
+            n += usize::from(matches!(delivery, Delivery::Sent { .. }));
+            self.apply(&entry.id, delivery).await?;
+        }
+        Ok(n)
+    }
 }
+
+/// What [`Messages::send_waiting`] sends once email is on: things a person asked for, with no
+/// secret in them.
+const WAITING: [&str; 2] = ["newsletter.confirm", "lead.report"];
 
 type StoredParts = (String, String, Option<String>, Option<Json>, String);
 
@@ -794,6 +847,7 @@ fn envelope_from(
 ) -> Envelope {
     let mut env = Envelope {
         outbox_id: outbox_id.to_string(),
+        attempt: 0,
         message: def.id.to_string(),
         site_id: out.site_id.clone(),
         channel,
@@ -860,6 +914,7 @@ fn envelope_from_entry(entry: &Entry) -> Envelope {
     });
     Envelope {
         outbox_id: entry.id.clone(),
+        attempt: entry.attempts,
         message: entry.message.clone(),
         site_id: entry.site_id.clone(),
         channel: entry.channel,
@@ -999,6 +1054,125 @@ mod tests {
         let b = m.send(out).await.unwrap();
         assert_eq!(a.entries[0].id, b.entries[0].id);
         assert_eq!(transport.sent.lock().unwrap().len(), 1);
+    }
+
+    fn confirm(to: &str, key: &str) -> Outgoing {
+        let def = catalogue::get("newsletter.confirm").unwrap();
+        Outgoing {
+            message: def.id.into(),
+            site_id: None,
+            to: Recipient::email(to, None),
+            context: def.example_context(),
+            reason: "A visitor asked for the weekly fix".into(),
+            dedupe_key: Some(format!("newsletter.confirm:{key}")),
+        }
+    }
+
+    fn at(t: DateTime<Utc>) -> Clock {
+        Arc::new(move || t)
+    }
+
+    #[tokio::test]
+    async fn asking_again_once_email_is_on_sends_what_never_left() {
+        let off = messages().await;
+        let first = off
+            .send(confirm("amina@gmail.com", "newsletter:amina@gmail.com"))
+            .await
+            .unwrap();
+        assert_eq!(first.entries[0].status, Status::NotSent);
+        let transport = Arc::new(Recording::default());
+        let on = off.with_transport(transport.clone());
+        let again = on
+            .send(confirm("amina@gmail.com", "newsletter:amina@gmail.com"))
+            .await
+            .unwrap();
+        assert_eq!(again.entries[0].id, first.entries[0].id, "still one row");
+        assert_eq!(again.entries[0].status, Status::Sent);
+        assert_eq!(again.entries[0].status_reason, None);
+        // Once sent, asking again sends nothing more.
+        on.send(confirm("amina@gmail.com", "newsletter:amina@gmail.com"))
+            .await
+            .unwrap();
+        assert_eq!(transport.sent.lock().unwrap().len(), 1);
+    }
+
+    #[derive(Default)]
+    struct RefusesFirst {
+        attempts: Mutex<Vec<i64>>,
+    }
+
+    #[async_trait]
+    impl Transport for RefusesFirst {
+        fn readiness(&self, _channel: Channel) -> Readiness {
+            Readiness::Ready
+        }
+        async fn deliver(&self, envelope: &Envelope) -> Delivery {
+            let mut attempts = self.attempts.lock().unwrap();
+            attempts.push(envelope.attempt);
+            if attempts.len() == 1 {
+                Delivery::Failed {
+                    reason: "refused".into(),
+                }
+            } else {
+                Delivery::Sent {
+                    provider: "test".into(),
+                    provider_ref: "ref-2".into(),
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn a_refused_email_is_tried_again_when_asked_for_again_as_a_new_attempt() {
+        let transport = Arc::new(RefusesFirst::default());
+        let m = messages().await.with_transport(transport.clone());
+        let out = confirm("amina@gmail.com", "newsletter:amina@gmail.com");
+        assert_eq!(
+            m.send(out.clone()).await.unwrap().entries[0].status,
+            Status::Failed
+        );
+        let again = m.send(out).await.unwrap();
+        assert_eq!(again.entries[0].status, Status::Sent);
+        assert_eq!(again.entries[0].attempts, 2);
+        // The second try carries its attempt, so the provider's idempotency key differs.
+        assert_eq!(*transport.attempts.lock().unwrap(), vec![0, 1]);
+    }
+
+    #[tokio::test]
+    async fn what_people_asked_for_while_email_was_off_goes_once_when_it_is_on() {
+        use chrono::TimeZone;
+        let now = Utc.with_ymd_and_hms(2026, 11, 8, 17, 0, 0).unwrap();
+        let off = messages().await;
+        // Too old: a sign-up from last month stays as it was.
+        off.with_clock(at(now - chrono::Duration::days(8)))
+            .send(confirm("old@gmail.com", "newsletter:old@gmail.com"))
+            .await
+            .unwrap();
+        // The same address twice (the sign-up, then the keep step's tick): only the newest goes.
+        off.with_clock(at(now - chrono::Duration::hours(2)))
+            .send(confirm("amina@gmail.com", "newsletter:amina@gmail.com"))
+            .await
+            .unwrap();
+        let newest = off
+            .with_clock(at(now - chrono::Duration::hours(1)))
+            .send(confirm("amina@gmail.com", "asmt_1:amina@gmail.com"))
+            .await
+            .unwrap();
+        // A sign-in code is never sent late.
+        off.send(signin("amina@gmail.com")).await.unwrap();
+        assert_eq!(off.send_waiting().await.unwrap(), 0, "email is still off");
+
+        let transport = Arc::new(Recording::default());
+        let on = off.with_transport(transport.clone()).with_clock(at(now));
+        assert_eq!(on.send_waiting().await.unwrap(), 1);
+        assert_eq!(on.send_waiting().await.unwrap(), 0, "only once");
+        let sent = transport.sent.lock().unwrap().clone();
+        assert_eq!(sent.len(), 1);
+        assert_eq!(sent[0].outbox_id, newest.entries[0].id);
+        assert_eq!(sent[0].to, "amina@gmail.com");
+        assert!(sent[0].text.contains("Confirm the weekly fix"));
+        let row = on.outbox().get(&sent[0].outbox_id).await.unwrap().unwrap();
+        assert_eq!(row.status, Status::Sent);
     }
 
     struct QuietUntil(DateTime<Utc>);

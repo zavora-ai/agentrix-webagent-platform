@@ -577,6 +577,7 @@ version = "0.1.0"
 dependencies = [
  "adk-core",
  "adk-site",
+ "agentrix-store",
  "agentrix-types",
  "anyhow",
  "async-trait",
@@ -608,6 +609,7 @@ version = "0.1.0"
 dependencies = [
  "adk-core",
  "adk-site",
+ "agentrix-billing",
  "agentrix-channels",
  "agentrix-console",
  "agentrix-decisions",

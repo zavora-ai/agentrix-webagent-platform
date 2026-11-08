@@ -88,6 +88,31 @@ pub async fn build(config: &Config) -> anyhow::Result<App> {
     )?
     .with_console(console.clone());
 
+    // Platform crates through the agentrix-host seam (contract C11): each runs its own
+    // migrator, then mounts its routes, hosts and tasks; node lends them its receipts, sign-in,
+    // approvals and content store.
+    let ctx = agentrix_host::NodeContext {
+        pool: pool.clone(),
+        http: http.clone(),
+        data_dir: config.data_dir.clone(),
+        origin: config.origin.clone(),
+        platform_host: config.platform_host(),
+        models_url: config.models_url.clone(),
+        receipts: Arc::new(wiring::host::NodeReceipts {
+            store: receipts.clone(),
+        }),
+        owners: Arc::new(wiring::host::NodeOwners { auth: auth.clone() }),
+        approvals: Arc::new(wiring::host::NodeApprovals {
+            approvals: auth.approvals(),
+        }),
+        blobs: Arc::new(wiring::host::NodeBlobs { cas: cas.clone() }),
+        owner_accounts: Arc::new(wiring::host::NodeOwnerAccounts { auth: auth.clone() }),
+    };
+    // What governed paths check before they run: the WebAgents' dials (W1), the owner's Freeze
+    // (W5) and the operator's holds (W3). With Freeze enforced here, the shell may offer it
+    // (AGENTRIX_FREEZE_ENFORCED).
+    let guards = crate::guards::Guards::for_node(&ctx);
+
     // The broker (assess lane): signed jobs to the runner on the sandbox VM (design §4.2).
     let broker = crate::broker::Broker::for_node(
         config.runner.as_deref(),
@@ -126,6 +151,11 @@ pub async fn build(config: &Config) -> anyhow::Result<App> {
         events: move_events.clone(),
         logs,
         probes: (10, std::time::Duration::from_secs(30)),
+        // After go-live, in the background: W3's billing records go-live day and W11 drafts
+        // pictures for pages that had none (handover-wiring 1.3).
+        after_live: Some(Arc::new(crate::launch::after_live::NodeAfterLive::new(
+            ctx.clone(),
+        ))),
     };
     let decisions = crate::decisions::DecisionsState {
         store: agentrix_move::MoveStore::new(pool.clone()),
@@ -134,6 +164,7 @@ pub async fn build(config: &Config) -> anyhow::Result<App> {
         approver: Arc::new(auth.approvals()),
         sessions: Arc::new(auth.clone()),
         events: move_events.clone(),
+        guards: guards.clone(),
     };
 
     // Converted sites and the agent door (experience lane).
@@ -156,6 +187,7 @@ pub async fn build(config: &Config) -> anyhow::Result<App> {
         },
         sessions: Arc::new(auth.clone()),
         fixture_exports: std::env::var_os("AGENTRIX_FIXTURE_EXPORTS").map(std::path::PathBuf::from),
+        guards: guards.clone(),
     };
     tokio::spawn({
         let mover = mover.clone();
@@ -172,7 +204,9 @@ pub async fn build(config: &Config) -> anyhow::Result<App> {
     // "Pass your question to the owner" (R8.3): stored as data, shown on Today.
     .with_questions(Arc::new(crate::db::questions::QuestionStore::new(
         pool.clone(),
-    )));
+    )))
+    // The platform's checks before Ask and the agent door act (handover-wiring §2a).
+    .with_guards(guards.clone());
     let door = DoorState {
         site: site_state.clone(),
         held: Arc::new(crate::decisions::HeldOrders {
@@ -195,26 +229,6 @@ pub async fn build(config: &Config) -> anyhow::Result<App> {
         signer: signer.clone(),
     };
 
-    // Platform crates through the agentrix-host seam (contract C11): each runs its own
-    // migrator, then mounts its routes, hosts and tasks; node lends them its receipts, sign-in,
-    // approvals and content store.
-    let ctx = agentrix_host::NodeContext {
-        pool: pool.clone(),
-        http: http.clone(),
-        data_dir: config.data_dir.clone(),
-        origin: config.origin.clone(),
-        platform_host: config.platform_host(),
-        models_url: config.models_url.clone(),
-        receipts: Arc::new(wiring::host::NodeReceipts {
-            store: receipts.clone(),
-        }),
-        owners: Arc::new(wiring::host::NodeOwners { auth: auth.clone() }),
-        approvals: Arc::new(wiring::host::NodeApprovals {
-            approvals: auth.approvals(),
-        }),
-        blobs: Arc::new(wiring::host::NodeBlobs { cas: cas.clone() }),
-        owner_accounts: Arc::new(wiring::host::NodeOwnerAccounts { auth: auth.clone() }),
-    };
     // W4's onboarding pages (agentrix-onboarding), drawn as the concepts: Assess, the claim and
     // the Move. Their styles and scripts come through agentrix_onboarding::mount (wiring/host.rs).
     // Once a site is live, the Move page asks where the WebAgents should reach the owner, offering
@@ -313,7 +327,22 @@ pub async fn build(config: &Config) -> anyhow::Result<App> {
     let sites = crate::site::router(site_state.clone())
         .merge(crate::door::router(door))
         // W1: every site host serves the living marks same-origin.
-        .merge(agentrix_kernel::site_routes());
+        .merge(agentrix_kernel::site_routes())
+        // W8: visits counted without cookies (POST /_agx/visit, GET /_agx/visit.js); the
+        // Move's releases carry the counter's tag (handover-wiring 3.1).
+        .merge(agentrix_store::visits::beacon_routes(
+            agentrix_store::visits::VisitStore::new(pool.clone()),
+            Arc::new(wiring::ServedSites {
+                releases: Arc::new(gate.releases()),
+                pool: pool.clone(),
+            }),
+        ))
+        // W3: platform holds, per request: a notice hold serves only the neutral notice
+        // (handover-wiring 3.2).
+        .layer(axum::middleware::from_fn_with_state(
+            site_state.clone(),
+            crate::site::holds,
+        ));
 
     let dispatch = Dispatch {
         platform_host: config.platform_host(),
@@ -327,14 +356,17 @@ pub async fn build(config: &Config) -> anyhow::Result<App> {
 
     // The Chief WebAgent's brief for Today (S2-04): refreshed every 15 minutes; it writes nothing
     // and calls no model when nothing has changed.
-    let chief = Arc::new(crate::brief::ChiefBrief::new(
-        pool.clone(),
-        receipts.clone(),
-        Arc::new(crate::brief::GatewayHeadline::new(
-            config.models_url.clone(),
-            http.clone(),
-        )),
-    ));
+    let chief = Arc::new(
+        crate::brief::ChiefBrief::new(
+            pool.clone(),
+            receipts.clone(),
+            Arc::new(crate::brief::GatewayHeadline::new(
+                config.models_url.clone(),
+                http.clone(),
+            )),
+        )
+        .with_guards(guards.clone()),
+    );
     chief.clone().spawn(std::time::Duration::from_secs(900));
 
     // routing.changed receipts (R11.4, R11.6): the gateway's routes, checked at startup and every

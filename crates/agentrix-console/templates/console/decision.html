@@ -28,7 +28,7 @@
   {% if card.levels %}
   <section class="card" aria-labelledby="levels-h">
     <h2 id="levels-h">What your WebAgents may do without asking</h2>
-    <p class="small">These starting levels are written into your charter and signed with this card. Signing them unchanged is safe: anything that can't be undone still asks you first.</p>
+    <p class="small">Approving this card also sets these starting levels. Anything that can't be undone still asks you first.</p>
     {% for j in card.levels %}
     <div class="stack" style="gap:6px">
       <div class="spread"><b>{{ j.webagent }} · {{ j.job }}</b><span class="chip {{ 'info' if j.above_ask_first else '' }}">{{ j.level_words }}</span></div>
@@ -44,7 +44,7 @@
     <summary style="cursor:pointer;font-weight:700;min-height:32px;display:flex;align-items:center">What your approval signs</summary>
     <p class="fp" style="margin-top:8px">{{ card.fingerprint }}</p>
     {% if card.fields %}<dl class="kv">{% for f in card.fields %}<dt>{{ f.label }}</dt><dd class="mono">{{ f.value }}</dd>{% endfor %}</dl>{% endif %}
-    <p class="hint">The card and your approval are drawn from the same arguments that make this fingerprint. Your passkey signs it, or an authenticator code is bound to it, and it runs once.</p>
+    <p class="hint">This fingerprint stands for exactly what will run. The card you read and the approval you give are both made from it, so what you approve is what runs, once.</p>
   </details>
 
   {% if card.state == "waiting" %}
@@ -58,7 +58,7 @@
         <input type="hidden" name="method" value="totp">
         <input type="hidden" name="fingerprint" value="{{ card.fingerprint }}">
         <label class="field">Code from your authenticator app<input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label>
-        <p class="hint">Single use, and bound to this exact card. Your receipt will say a code approved it, not a passkey.</p>
+        <p class="hint">It works once, and only for this card. Your receipt will say a code approved it, not a passkey.</p>
         <button class="btn btn-primary btn-wide" type="submit">Approve with code</button>
       </form>
     </details>

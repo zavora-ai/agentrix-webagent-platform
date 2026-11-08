@@ -22,7 +22,7 @@
 
   <div class="cp-grid cols-2e">
     <article class="card tight">
-      <div class="card-title"><h4>Gates</h4><span class="small muted">what a train must pass (08 §3.5)</span></div>
+      <div class="card-title"><h4>Gates</h4><span class="small muted">what a train must pass</span></div>
       <ul class="gates">
         <li class="{{ '' if r.gauntlet_week[0] and r.gauntlet_week[0] == r.gauntlet_week[1] else ('failed' if r.gauntlet_week[0] else 'paused') }}"><span>Containment gauntlet on live sites</span><span class="r">{% if r.gauntlet_week[0] %}{{ r.gauntlet_week[1] }} of {{ r.gauntlet_week[0] }} runs held every attack · last 7 days{% else %}no runs{% endif %}</span></li>
         <li class="paused"><span>Scenarios S1 to S19, scripted</span><span class="r">not recorded</span></li>

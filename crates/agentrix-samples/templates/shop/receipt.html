@@ -22,7 +22,7 @@
     </dl>
     {% for r in refunds %}<p class="{% if r.state == 'done' %}k-okline{% else %}k-waitline{% endif %}">{{ r.words }}</p>{% endfor %}
     {% if payment.sample %}
-    <p class="k-small">A sample payment isn't signed, because nothing was charged. A real payment's receipt is signed by the gateway that took it, so anyone can check it.</p>
+    <p class="k-small">A sample payment isn't signed, because nothing was charged. A real payment's receipt is signed by the payment service that took it, so anyone can check it.</p>
     {% else %}
     <p class="k-small">{{ payment.rail }} also sends its own receipt for {{ payment.amount }}. Both show the same amount and payee.</p>
     {% endif %}

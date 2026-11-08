@@ -6,7 +6,7 @@
 {%- set m = money -%}
 {%- set dollars = 10000 -%}
 <div class="field-head">
-  <div><h2>Money · {{ m.month }}</h2><div class="sub">USD · prices from the plan catalogue v{{ catalogue.version }}, still hypotheses until James sets them</div></div>
+  <div><h2>Money · {{ m.month }}</h2><div class="sub">USD · prices from the plan catalogue v{{ catalogue.version }}, drafts until James sets them</div></div>
   <div class="row">
     {%- if run.issued %}<span class="chip chip-ok">{{ m.period }} invoices issued</span>{% elif run.drafts %}<span class="chip chip-info">Invoice run drafted · {{ run.drafts|length }}</span>{% else %}<span class="chip">Nothing to invoice yet</span>{% endif %}
     {%- if m.reminders %}<span class="chip chip-wait">{{ m.reminders|length }} in reminders</span>{% endif %}
@@ -52,7 +52,7 @@
         {%- for r in m.reminders %}
         <li><span class="dot {{ 'risk' if r.needs_person else 'wait' }}"></span><span><b>{{ r.domain }}</b>: {{ r.step }}{% if r.needs_person %}, read-only suspension needs op.finance{% else %} reminder, within policy{% endif %}</span><span class="meta">{{ r.days }} d late</span></li>
         {%- else %}
-        <li><span class="dot"></span><span>No payment is late.</span><span class="meta">policy: 08 §4.2</span></li>
+        <li><span class="dot"></span><span>No payment is late.</span><span class="meta">nothing to chase</span></li>
         {%- endfor %}
       </ul>
     </article>

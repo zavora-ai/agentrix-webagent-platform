@@ -30,7 +30,7 @@
       <div class="o-budget">
         <div class="spread"><span>{% if spent_words %}<b>{{ spent_words }}</b> of your {{ budget_words }} AI budget this period{% else %}Your AI budget: <b>{{ budget_words }}</b> a month{% endif %}</span></div>
         {% if spent_words %}<div class="meter pct-{{ spent_pct }}" aria-hidden="true"><span></span></div>{% endif %}
-        <p class="o-hint">{% if spent_words %}Counted by the Model Gateway on every call. {% else %}No AI spend counted for this site yet. {% endif %}Nothing above your budget is ever billed: it's a limit, not a meter.</p>
+        <p class="o-hint">{% if spent_words %}Counted on every AI call. {% else %}No AI spend counted for this site yet. {% endif %}Nothing above your budget is ever billed: it's a hard limit.</p>
       </div>
       {% endif %}
       <p class="small">Invoices aren't listed here yet. PayPal emails you a receipt for every charge, and the subscription is in your PayPal account under Payments.</p>
@@ -47,7 +47,7 @@
         </div>
         {% endfor %}
       </div>
-      <p class="small">Changing plan from here comes next. Until then your plan stays as it is; to change it, cancel and choose again before your next go-live.</p>
+      <p class="small">You can't change plan here yet, so your plan stays as it is. To change it now, cancel, then choose again before your next go-live.</p>
     </div>
 
     <div role="tabpanel" id="t-cancel" aria-labelledby="tab-cancel" class="o-sec" hidden>
@@ -72,7 +72,7 @@
     </div>
 
     <div role="tabpanel" id="t-export" aria-labelledby="tab-export" class="o-sec" hidden>
-      <p class="small">Your site and its data are yours. The one-file export (your records, every signed release, every receipt) comes next. Today every receipt is on your Trust page, where anyone can check its signature.</p>
+      <p class="small">Your site and its data are yours. A one-file export of your records, every signed release and every receipt isn't ready yet. For now, every receipt is on your Trust page, where anyone can check its signature.</p>
       <a class="btn self-start" href="/console/trust">Open your receipts</a>
     </div>
   </div>

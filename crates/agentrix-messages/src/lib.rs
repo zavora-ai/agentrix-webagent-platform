@@ -103,7 +103,8 @@ pub fn identity_mailer(ctx: &NodeContext) -> Arc<dyn agentrix_identity::CodeMail
 }
 
 /// Mounts the console's Messages page on the platform host and the task that delivers
-/// messages held for quiet hours once they end.
+/// messages held for quiet hours once they end (and, at start, what people asked for while
+/// email was off: [`Messages::send_waiting`]).
 pub fn mount(ctx: &NodeContext) -> anyhow::Result<Mounted> {
     let messages = from_context(ctx);
     let routes = web::routes(web::WebState {
@@ -118,6 +119,14 @@ pub fn mount(ctx: &NodeContext) -> anyhow::Result<Mounted> {
     Ok(Mounted::default().platform(routes).task(
         "messages: deliver held messages when quiet hours end",
         Box::pin(async move {
+            // What people asked for while email was off goes once, when node starts with it on.
+            match release.send_waiting().await {
+                Ok(0) => {}
+                Ok(n) => tracing::info!(sent = n, "sent emails kept while email was off"),
+                Err(e) => {
+                    tracing::warn!(error = %e, "couldn't send emails kept while email was off")
+                }
+            }
             let mut tick = tokio::time::interval(Duration::from_secs(60));
             loop {
                 tick.tick().await;

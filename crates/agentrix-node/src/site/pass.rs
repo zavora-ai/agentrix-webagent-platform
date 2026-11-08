@@ -172,6 +172,10 @@ pub(super) async fn pass_handler(
             );
         }
     };
+    // A platform read-only hold pauses forms too (W3, handover-wiring 3.2).
+    if state.guards.held(&release.pointer.site_id).await {
+        return said(StatusCode::SERVICE_UNAVAILABLE, super::HELD);
+    }
     if !state
         .pass_limit
         .allow(&client(&headers, &extensions), Instant::now())

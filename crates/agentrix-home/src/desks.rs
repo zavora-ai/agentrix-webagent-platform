@@ -561,6 +561,19 @@ fn map_cites(text: &str, mut f: impl FnMut(usize) -> Option<usize>) -> String {
     out
 }
 
+/// House style for a model's sentence (voice.md): no dashes in prose and no exclamation marks.
+/// Vultr's models write em dashes where Anthropic's mostly didn't, so every desk answer passes
+/// through this, like the samples' studio desk (`agentrix_samples::studio::desk::plain`).
+fn house(s: &str) -> String {
+    s.replace(" \u{2014} ", ", ")
+        .replace('\u{2014}', ", ")
+        .replace(" \u{2013} ", ", ")
+        .replace('!', ".")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 fn sentences(text: &str) -> Vec<String> {
     let chars: Vec<char> = text.chars().collect();
     let mut out: Vec<String> = Vec::new();
@@ -935,7 +948,7 @@ impl Desks {
         let renumber = |n: usize| cited.iter().position(|c| *c == n).map(|i| i + 1);
         let phrases: Vec<String> = sentences(&answer)
             .into_iter()
-            .map(|p| map_cites(&p, renumber))
+            .map(|p| house(&map_cites(&p, renumber)))
             .collect();
         let kept: Vec<Source> = cited
             .iter()
@@ -1143,7 +1156,7 @@ impl Desks {
         let renumber = |n: usize| cited.iter().position(|c| *c == n).map(|i| i + 1);
         let phrases: Vec<String> = sentences(&answer)
             .into_iter()
-            .map(|p| map_cites(&p, renumber))
+            .map(|p| house(&map_cites(&p, renumber)))
             .collect();
         let kept: Vec<Source> = cited
             .iter()
@@ -1305,6 +1318,22 @@ fn doesnt_say(desk: &'static Desk, know: &Knowledge, ai: bool) -> Answer {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn answers_lose_dashes_and_exclamation_marks() {
+        assert_eq!(
+            house("We answer questions and take bookings \u{2014} passing anything else to you!"),
+            "We answer questions and take bookings, passing anything else to you."
+        );
+        assert_eq!(
+            house("Monday \u{2013} Friday, 9\u{2013}5"),
+            "Monday, Friday, 9\u{2013}5"
+        );
+        assert_eq!(
+            house("It says \"open on Sunday?\"\u{2014}it answers"),
+            "It says \"open on Sunday?\", it answers"
+        );
+    }
 
     #[test]
     fn sections_come_from_the_served_page() {

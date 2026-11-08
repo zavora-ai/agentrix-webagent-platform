@@ -1,7 +1,8 @@
 {#- The converted site's page (S1-09; 06 §4). Rendered by the Move's rebuild into each page of a
     release, so the HTML is signed and served byte for byte. Variables:
     site: {name, domain, lang, tokens: {bg, soft, ink, ink2, line, accent, on_accent, display, text},
-           nav: [{label, href}], contact_href, fixture: bool, counting: bool}
+           nav: [{label, href}], contact_href, fixture: bool, counting: bool,
+           counter: W8's visit counter tag (agentrix_store::visits::script_tag) or none}
     page: {title, description, path, md_href (its Markdown twin), body_html (sanitised by the
            Move), updated}
     The Move also copies static/site/site.css into the release as /assets/site.css.
@@ -25,7 +26,8 @@
   }
 </style>
 <script src="/_agentrix/ask.js" defer></script>
-</head>
+{% if site.counter %}{{ site.counter | safe }}
+{% endif %}</head>
 <body>
 <a class="s-skip" href="#main">Skip to content</a>
 {% if site.fixture %}<p class="s-fixture">Zavora's fixture site, used to demonstrate the platform.</p>{% endif %}
@@ -43,7 +45,7 @@
 </main>
 <footer class="s-foot">
   <p>The WebAgents on this site are AI. They answer from this site's pages and never guess prices, dates or allergens.{% if site.contact_href %} A person is one step away: <a href="{{ site.contact_href }}">contact {{ site.name }}</a>.{% endif %}</p>
-  {% if site.counting %}<p>This site counts visits without cookies: the page, the site you came from, your type of device and your country, as daily totals.</p>{% endif %}
+  {% if site.counting %}<p class="s-visits"><span data-visits="on">This site counts visits as daily totals, with no cookies and nothing that says who you are. Browsers that send Global Privacy Control aren't counted.</span><span data-visits="gpc" hidden>Your browser asks sites not to track you, so your visits aren't counted.</span><span data-visits="off" hidden>Your visits on this device aren't counted.</span> <button type="button" data-agx-count="off" data-visits="on">Don't count my visits</button><button type="button" data-agx-count="on" data-visits="off" hidden>Count them again</button></p>{% endif %}
   <p>© {{ site.name }} · Made with Agentrix</p>
 </footer>
 </body>

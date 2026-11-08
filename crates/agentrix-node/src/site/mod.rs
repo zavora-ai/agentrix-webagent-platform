@@ -23,12 +23,15 @@ pub mod release;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use agentrix_kernel::{Action, Effect};
+use agentrix_operator::holds::Mode;
 use async_trait::async_trait;
 use axum::Json;
 use axum::Router;
 use axum::body::Body;
 use axum::extract::{Query, Request, State};
 use axum::http::{HeaderMap, HeaderValue, Method, StatusCode, header};
+use axum::middleware::Next;
 use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
@@ -75,6 +78,9 @@ pub struct SiteState {
     pub questions: Arc<dyn QuestionSink>,
     /// Questions passed per client IP in the last hour.
     pub pass_limit: Arc<pass::Limiter>,
+    /// The platform's checks before Ask and the door act (dials, Freeze, holds). None until
+    /// wired with [`SiteState::with_guards`].
+    pub guards: crate::guards::Guards,
 }
 
 impl SiteState {
@@ -90,7 +96,14 @@ impl SiteState {
             receipts,
             questions: Arc::new(pass::Unwired),
             pass_limit: Arc::new(pass::Limiter::default()),
+            guards: crate::guards::Guards::default(),
         }
+    }
+
+    /// Checks the platform's guards (`crate::guards`) before Ask and the door act.
+    pub fn with_guards(mut self, guards: crate::guards::Guards) -> Self {
+        self.guards = guards;
+        self
     }
 
     /// Stores questions visitors pass to the owner in `sink` (`db::questions::QuestionStore`).
@@ -310,6 +323,64 @@ pub struct AskRequest {
 
 const MAX_QUESTION_CHARS: usize = 800;
 
+/// The desk Ask answers as, for its living mark (W1, handover-wiring 2.2).
+const DESK: &str = "concierge";
+
+/// W1's presence hub: each Ask frame moves the Concierge's mark.
+fn presence() -> &'static agentrix_kernel::Presence {
+    agentrix_kernel::presence::global()
+}
+
+/// What a visitor reads when the Concierge isn't answering.
+const PAUSED: &str = "Answers are paused right now. The page still works.";
+
+/// What a visitor reads while a platform hold keeps the site read only (W3's words; never the
+/// reason).
+pub const HELD: &str = "Answers and forms are paused right now. You can still read the site.";
+
+/// Platform holds, per request on every site host (W3, handover-wiring 3.2). Under a `notice`
+/// hold the host answers only the neutral "This site isn't available right now."; under a
+/// `read-only` hold pages still serve and Ask, passed questions and the door's tools pause
+/// (each checks [`crate::guards::Guards::held`]). Visitors never see the reason.
+pub async fn holds(State(state): State<SiteState>, request: Request, next: Next) -> Response {
+    if state.guards.enforces_holds()
+        && let Some(host) = host_of(request.headers())
+        && let Ok(Some(pointer)) = state.releases.source().live(&host).await
+        && state.guards.hold(&pointer.site_id).await == Some(Mode::Notice)
+    {
+        return plain(StatusCode::SERVICE_UNAVAILABLE, UNAVAILABLE);
+    }
+    next.run(request).await
+}
+
+/// Ask's resting reply: no model call and nothing written; the Concierge's mark rests.
+fn resting(release: &LoadedRelease, message: &str) -> Response {
+    let (tx, rx) = tokio::sync::mpsc::unbounded_channel::<ask::Frame>();
+    for f in [
+        ask::Frame {
+            event: "ready",
+            data: serde_json::json!({"desk": "Concierge", "ai": true, "disclosure": ask::DISCLOSURE, "release_seq": release.pointer.seq}),
+        },
+        ask::Frame {
+            event: "error",
+            data: serde_json::json!({ "message": message }),
+        },
+        ask::Frame {
+            event: "awp.presence",
+            data: serde_json::json!({"state": "resting"}),
+        },
+        ask::Frame {
+            event: "done",
+            data: serde_json::json!({}),
+        },
+    ] {
+        presence().on_ask(&release.pointer.site_id, DESK, f.event, &f.data);
+        let _ = tx.send(f);
+    }
+    drop(tx);
+    sse(rx).into_response()
+}
+
 fn event_of(frame: &ask::Frame) -> Event {
     Event::default()
         .event(frame.event)
@@ -352,6 +423,24 @@ async fn ask_handler(
         .collect();
     if question.is_empty() {
         return plain(StatusCode::BAD_REQUEST, "Ask a question about this site.");
+    }
+    // While the owner's Freeze is in force the Concierge rests (W5, handover-wiring 2b.1).
+    if state.guards.frozen(&release.pointer.site_id).await {
+        return resting(&release, PAUSED);
+    }
+    // A platform read-only hold pauses answers (W3, handover-wiring 3.2).
+    if state.guards.held(&release.pointer.site_id).await {
+        return resting(&release, HELD);
+    }
+    // The Concierge answers only while it is on duty (W1's dials, handover-wiring 2a.3).
+    let answering = Action::new(DESK, "presentations", Effect::Read);
+    if state
+        .guards
+        .refusal(&release.pointer.site_id, &answering)
+        .await
+        .is_some()
+    {
+        return resting(&release, PAUSED);
     }
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel::<ask::Frame>();
     let offer_href = contact_href(&release);
@@ -397,6 +486,7 @@ async fn ask_handler(
             },
         ];
         for f in frames {
+            presence().on_ask(&release.pointer.site_id, DESK, f.event, &f.data);
             let _ = tx.send(f);
         }
         drop(tx);
@@ -414,6 +504,7 @@ async fn ask_handler(
 
     let site_name = release.pointer.domain.clone();
     tokio::spawn(async move {
+        let site_id = release.pointer.site_id.clone();
         let send = |mut frame: ask::Frame| {
             if frame.event == "reply"
                 && let Some(href) = &offer_href
@@ -422,6 +513,7 @@ async fn ask_handler(
             {
                 obj.insert("offer_href".into(), serde_json::Value::String(href.clone()));
             }
+            presence().on_ask(&site_id, DESK, frame.event, &frame.data);
             let _ = tx.send(frame);
         };
         ask::answer(

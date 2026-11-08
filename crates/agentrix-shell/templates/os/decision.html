@@ -25,7 +25,7 @@
     {% if card.levels %}
     <div class="levels-box">
       <h4>What your WebAgents may do without asking</h4>
-      <p class="small">These starting levels are written into your charter and signed with this card. Anything that can't be undone still asks you first.</p>
+      <p class="small">Approving this card also sets these starting levels. Anything that can't be undone still asks you first.</p>
       {% for j in card.levels %}
       <div class="job">
         <div class="spread"><b>{{ j.webagent }} · {{ j.job }}</b><span class="chip {{ 'chip-info' if j.above_ask_first else '' }}">{{ j.level_words }}</span></div>
@@ -39,7 +39,7 @@
       <summary>What your approval signs</summary>
       <p class="mono fp-line">{{ card.fingerprint }}</p>
       {% if card.fields %}<dl class="kv">{% for f in card.fields %}<dt>{{ f.label }}</dt><dd class="mono">{{ f.value }}</dd>{% endfor %}</dl>{% endif %}
-      <p class="small muted">The card and your approval come from the same arguments that make this fingerprint. Your passkey signs it, or a single-use authenticator code is bound to it, and it runs once.</p>
+      <p class="small muted">This fingerprint stands for exactly what will run. The card you read and the approval you give are both made from it, so what you approve is what runs, once.</p>
     </details>
 
     {% if card.state == "waiting" %}
@@ -54,7 +54,7 @@
         <input type="hidden" name="fingerprint" value="{{ card.fingerprint }}">
         <label for="code-{{ card.id }}">Code from your authenticator app</label>
         <input id="code-{{ card.id }}" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required>
-        <p class="small muted">Single use, and bound to this exact card. Your receipt will say a code approved it, not a passkey.</p>
+        <p class="small muted">It works once, and only for this card. Your receipt will say a code approved it, not a passkey.</p>
         <button class="btn btn-primary" type="submit">Approve with code</button>
       </form>
     </details>

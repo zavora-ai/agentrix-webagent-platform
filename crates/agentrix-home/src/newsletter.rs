@@ -313,16 +313,21 @@ impl Newsletter {
                 "unsubscribe_url": format!("{}/_home/fix/stop?token={token}", self.origin),
                 "consent": { "words": WEEKLY_WORDS, "given_at": given, "source": SOURCE },
             });
-            if sender
+            // One reader's email refused doesn't stop the issue for the others.
+            match sender
                 .send(
-                    "newsletter.issue",
+                    crate::keep::ISSUE_MESSAGE,
                     &email,
                     context,
                     &format!("{issue}:{token}"),
                 )
-                .await?
+                .await
             {
-                sent += 1;
+                Ok(true) => sent += 1,
+                Ok(false) => {}
+                Err(e) => {
+                    tracing::warn!(error = %format!("{e:#}"), issue, "home: a reader's weekly fix")
+                }
             }
         }
         sqlx::query("UPDATE home_issues SET state = 'sent', sent_at = ?, readers = ? WHERE id = ?")

@@ -20,6 +20,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::Duration;
 
+use agentrix_kernel::{Action, Effect};
 use agentrix_types::{Brief, BriefLine, Digest, ReceiptKind, SiteId};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -102,6 +103,7 @@ pub struct ChiefBrief {
     pool: SqlitePool,
     receipts: Arc<ReceiptStore>,
     model: Arc<dyn HeadlineModel>,
+    guards: crate::guards::Guards,
 }
 
 impl ChiefBrief {
@@ -115,12 +117,24 @@ impl ChiefBrief {
             pool,
             receipts,
             model,
+            guards: crate::guards::Guards::default(),
         }
+    }
+
+    /// Checks the platform's guards (`crate::guards`) before writing.
+    #[must_use]
+    pub fn with_guards(mut self, guards: crate::guards::Guards) -> Self {
+        self.guards = guards;
+        self
     }
 
     /// Composes `site`'s brief from the last day's receipts and stores it, unless it says the
     /// same as the latest brief. Returns the brief now current.
     pub async fn refresh(&self, site: &SiteId) -> anyhow::Result<Brief> {
+        // While the owner's Freeze is in force the Chief writes nothing (W5, 2b.1).
+        if self.guards.frozen(site.as_str()).await {
+            return self.latest_or_empty(site).await;
+        }
         let now = Utc::now();
         let since = now - chrono::Duration::hours(WINDOW_HOURS);
         let stored = self.receipts.list_since(site, since, READ_MAX).await?;
@@ -158,6 +172,29 @@ impl ChiefBrief {
             return Ok(latest);
         }
 
+        // The Chief writes a new brief only while its dial lets it: at Watch it writes nothing
+        // and calls no model (W1, handover-wiring 2a.2).
+        let writing = Action::new("coordinator", "morning-brief", Effect::Draft);
+        if self.guards.refusal(site.as_str(), &writing).await.is_some() {
+            return self.latest_or_empty(site).await;
+        }
+
+        // The Chief's living mark shows it writing while the brief is written (W1, 2.4).
+        let presence = agentrix_kernel::presence::global();
+        presence.on_brief(site.as_str(), true);
+        let written = self.write(site, digest, spend, now).await;
+        presence.on_brief(site.as_str(), false);
+        written
+    }
+
+    /// Writes the headline (the only model call) and stores the brief.
+    async fn write(
+        &self,
+        site: &SiteId,
+        digest: Composed,
+        spend: String,
+        now: DateTime<Utc>,
+    ) -> anyhow::Result<Brief> {
         let headline = match self.model.headline(site, &digest.facts).await {
             Ok(text) => clean_headline(&text).unwrap_or_else(|| digest.fallback.clone()),
             Err(e) => {
@@ -207,6 +244,15 @@ impl ChiefBrief {
                 }
             }
         })
+    }
+
+    /// The brief already written, or an empty one, when nothing new may be written.
+    async fn latest_or_empty(&self, site: &SiteId) -> anyhow::Result<Brief> {
+        Ok(self.latest(site).await?.unwrap_or(Brief {
+            headline: None,
+            lines: Vec::new(),
+            spend_words: None,
+        }))
     }
 
     async fn latest(&self, site: &SiteId) -> anyhow::Result<Option<Brief>> {

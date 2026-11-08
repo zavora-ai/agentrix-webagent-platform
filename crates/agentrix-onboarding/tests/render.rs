@@ -561,6 +561,28 @@ fn a_claim_message_reads_with_one_full_stop() {
 }
 
 #[test]
+fn the_live_card_points_at_pictures_only_when_some_wait() {
+    use agentrix_onboarding::view::MoveState;
+    let mut live = common::move_view(MoveState::Live);
+    let none = pages().render_move(&live).unwrap();
+    assert!(!none.contains("Pictures for pages that had none"));
+    live.pictures_href = Some("/console/site_0193test/apps/pictures".into());
+    let some = pages().render_move(&live).unwrap();
+    assert!(some.contains(
+        r#"Pictures for pages that had none wait for you in <a href="/console/site_0193test/apps/pictures">Pictures</a>."#
+    ));
+    let mut waiting = common::move_view(MoveState::Waiting);
+    waiting.pictures_href = live.pictures_href.clone();
+    assert!(
+        !pages()
+            .render_move(&waiting)
+            .unwrap()
+            .contains("Pictures for pages that had none"),
+        "only once live"
+    );
+}
+
+#[test]
 fn the_reach_step_shows_only_with_the_channels_app() {
     use agentrix_onboarding::view::MoveState;
     let live = common::move_view(MoveState::Live);

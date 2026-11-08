@@ -78,7 +78,8 @@ impl Receipts for NodeReceipts {
 }
 
 /// A Move's events: persisted in `ui_events` (stream `move:<id>`, `seq` monotonic per Move)
-/// for `Last-Event-ID` replay, and broadcast to live SSE subscribers (design §4.3a).
+/// for `Last-Event-ID` replay, broadcast to live SSE subscribers (design §4.3a), and turned
+/// into the Mover's presence (W1's `presence::global().on_move`).
 #[derive(Clone)]
 pub struct MoveEvents {
     pool: SqlitePool,
@@ -136,6 +137,8 @@ impl Events for MoveEvents {
         .bind(agentrix_move::store::time(chrono::Utc::now()))
         .fetch_one(&self.pool)
         .await?;
+        // The Mover's living mark follows its steps (W1, handover-wiring 2.1).
+        agentrix_kernel::presence::global().on_move(site.as_str(), &event);
         let _ = self.live.send((
             move_id.clone(),
             UiEnvelope {
