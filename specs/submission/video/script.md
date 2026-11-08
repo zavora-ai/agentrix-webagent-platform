@@ -37,7 +37,7 @@ live platform, the deck's slides and a narration track.
 | 11 | 3:18 | Live: the new site. Ask gives a cited answer; then the agent race result | The new site answers visitors from its own pages, with citations. And customers' AI agents get a door of their own. In our race, an agent ordered a cake through the new site's door in seven seconds. On the old site it gave up after twenty-two steps. |
 | 12 | 3:40 | Live: a sample owner's console | Every morning the owner gets a brief and a short list of decisions, each one a tap and a passkey. |
 | 13 | 3:52 | Business slide | Moving is free. Plans start at twenty-nine dollars a month, paid with PayPal, and agencies pay per site. Every site moved is steady Vultr compute, storage and inference. |
-| 14 | 4:07 | Competition slide | We read all ninety-three entries before ours. Containment is table stakes. None of them moves a business. |
+| 14 | 4:07 | Competition slide | We checked all hundred and eighty-nine entries. Containment is table stakes. None of them moves a business. |
 | 15 | 4:16 | What's next slide | Next: a throwaway Vultr VM for every Move, payments live, and ten pilot sites in Kenya. |
 | 16 | 4:25 | Close slide, with the links | Agentrix. Upgrade your website into WebAgents. |
 

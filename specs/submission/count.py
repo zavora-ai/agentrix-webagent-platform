@@ -7,7 +7,7 @@ A field sits between a line "[field: NAME]" and a line "[end of field]".
 import re
 import sys
 
-LIMITS = {"title": (1, 50), "short": (50, 255), "long": (600, 2000)}
+LIMITS = {"title": (1, 50), "short": (50, 255), "short_b": (50, 255), "long": (600, 2000)}
 
 path = sys.argv[1] if len(sys.argv) > 1 else "specs/submission/form.md"
 text = open(path, encoding="utf-8").read()

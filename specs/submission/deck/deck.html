@@ -267,7 +267,7 @@ ul.clean li::before { content: ""; position: absolute; left: 4px; top: 25px; wid
   </div>
   <div class="grid g2" style="margin-top:22px">
     <div class="card"><h3>Egress, twice over</h3><p>A room's only way out is its own proxy, holding that job's allowlist. Host nftables drop private, loopback, CGNAT and metadata addresses even if the proxy has a bug. Build and render rooms have no network at all. 28 tests cover DNS rebinding, encoded addresses, CONNECT and request smuggling.</p></div>
-    <div class="card sealed"><span class="tag gold">Next: a throwaway VM per Move</span><p>Each Move gets its own sandbox VM, created through the Vultr API from a prepared snapshot and destroyed with a receipt. Measured tonight: a throwaway copy of the sandbox restored in <span class="live" data-live="restore">recorded live</span>.</p></div>
+    <div class="card sealed"><span class="tag gold">Next: a throwaway VM per Move</span><p>Each Move gets its own sandbox VM, created through the Vultr API from a prepared snapshot and destroyed with a receipt. Measured on 8 Nov: restoring the sandbox from its 9.6 GB snapshot took 12 min 55 s, so this needs warm spares or a smaller image first.</p></div>
   </div>
   <div class="foot"><span>Process isolation · secret hygiene · resource limits · lifecycle discipline: Challenge 1's four focus points</span><span>7</span></div>
 </section>
@@ -349,16 +349,16 @@ ul.clean li::before { content: ""; position: absolute; left: 4px; top: 25px; wid
   <p class="kicker">The competition</p>
   <h2>Containment is table stakes. Moving a business is not.</h2>
   <div class="grid g4" style="margin-top:44px">
-    <div class="card"><div class="big" style="font-size:96px">93</div><p>other entries, every one read, on 7 Nov</p></div>
-    <div class="card"><div class="big" style="font-size:96px">66</div><p>pitch signed receipts or hash chains</p></div>
-    <div class="card"><div class="big" style="font-size:96px">36</div><p>have a human approval gate</p></div>
+    <div class="card"><div class="big" style="font-size:96px">189</div><p>public entries on Sun 8 Nov, every one checked</p></div>
+    <div class="card"><div class="big" style="font-size:96px">131</div><p>pitch receipts or signed evidence</p></div>
+    <div class="card"><div class="big" style="font-size:96px">77</div><p>have a human approval step</p></div>
     <div class="card"><div class="big" style="font-size:96px">0</div><p>move a website onto a new one</p></div>
   </div>
   <div class="grid g2" style="margin-top:22px">
     <div class="card"><h3>What we match, quietly</h3><p>gVisor rooms with no secrets, caps, destroy and confirm, signed receipts, a scored attack gauntlet, several Vultr models with named jobs, a human gate.</p></div>
     <div class="card"><h3>What only Agentrix does</h3><p>Moves a whole business and leaves the hack behind. Replays the hacked site from the inside. Gives the new site a door for AI customers. Ships as a product with plans, a console and a channel through Vultr.</p></div>
   </div>
-  <div class="foot"><span>Source: lablab's public submissions, all 93 read, Sat 7 Nov 2026, 10:10 EAT; later entries not counted</span><span>12</span></div>
+  <div class="foot"><span>Source: lablab's public submissions, 189 at 18:21 EAT on Sun 8 Nov 2026; receipts and approval counted by keyword</span><span>12</span></div>
 </section>
 
 <!-- 13 · Team -->
@@ -405,7 +405,6 @@ ul.clean li::before { content: ""; position: absolute; left: 4px; top: 25px; wid
 const LIVE = {
   routing: null,      // e.g. "every one, since the routing.changed receipt of 8 Nov"
   cost: null,         // the demo Move's model cost on Vultr, from the usage meter
-  restore: null,      // provision.sh restore-test sandbox: create to ready
   gauntlet: null,     // "10/10", from the gauntlet.run receipt
   move_time: null,    // the Vultr Move: Start to the go-live card
   parity: null,       // the Vultr Move's rendered parity

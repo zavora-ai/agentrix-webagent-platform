@@ -324,10 +324,12 @@ already:
   inbound, times it to ready and deletes it.
 - The runner's address is one setting on the control VM (`AGENTRIX_RUNNER`).
 
-What's missing is a broker that picks a runner per Move and a pool of warm instances, because a
-snapshot restore takes minutes. TODO(live): the measured create-to-ready time of a throwaway
-sandbox copy. Until that number is small enough, a Move waits on no VM boot: it uses the warm
-sandbox VM and a fresh room per job.
+What's missing is a broker that picks a runner per Move, and a pool of warm instances, because a
+snapshot restore takes minutes. Measured on Sun 8 Nov: restoring the sandbox VM from its 9.6 GB
+snapshot took 12 min 33 s to a restored disk and 12 min 55 s until it was serving. A smaller,
+purpose-built image should start faster, but that hasn't been measured. Until a VM can be ready
+in well under a minute, a Move waits on no VM boot: it uses the warm sandbox VM and a fresh room
+per job.
 
 Trust design in full: [docs/03-trust.md](docs/03-trust.md).
 
@@ -570,7 +572,7 @@ Agentrix moves becomes steady Vultr compute, storage and inference.
 | **Serverless Inference** | The agents' model calls, through the Model Gateway, by purpose and tier (9.2) | Live now (Phase 1): embeddings and rerank on Vultr; the other purposes run on Claude until the switch gate. TODO(live): every purpose on Vultr after the switch |
 | **Object Storage** | Every minute, `agentrix-node` mirrors every blob in the content-addressed store to `cas/sha256/<hex>`, and every signed receipt, byte for byte, to `receipts/<hex>.json`. If the control VM loses a file, the store reads it back, checks it against its digest and restores it. The S3 keys reach node as a systemd credential | Live: mirroring started on 7 Nov |
 | **DNS** | `agentrix.website`, `fixture.agentrix.website` and `*.agentrix.website`, written by `provision.sh`; Caddy's TLS for converted sites | Live |
-| **Vultr API** | [`deploy/provision.sh`](deploy/provision.sh) creates, reuses (by label) and destroys everything above. It also snapshots the VMs, sleeps the sandbox and fixture (a snapshot, then no instance) and wakes them from their snapshots, rewriting DNS and checking SSH host keys; `restore-test` times a throwaway copy of a VM from its snapshot and deletes it ([specs/platform/cost.md](specs/platform/cost.md) §2) | Scripted. On Sun 8 Nov the three VMs were snapshotted in the morning; the evening's restore from those snapshots is in progress. TODO(live): the measured restore times |
+| **Vultr API** | [`deploy/provision.sh`](deploy/provision.sh) creates, reuses (by label) and destroys everything above. It also snapshots the VMs, sleeps the sandbox and fixture (a snapshot, then no instance) and wakes them from their snapshots, rewriting DNS and checking SSH host keys; `restore-test` times a throwaway copy of a VM from its snapshot and deletes it ([specs/platform/cost.md](specs/platform/cost.md) §2) | Scripted. On Sun 8 Nov the three VMs were snapshotted in the morning and restored from those snapshots in the evening. Measured restores, create to serving: the sandbox (9.6 GB snapshot) in 12 min 55 s; the fixture (3.8 GB) in 9 min 10 s, plus a manual start of its WordPress containers. Control's restore was finished by hand after a host-key check, so it has no clean time |
 
 ### 9.2 Serverless Inference, by purpose
 

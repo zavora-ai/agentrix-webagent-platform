@@ -24,6 +24,15 @@ It's the home page's own headline. Alternatives, if James wants the containment 
 Agentrix moves a small business's WordPress site, hacked or not, into a new site run by AI WebAgents. Every untrusted step runs in a sealed room on Vultr, and nothing goes live until the owner approves with a passkey.
 [end of field]
 
+Option B, in James's README wording (pick one; B is checked below as `short_b`):
+
+[field: short_b]
+Agentrix turns a WordPress, Shopify or React website into an autonomous AI business: WebAgents that work 24/7 for the owner, built and checked in secure sandboxes on Vultr, and live only on the owner's passkey.
+[end of field]
+
+Tonight's live Move is of a WordPress site. No Shopify or React site has been moved live yet, so
+judges who try one may not see the same result.
+
 ## Long description (600 to 2,000 characters)
 
 [field: long]
@@ -35,7 +44,7 @@ Containment: every room is a gVisor container with a read-only root, no capabili
 
 On Vultr: Cloud Compute VMs for control, a VX1 sandbox and the test site, on a VPC with firewall groups; DNS; Object Storage for every receipt; and Serverless Inference for every model call, through one gateway that holds the only key.
 
-After the Move, the site's WebAgents answer visitors with citations, take orders from customers' AI agents through an agent door, and ask the owner before anything that matters. Moving is free; plans start at $29 a month, paid with PayPal. Built in Rust on adk-rust. MIT licensed.
+After the Move, the site's WebAgents work 24/7 for the owner: they answer visitors with citations, take orders from customers' AI agents through an agent door, and ask the owner before anything that matters. Moving is free; plans start at $29 a month, paid with PayPal. Built in Rust on adk-rust. MIT licensed.
 [end of field]
 
 ## Mode, challenge, categories and technologies
