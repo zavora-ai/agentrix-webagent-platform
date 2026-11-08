@@ -12,23 +12,6 @@ sealed sandboxes on Vultr with no secrets and no way out except a per-job allowl
 live only when the owner approves it with a passkey, the old site stays on standby, and undo is
 one tap for 30 days. Every step leaves a signed receipt that anyone can check.
 
-### For Vultr Agent Rush judges
-
-Challenge 1, Blast Radius Zero. Agentrix is a web agent that moves a small business's website,
-hacked or not, into a new site run by AI WebAgents. Every untrusted step runs in a sealed room on
-a separate Vultr VM, and nothing goes live until the owner approves with a passkey.
-
-| | |
-|---|---|
-| Try it | https://agentrix.website: paste a site's address for a health report, or open a sample business |
-| Watch | TODO: the demo video link |
-| Slides | [`specs/submission/deck/agentrix-vultr-deck.pdf`](specs/submission/deck/agentrix-vultr-deck.pdf) |
-| Vultr services used | [Agentrix on Vultr](#9-agentrix-on-vultr-the-agent-rush-entry) |
-| Backend and deployment | [Architecture](#2-architecture) and [Deploy](#6-deploy) |
-| How real tasks execute | [How a Move flows](#24-how-a-move-flows) and [both of Challenge 1's patterns](#94-how-the-agent-does-real-work) |
-| Containment | [Containment](#4-containment) and [the gauntlet](#44-the-gauntlet) |
-| The submission's texts | [`specs/submission/`](specs/submission/): the form, the deck, the cover and the video's script |
-
 ## Contents
 
 1. [What Agentrix does](#1-what-agentrix-does)
