@@ -88,12 +88,6 @@ Business using WebAgents running on secure sandboxes on Vultr.
 | **For the owner** | The Chief WebAgent writes the morning brief (what the site did overnight, the one decision waiting, what it cost against the budget) and Monday's weekly review. The owner hears about an alarm, a decision about to expire, a new order and a budget close to its limit without having to look. | Ask the Chief anything about the business in the console, the app or Telegram. It answers from the site's own records and says which ones ("From today's orders: 3 placed, 1 waiting for payment"). | Anything with a consequence, such as a refund or a held order, comes as one decision card that the owner approves with a passkey. The owner sets an autonomy dial for each job and can undo go-live. Messages respect quiet hours. |
 | **For the customer** | Order confirmations, status updates, payment receipts and refunds reach the customer by email without them having to ask. | *Ask this site* answers at any hour from the site's own pages and shows the page it used. Desks take orders and bookings and look up an order's status. The same answers reach customers on Telegram and their AI agents through the agent door. | When a question needs a person, the WebAgent says so and passes it to the owner, and the owner's reply comes back. Quote and booking requests are held, approved, changed or declined, and the customer is told each time. Customers always know they are talking to AI. |
 
-**How a site moves.**
-
-| In 3 minutes, no account | On day 1: the Move | Every morning after |
-|---|---|---|
-| Paste your address. Your site is read in sealed rooms, and you get an honest health report: what is broken, what looks hacked, what a new site would keep. | The old site is replayed in isolation, cleaned (anything hidden or malicious is left behind), rebuilt, and checked page by page against the old one. It goes live on your passkey. The old site stays as a fallback, and undo is one tap. | The morning brief says what your site did overnight, the one decision waiting for you, and what it cost against the budget you set. |
-
 **The Move, step by step:** Assess, Claim (prove you own the domain), Replay, Clean, Rebuild,
 Prove (parity of at least 0.95 against the old site), Go live. Each step is persisted, so a crash
 resumes where it stopped.
