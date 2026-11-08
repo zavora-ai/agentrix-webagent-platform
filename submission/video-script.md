@@ -1,4 +1,4 @@
-# Brick 1 video script (target 4:35, hard limit 5:00)
+# The first release's video script (target 4:35, hard limit 5:00)
 
 Status: draft v2, Sat 7 Nov 2026. Owner: submission lane (task S3-08). Recorded by James (S3-09)
 on the deployed platform, **on Vultr routes**, after switch gate S3-10.

@@ -18,7 +18,7 @@ review), **waiting** (blocked on another task), **blocker** (must be resolved be
 | 4 | Cover image, 16:9 | ready | [cover.png](cover.png) (1920 × 1080), drawn from [cover.svg](cover.svg). It states no number |
 | 5 | Egress proxy security review passed: DNS rebinding, redirects, IPv6 and encoded addresses, CONNECT, header smuggling | waiting | S2-09 done, verified by spec: 28 cases, 27 pass locally. The DNS-rebinding case needs public DNS (nip.io) and runs on the control VM before deploy |
 | 6 | Video (about 4 min, with the containment moment, under 5:00) | drafted | Script v2, [video-script.md](video-script.md), about 4:35. Waiting on S3-10 (Vultr routes) and S3-01 (the gauntlet), then the recording, S3-09 |
-| 7 | Slide presentation (PDF) | drafted | 12 slides in the deck [*Agentrix Brick 1 Deck*](https://claude.ai/artifact/Pqz4zFxV2tXx79RxF46a1w). Fill its bracketed values, then export to PDF (Share › Export) |
+| 7 | Slide presentation (PDF) | drafted | 12 slides in [the earlier deck](https://claude.ai/artifact/Pqz4zFxV2tXx79RxF46a1w). Fill its bracketed values, then export to PDF (Share › Export) |
 | 8 | Public GitHub repository (MIT) | **blocker** | `LICENSE` is MIT. There is no remote yet. **The Vultr Inference key in commit 80905be's `.env.example` is still in history (05b48af): James rotates it at Vultr before the repo gets a remote** |
 | 9 | Demo application platform: Vultr; application URL | ready | https://agentrix.website is live, deployed from a committed tree by `deploy/deploy.sh` (S1-12, S2-10) |
 | 10 | README: Vultr services, deployment architecture, how the agent does real work | drafted | [README](../README.md) sections from *How we use Vultr* to *Run it yourself* (S3-07). Each `TODO(live)` waits on the live build |
@@ -29,7 +29,7 @@ review), **waiting** (blocked on another task), **blocker** (must be resolved be
 | # | Item | State | Where / waiting on |
 |---|---|---|---|
 | 12 | The gauntlet: the score on the live URL, computed from receipts, shown on the Trust tab | waiting | The runner is built, and `deploy.sh` re-runs it on every deploy, printing `n/10` and the `gauntlet.run` receipt (R13.2). Waits on a live site: the demo Move's go-live in James's run |
-| 13 | The demo runs on Vultr routes: the switch gate passed, and acceptance and the gauntlet re-run on Vultr | waiting | S3-10, the last step of James's run (runbook on the S3-10 board row). The bake-off is done ([`bakeoff.md`](../specs/brick-1/bakeoff.md)): build `qwen3.8-27b`, vision `deepseek-v4.1-flash-1017`, already the Vultr defaults. A routing change signs a `routing.changed` receipt; the first, "Models in use, on anthropic", is live. Acceptance on Phase 1 passes live: 7 pass, 0 fail. The README, deck (slide 8), form and video say the demo runs on Vultr; the switch receipt makes it true, or they must change |
+| 13 | The demo runs on Vultr routes: the switch gate passed, and acceptance and the gauntlet re-run on Vultr | waiting | S3-10, the last step of James's run (runbook on the S3-10 board row). The bake-off is done ([`bakeoff.md`](../specs/first-release/bakeoff.md)): build `qwen3.8-27b`, vision `deepseek-v4.1-flash-1017`, already the Vultr defaults. A routing change signs a `routing.changed` receipt; the first, "Models in use, on anthropic", is live. Acceptance on Phase 1 passes live: 7 pass, 0 fail. The README, deck (slide 8), form and video say the demo runs on Vultr; the switch receipt makes it true, or they must change |
 | 14 | Fresh deploy from the README on clean VMs (R14.3) | drafted | The README's *Run it yourself* uses `deploy/deploy.sh <commit>` (lock, `git archive`, a `--locked` release build, rollback, smoke test, gauntlet). Not yet repeated on clean VMs. Object Storage is optional: without `objects.json` it is off and the deploy starts (b7f1147 in node; the unit's fallback and `deploy.sh`'s pre-flight exemption are with control-plane, so recheck both before submitting). The bucket is a manual step; `provision.sh` doesn't create it |
 | 15 | Object Storage in use (R14.4, a Should) | ready | Live: bucket `agentrix-b1-14e3def5` on `ams1.vultrobjects.com`; node mirrors every content-store blob and signed receipt each minute, and reads a lost file back by digest (c3c9c0f, bc69a7a). In the README, deck slide 8 and the form. Confirm receipts are in the bucket after the `bc69a7a` deploy |
 | 16 | Live frames on the Assess screen (R1.4): the sealed Firefox room | waiting | Deploying; the spec lane confirms. Until then the README and the video don't call frames live |
@@ -47,7 +47,7 @@ review), **waiting** (blocked on another task), **blocker** (must be resolved be
       Move, the build model chosen by the bake-off.
 - [ ] The WordPress share is cited as W3Techs and re-checked on the day (39.4% on 7 Nov 2026).
       Docs 01 and 04 were corrected in 1fa65c7.
-- [ ] No claim of a microVM: Brick 1's replay runs under gVisor (S2-05). Docs 04 were corrected
+- [ ] No claim of a microVM: The first release's replay runs under gVisor (S2-05). Docs 04 were corrected
       in 1fa65c7, and the README's Challenge 1 table in the submission lane's follow-up commit,
       at the spec lane's request.
 - [ ] The model names match the gateway's routes: build `qwen3.8-27b` (raised to `glm-5.3`),

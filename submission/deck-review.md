@@ -1,7 +1,7 @@
 # Deck review against lablab's rules and judging criteria
 
 Status: Sat 7 Nov 2026, 23:45 EAT. Submission lane (S3-08). It reviews the deck
-[*Agentrix Brick 1 Deck*](https://claude.ai/artifact/Pqz4zFxV2tXx79RxF46a1w) at version
+[the earlier deck](https://claude.ai/artifact/Pqz4zFxV2tXx79RxF46a1w) at version
 1794082454-4c3a, 12 slides. A copy of its source is in [`deck/`](deck/). None of the fixes below
 is applied yet; James asked to see the review first.
 

@@ -193,11 +193,9 @@ async def scene_assess(tab, base):
     await tab.type_into(sel, fixture)
     await asyncio.sleep(0.6)
     await tab.js(f"document.querySelector({json.dumps(sel)}).form.requestSubmit()")
-    await tab.wait_for("location.pathname.startsWith('/assess/')", 30)
+    await tab.wait_for("location.pathname.startsWith('/assess/') || document.body.innerText.includes('Checking ')", 30)
     await asyncio.sleep(2)
-    await tab.wait_for("document.body.innerText.match(/refused|isn.t allowed to go/i)", 120)
-    await asyncio.sleep(6)
-    await tab.wait_for("document.body.innerText.includes('In short')", 180)
+    await tab.wait_for("document.body.innerText.includes('In short') || (document.body.innerText.includes('Act now') && !document.body.innerText.includes('Reading your pages'))", 200)
     await asyncio.sleep(3)
     await tab.scroll_to(900, 3)
     await asyncio.sleep(4)
@@ -212,6 +210,23 @@ async def scene_page(tab, base):
     for y in [int(v) for v in os.environ.get("AGX_SCROLL", "").split(",") if v.strip()]:
         await tab.scroll_to(y, 2.5)
         await asyncio.sleep(2.5)
+
+
+async def scene_receipts(tab, base):
+    """Receipts, public at /receipts/{digest}: AGX_RECEIPTS is a comma-separated list of sha256 digests."""
+    for d in [x.strip() for x in os.environ.get("AGX_RECEIPTS", "").split(",") if x.strip()]:
+        await tab.goto(f"{base}/receipts/{d if d.startswith('sha256:') else 'sha256:' + d}", settle=1.5)
+        await asyncio.sleep(2.5)
+        for word in ("Runtime", "Room destroyed", "Attack", "contained", "held"):
+            y = await tab.js(f"(() => {{ const el = [...document.querySelectorAll('dt, th, h2, h3, li, td, p')].find(e => e.innerText.trim().startsWith({json.dumps(word)})); return el ? el.getBoundingClientRect().top + scrollY - 260 : null; }})()")
+            if y and y > 200:
+                await tab.scroll_to(y, 2.2)
+                await asyncio.sleep(3)
+                break
+        if await tab.js("!![...document.querySelectorAll('button')].find(b => b.innerText.includes('Check the signature'))"):
+            await tab.click(text="Check the signature")
+            await asyncio.sleep(3.5)
+        await asyncio.sleep(1.5)
 
 
 SCENES = {name[6:]: fn for name, fn in globals().items() if name.startswith("scene_")}

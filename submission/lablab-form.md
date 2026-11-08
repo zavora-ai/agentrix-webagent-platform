@@ -83,7 +83,7 @@ Small business
 | Demo application platform | Vultr | Ready |
 | Application URL | https://agentrix.website | Live, deployed from a committed tree by `deploy/deploy.sh` |
 | Video | TODO: the upload link (S3-09) | Waits on recording |
-| Slide presentation (PDF) | Export the deck *Agentrix Brick 1 Deck* (https://claude.ai/artifact/Pqz4zFxV2tXx79RxF46a1w) to PDF from its Share › Export menu, after filling its bracketed numbers | Deck drafted |
+| Slide presentation (PDF) | Export the earlier deck (https://claude.ai/artifact/Pqz4zFxV2tXx79RxF46a1w) to PDF from its Share › Export menu, after filling its bracketed numbers | Deck drafted |
 | Cover image | [`submission/cover.png`](cover.png), 1920 × 1080 (source: [`cover.svg`](cover.svg)) | Ready |
 
 ## Before pasting

@@ -26,15 +26,43 @@
       "end": 24
     },
     {
-      "id": "b04",
+      "id": "b04a",
       "pic": "clip:assess.mp4",
       "fallback": 7,
+      "start": 3.5,
+      "end": 14,
       "fit": "clip",
       "badge": [
         "Live",
-        "Assess on Zavora's infected test site"
+        "Assess of Zavora's infected test site, on Vultr"
       ],
-      "say": "A real Firefox reads the old site from a sealed room on a separate Vultr VM. The room holds no keys, and it can reach only this site. Watch the receipt. This page tried to send our browser to Vultr's metadata address. Refused, and written down. Then the honest report: hidden spam links, a disguised miner script, and text aimed at AI agents, each with its evidence."
+      "say": "Paste an address. Here it's Zavora's own infected test site, and no account is needed."
+    },
+    {
+      "id": "b04b",
+      "pic": "clip:assess.mp4",
+      "fallback": 7,
+      "start": 14,
+      "end": 112,
+      "speed": 6,
+      "fit": "clip",
+      "speed_label": "6x speed",
+      "badge": [
+        "Live",
+        "Assess of Zavora's infected test site, on Vultr"
+      ],
+      "say": "A real Firefox reads every page from sealed rooms on a separate Vultr VM. Each room holds no keys, can reach only this site, and is destroyed when its job is done."
+    },
+    {
+      "id": "b04c",
+      "pic": "clip:assess.mp4",
+      "fallback": 7,
+      "start": 114,
+      "badge": [
+        "Live",
+        "Assess of Zavora's infected test site, on Vultr"
+      ],
+      "say": "Then the honest report: hidden spam links, a disguised script in the footer, and hidden instructions aimed at AI assistants. Two pages tried to send our sealed room where it isn't allowed to go: Vultr's metadata address, and the machine's own loopback. Both were refused, and both are on the receipt."
     },
     {
       "id": "b05",
