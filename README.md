@@ -2,10 +2,9 @@
 
 **Move your website. Meet your WebAgents.**
 
-Agentrix moves a small business's website off WordPress onto a **WebAgent site**: a fast,
-signed website staffed by proactive, responsive and supportive AI agents that work 24/7 for the
-owner. They answer customers, take orders, write the morning brief and ask the owner before
-anything that matters.
+Agentrix WebAgent Platform transforms any WordPress/Shopify/React website into an Autonomous AI
+Business using WebAgents running on secure sandboxes on Vultr. Developed using ADK-Rust AI Agent
+Framework.
 
 The old site is never trusted. It is read, replayed and rebuilt inside **sealed rooms** on a
 separate machine with no secrets and no way out except a per-job allowlist. The new site goes
