@@ -16,13 +16,6 @@ By [Zavora Technologies Ltd](https://github.com/zavora-ai) · Rust on
 [adk-rust](https://github.com/zavora-ai/adk-rust) · runs on [Vultr](https://www.vultr.com) ·
 [MIT licensed](LICENSE).
 
-> **Status, Sun 8 Nov 2026.** Brick 1, the single-node build made for the Vultr Agent Rush, runs
-> on Vultr at https://agentrix.website. The full platform is built on top of it in this
-> repository: WebAgents for each site, the owner's console, an operator console, three sample
-> businesses, Telegram and email channels, Flutter apps and an agent-first home page. A number in
-> this README comes from a receipt or the usage meter; anything not yet shown on the live
-> platform is marked **TODO(live)**.
-
 ### For Vultr Agent Rush judges
 
 Challenge 1, Blast Radius Zero. Agentrix is a web agent that moves a small business's website,
