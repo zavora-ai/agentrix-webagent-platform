@@ -19,7 +19,7 @@ and an agent-driven migration process. The old site stays on standby, and undo i
 
 ## Contents
 
-1. [What Agentrix does](#1-what-agentrix-does)
+1. [The problem and the solution](#1-the-problem-and-the-solution)
 2. [Architecture](#2-architecture)
 3. [The main parts](#3-the-main-parts)
 4. [Containment](#4-containment)
@@ -37,12 +37,32 @@ and an agent-driven migration process. The old site stays on standby, and undo i
 
 ---
 
-## 1. What Agentrix does
+## 1. The problem and the solution
 
-Four in ten websites run on WordPress. Many small-business sites are out of date, and a good
-share are quietly hacked: hidden spam links, a webshell in the uploads folder, a plugin that
-shows search engines a different page. Their owners can't fix them and can't afford someone who
-can. Agentrix moves the site and then runs it.
+### The problem
+
+- **WordPress runs 39.4% of all websites**
+  ([W3Techs](https://w3techs.com/technologies/details/cm-wordpress), 8 Nov 2026).
+- **A third of WordPress sites run old software.** 34.4% run a WordPress version older than the
+  current 7.1, and 32.4% run a PHP version older than 8.2, which no longer gets security fixes
+  ([WordPress.org stats](https://wordpress.org/about/stats/) and
+  [PHP's supported versions](https://www.php.net/supported-versions.php), 8 Nov 2026).
+- **Plugins are where the holes are.** 11,334 new vulnerabilities were found in the WordPress
+  ecosystem in 2025, 42% more than in 2024. 91% were in plugins, 46% had no fix from the
+  developer by the time they were made public, and the most targeted were exploited at scale
+  within a median of 5 hours
+  ([Patchstack, State of WordPress Security in 2026](https://patchstack.com/whitepaper/state-of-wordpress-security-in-2026/)).
+- **Most of the web is idle.** Netcraft counted 1.49 billion websites in July 2026, and only about
+  217 million (15%) were active. The rest are parked, redirecting or abandoned
+  ([Netcraft](https://www.netcraft.com/blog/july-2026-web-server-survey)).
+- **Even the active sites are passive.** A site waits for a visitor to search, click or fill in a
+  form, and answers only that. A small business can't keep its site patched, or staffed around
+  the clock.
+
+### The solution
+
+Agentrix WebAgent Platform transforms any WordPress/Shopify/React website into an Autonomous AI
+Business using WebAgents running on secure sandboxes on Vultr.
 
 **What the WebAgents do, 24/7.** They work for two people: the owner, and the owner's customers.
 
@@ -51,6 +71,8 @@ can. Agentrix moves the site and then runs it.
 | **For the owner** | The Chief WebAgent writes the morning brief (what the site did overnight, the one decision waiting, what it cost against the budget) and Monday's weekly review. The owner hears about an alarm, a decision about to expire, a new order and a budget close to its limit without having to look. | Ask the Chief anything about the business in the console, the app or Telegram. It answers from the site's own records and says which ones ("From today's orders: 3 placed, 1 waiting for payment"). | Anything with a consequence, such as a refund or a held order, comes as one decision card that the owner approves with a passkey. The owner sets an autonomy dial for each job and can undo go-live. Messages respect quiet hours. |
 | **For the customer** | Order confirmations, status updates, payment receipts and refunds reach the customer by email without them having to ask. | *Ask this site* answers at any hour from the site's own pages and shows the page it used. Desks take orders and bookings and look up an order's status. The same answers reach customers on Telegram and their AI agents through the agent door. | When a question needs a person, the WebAgent says so and passes it to the owner, and the owner's reply comes back. Quote and booking requests are held, approved, changed or declined, and the customer is told each time. Customers always know they are talking to AI. |
 
+**How a site moves.**
+
 | In 3 minutes, no account | On day 1: the Move | Every morning after |
 |---|---|---|
 | Paste your address. Your site is read in sealed rooms, and you get an honest health report: what is broken, what looks hacked, what a new site would keep. | The old site is replayed in isolation, cleaned (anything hidden or malicious is left behind), rebuilt, and checked page by page against the old one. It goes live on your passkey. The old site stays as a fallback, and undo is one tap. | The morning brief says what your site did overnight, the one decision waiting for you, and what it cost against the budget you set. |
@@ -58,18 +80,6 @@ can. Agentrix moves the site and then runs it.
 **The Move, step by step:** Assess, Claim (prove you own the domain), Replay, Clean, Rebuild,
 Prove (parity of at least 0.95 against the old site), Go live. Each step is persisted, so a crash
 resumes where it stopped.
-
-**Who uses it:**
-
-- **Visitors and customers** use the new site: static, signed pages; *Ask this site*, answered
-  from the site's own pages with citations; checkout, bookings and accounts.
-- **Customers' AI agents** use the site's agent door (AWP and MCP): the same answers and actions,
-  held for the owner when they matter.
-- **The owner** uses the console (Agentrix OS), on the web, in the Flutter app or on Telegram:
-  Today, Decisions, WebAgents, Website, Customers, Trust. Anything with a consequence is a
-  decision card the owner approves with a passkey.
-- **Operators** (Zavora, and later agencies) use the operator console on its own host: the
-  fleet, support grants, holds and costs.
 
 **The WebAgents** are the Chief WebAgent and the Concierge, Sales, Editor, Reputation, Cashier,
 Guardian and Caretaker, plus the Mover for migration. Each has a mandate, a budget and an
