@@ -123,7 +123,7 @@ def segment(beat, i, sl, no_voice):
                 dur = max(dur, (length - start) / speed if beat.get("end") is None else (beat["end"] - start) / speed)
             inputs += ["-ss", str(start), "-i", clip]
             crop = beat.get("crop")  # "w:h:x:y" in the clip's pixels
-            vf.append((f"crop={crop}," if crop else "") + f"setpts=(PTS-STARTPTS)/{speed},scale={W}:{H}:force_original_aspect_ratio=decrease,pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=0x1f1d3d,fps={FPS},tpad=stop_mode=clone:stop_duration={dur + 1}")
+            vf.append((f"crop={crop}," if crop else "") + f"setpts=(PTS-STARTPTS)/{speed},scale=1728:972:force_original_aspect_ratio=decrease,pad={W}:{H}:(ow-iw)/2:84+(972-ih)/2:color=0x1f1d3d,fps={FPS},tpad=stop_mode=clone:stop_duration={dur + 1}")
         else:
             missing = True
             pic = "slide:" + str(beat.get("fallback", 1))

@@ -725,7 +725,7 @@ trust_host() {
     seen=$(ssh "${SSH_OPTS[@]}" agx-control "ssh-keyscan -t ed25519 -T 5 $ip 2>/dev/null" | awk '{ print $2 " " $3 }' | head -n 1)
   fi
   [ -n "$seen" ] || return 1
-  [ "$seen" = "$want" ] || die "agx-$role at $ip shows a host key that differs from the snapshot's; stopping"
+  [ "$seen" = "$want" ] || die "agx-$role at $ip shows a host key that differs from the one known for ${old:-its old address} (cloud-init may have made new keys; control's did on 8 Nov). Check its fingerprint in Vultr's web console (ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub), then ssh-keygen -R $ip, connect once to accept it, and run wake again for the roles still asleep. Restored roles are skipped; once all three exist, provision.sh apply --yes rewrites DNS and the inventory"
   ssh-keygen -R "$ip" >/dev/null 2>&1 || true
   printf '%s %s\n' "$ip" "$want" >> "$HOME/.ssh/known_hosts"
   say "  ssh          agx-$role at $ip: host key matches the snapshot's; added to ~/.ssh/known_hosts"
@@ -753,10 +753,10 @@ cmd_wake() {
                say "    Its VPC address must come back as $(grep -E '^CONTROL_VPC_IP=' "$STATE_DIR/inventory.env" 2>/dev/null | cut -d= -f2-): the other hosts' firewalls accept only it" ;;
     esac
   done
-  say "  Kept from the snapshot: room images and their pinned IDs, WordPress, host keys, the runner's job key."
+  say "  Kept from the snapshot: room images and their pinned IDs, WordPress, the runner's job key; host keys if cloud-init keeps them."
   [ "$YES" = 1 ] || { say "Needs James's yes on the board, then: deploy/provision.sh wake ${ROLES[*]} --yes"; return 0; }
   [ -f "$STATE_DIR/inventory.env" ] || die "no $(tilde "$STATE_DIR")/inventory.env"
-  local sshkey vpc fw id t0 t1 t2 vip ip ip6 old ud
+  local sshkey vpc fw id t0 t1 t2 vip ip ip6 old ud code want_code what failed=()
   sshkey=$(ensure_ssh_key)
   vpc=$(api GET "/vpcs?per_page=500" | jq -r --arg d "$PREFIX" --arg r "$REGION" '.vpcs[] | select(.description==$d and .region==$r) | .id' | head -n 1)
   [ -n "$vpc" ] || die "no $PREFIX VPC in $REGION"
@@ -799,20 +799,39 @@ cmd_wake() {
     ssh_host_set "$role" "$addr"
     for _ in $(seq 1 30); do trust_host "$role" "$addr" "$oldaddr" && break; sleep 10; done
     ssh "${SSH_OPTS[@]}" "agx-$role" true || die "agx-$role does not answer SSH (ADMIN_CIDR still your address? deploy/provision.sh apply --yes re-adds the rule)"
+    # "Serving" means the role's own check passes, not just that the VM booted.
+    want_code=200
     case $role in
-      control) for _ in $(seq 1 30); do
-          [ "$(curl -s -o /dev/null -m 10 -w '%{http_code}' --resolve "$PLATFORM_FQDN:443:$ip" "https://$PLATFORM_FQDN/healthz")" = 200 ] && break; sleep 5
-        done ;;
-      sandbox) for _ in $(seq 1 30); do
-          [ "$(ssh "${SSH_OPTS[@]}" agx-control "curl -s -o /dev/null -m 5 -w '%{http_code}' http://$vip:$RUNNER_PORT/")" = 404 ] && break; sleep 5
-        done ;;
-      fixture) for _ in $(seq 1 30); do
-          [ "$(curl -s -o /dev/null -m 10 -w '%{http_code}' --resolve "$FIXTURE_FQDN:443:$ip" "https://$FIXTURE_FQDN/")" = 200 ] && break; sleep 5
-        done ;;
+      control) what="https://$PLATFORM_FQDN/healthz" ;;
+      sandbox) what="the runner at $vip:$RUNNER_PORT, from control"; want_code=404 ;;
+      fixture) what="https://$FIXTURE_FQDN/"
+        # The fixture's compose project has no restart policy, so a restored VM boots with
+        # WordPress and its database stopped (Exited 255). Start them as they were.
+        if ssh "${SSH_OPTS[@]}" agx-fixture 'cd /opt/fixture && sudo -n docker compose start' >/dev/null 2>&1; then
+          say "  fixture      started WordPress and its database (docker compose start in /opt/fixture)"
+        else
+          say "  !! could not start the fixture's containers: ssh agx-fixture 'cd /opt/fixture && sudo docker compose start'"
+        fi ;;
     esac
+    code=""
+    for _ in $(seq 1 60); do
+      case $role in
+        control) code=$(curl -s -o /dev/null -m 10 -w '%{http_code}' --resolve "$PLATFORM_FQDN:443:$ip" "https://$PLATFORM_FQDN/healthz") ;;
+        sandbox) code=$(ssh "${SSH_OPTS[@]}" agx-control "curl -s -o /dev/null -m 5 -w '%{http_code}' http://$vip:$RUNNER_PORT/") ;;
+        fixture) code=$(curl -s -o /dev/null -m 10 -w '%{http_code}' --resolve "$FIXTURE_FQDN:443:$ip" "https://$FIXTURE_FQDN/") ;;
+      esac
+      [ "$code" = "$want_code" ] && break
+      sleep 5
+    done
     t2=$(date +%s)
-    say "  awake        $PREFIX-$role: disk restored in $(( (t1 - t0) / 60 )) min, serving after $(( (t2 - t0) / 60 )) min $(( (t2 - t0) % 60 )) s"
-    printf '%s wake %s %s %ss %ss\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$role" "$id" "$(( t1 - t0 ))" "$(( t2 - t0 ))" >> "$STATE_DIR/snapshots.log"
+    if [ "$code" = "$want_code" ]; then
+      say "  awake        $PREFIX-$role: disk restored in $(( (t1 - t0) / 60 )) min, serving after $(( (t2 - t0) / 60 )) min $(( (t2 - t0) % 60 )) s"
+      printf '%s wake %s %s %ss %ss\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$role" "$id" "$(( t1 - t0 ))" "$(( t2 - t0 ))" >> "$STATE_DIR/snapshots.log"
+    else
+      say "  !! $PREFIX-$role: restored in $(( (t1 - t0) / 60 )) min, but $what answered ${code:-nothing}, not $want_code, after 5 minutes"
+      printf '%s wake %s %s %ss not-serving\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$role" "$id" "$(( t1 - t0 ))" >> "$STATE_DIR/snapshots.log"
+      failed+=("$role")
+    fi
     if [ "$role" = control ] && [ "$vip" != "$old" ]; then
       say "  !! control's VPC address moved from $old to $vip. The sandbox's and fixture's snapshots accept SSH and"
       say "     the runner only from $old: fix their nftables and ufw from Vultr's web console, or rebuild them with apply."
@@ -823,6 +842,7 @@ cmd_wake() {
       say "     node reaches the runner only after the next deploy/deploy.sh, which installs that address."
     fi
   done
+  [ ${#failed[@]} -eq 0 ] || die "restored, but not serving: ${failed[*]} (see above). Fix that before any deploy"
   say "Awake. deploy/provision.sh costs shows the new run rate."
 }
 

@@ -33,6 +33,8 @@ x-db-env: &db-env
 services:
   db:
     image: mariadb:11.4
+    # Back after a reboot or a restore from snapshot (provision.sh wake), so the fixture never sits at 502.
+    restart: unless-stopped
     environment:
       MARIADB_DATABASE: wordpress
       MARIADB_USER: wordpress
@@ -48,6 +50,7 @@ services:
 
   wordpress:
     image: wordpress:php8.4-apache
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy

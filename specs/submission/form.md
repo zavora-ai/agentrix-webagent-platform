@@ -21,14 +21,12 @@ It's the home page's own headline. Alternatives, if James wants the containment 
 ## Short description (50 to 255 characters)
 
 [field: short]
-Agentrix moves a small business's WordPress site, hacked or not, into a new site run by AI WebAgents. Every untrusted step runs in a sealed room on Vultr, and nothing goes live until the owner approves with a passkey.
-[end of field]
-
-Option B, in James's README wording (pick one; B is checked below as `short_b`):
-
-[field: short_b]
 Agentrix turns a WordPress, Shopify or React website into an autonomous AI business: WebAgents that work 24/7 for the owner, built and checked in secure sandboxes on Vultr, and live only on the owner's passkey.
 [end of field]
+
+James picked this one on Sun 8 Nov; it's his README's wording.
+
+The earlier option, not used: "Agentrix moves a small business's WordPress site, hacked or not, into a new site run by AI WebAgents. Every untrusted step runs in a sealed room on Vultr, and nothing goes live until the owner approves with a passkey."
 
 Tonight's live Move is of a WordPress site. No Shopify or React site has been moved live yet, so
 judges who try one may not see the same result.

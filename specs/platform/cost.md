@@ -224,14 +224,17 @@ control's moves, and only the sandbox's moves.
    first, then the sandbox, then the fixture, one at a time, into the kept VPC. Each comes back
    with:
    - its label, plan and firewall group;
-   - cloud-init told to keep the snapshot's SSH host keys (`ssh_deletekeys: false`).
+   - cloud-init asked to keep the snapshot's SSH host keys (`ssh_deletekeys: false`); control's
+     changed anyway on 8 Nov.
 
    It then:
    - rewrites the DNS for `agentrix.website`, `*.agentrix.website` and the fixture (TTL 300);
    - updates `deploy/.state/inventory.env` and `ssh_config`;
    - checks each new address's host key against the one `~/.ssh/known_hosts` held for the old
      address before trusting it;
-   - waits for control's `/healthz`, the runner's 404 and the fixture's 200;
+   - starts the fixture's WordPress and database (`docker compose start` in `/opt/fixture`);
+   - waits up to 5 minutes for control's `/healthz`, the runner's 404 and the fixture's 200, and
+     exits non-zero, naming the VM, if one isn't serving;
    - logs the times in `deploy/.state/snapshots.log`.
 4. **VPC addresses.** In an empty VPC the first VM attached gets the first address, as when
    `apply` created them: control 10.42.0.3, then the sandbox 10.42.0.4, then the fixture
@@ -272,14 +275,31 @@ hours.
 
 ### 2.5 Restore time
 
-**Not measured yet.** The first real restore (2.3) measures it, and `wake` logs the times.
-Before then, a test restore can measure it without touching anything live. Then, with James's yes, `provision.sh restore-test sandbox --yes`:
-- restores a throwaway copy, outside the VPC, with nothing inbound;
-- times it from create to ready;
-- deletes the copy, for about $0.17.
+**Measured on Sun 8 Nov.** W0 ran `wake control sandbox fixture --yes` from 17:58 EAT, at James's
+word, from the snapshots taken at 07:19 to 07:23. The times are from `deploy/.state/snapshots.log`.
 
-The fixture's test costs $0.02. Until it's measured, plan on 10 to 20 minutes per VM, run side by
-side, plus a deploy (about 5 minutes) if the sandbox's VPC address moved.
+| VM | Snapshot | Disk restored | Serving | Notes |
+|---|---|---|---|---|
+| control | 5.0 GB | not logged | not logged | Back at 64.177.51.184, VPC address 10.42.0.3. Its SSH host key was new, so wake stopped at the key check; W0 checked the key and accepted it, then woke the other two |
+| sandbox | 9.6 GB | 12 min 33 s | 12 min 55 s | VPC address 10.42.0.4, as before, so no deploy was needed for the runner's address |
+| fixture | 3.8 GB | 5 min 43 s | 9 min 10 s | Back at 64.177.57.247, VPC address 10.42.0.5. It answered 502: WordPress and its database stayed stopped (see below). W0 started them by hand and it answered 200 |
+
+- **Plan on about 13 minutes per VM, one after another,** so 30 to 40 minutes for all three,
+  plus a deploy if the sandbox's address ever moves. The VPC handed out .3, .4 and .5 again,
+  in order.
+- **The fixture doesn't start its containers on boot.** Its compose project
+  (`fixtures/wordpress-infected/compose.yaml`) has no restart policy, so a restored VM boots
+  with `agx-fixture-db-1` and `agx-fixture-wordpress-1` stopped.
+  - `wake` now runs `docker compose start` in `/opt/fixture` (c9716e5).
+  - It reports a VM as serving only when that VM's check passes, and exits non-zero otherwise.
+  - The lasting fix is `restart: unless-stopped` on `db` and `wordpress` in the fixture's compose
+    file. That file belongs to the Brick 1 Gauntlet builder, so it's an ask on the board.
+- **Host keys:** `ssh_deletekeys: false` didn't keep control's key. Expect to check a new key in
+  Vultr's web console after a restore.
+
+`provision.sh restore-test ROLE --yes` can still time a throwaway copy, outside the VPC and with
+nothing inbound, without touching anything live (about $0.17 for the sandbox, $0.02 for the
+fixture).
 
 ### 2.6 The commands
 
