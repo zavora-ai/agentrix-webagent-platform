@@ -6,8 +6,9 @@ Agentrix WebAgent Platform transforms any WordPress/Shopify/React website into a
 Business using WebAgents running on secure sandboxes on Vultr. Developed using ADK-Rust AI Agent
 Framework.
 
-The old site is never trusted. It is read, replayed and rebuilt inside **sealed rooms** on a
-separate machine with no secrets and no way out except a per-job allowlist. The new site goes
+When we move your existing website, we treat it as untrusted, as it may contain vulnerabilities
+or insecure code or data. The website is scanned, read, replayed and rebuilt inside contained and
+sealed sandboxes on Vultr with no secrets and no way out except a per-job allowlist. The new site goes
 live only when the owner approves it with a passkey, the old site stays on standby, and undo is
 one tap for 30 days. Every step leaves a signed receipt that anyone can check.
 
