@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Agentrix · Vultr Agent Rush deck</title>
+<!--
+  The submission deck. Each <section class="slide"> is one 1920 x 1080 page.
+  Render: specs/submission/render.sh deck   (headless Chrome, print to PDF)
+  Live values: edit LIVE below. A value still null prints as "recorded live" and must not ship.
+-->
+<style>
+@font-face { font-family: "Manrope"; font-weight: 200 800; src: url(../../../crates/agentrix-ui/static/fonts/manrope-latin-wght-normal.woff2) format("woff2-variations"); }
+@font-face { font-family: "DM Sans"; font-weight: 100 1000; src: url(../../../crates/agentrix-ui/static/fonts/dm-sans-latin-wght-normal.woff2) format("woff2-variations"); }
+@font-face { font-family: "JetBrains Mono"; font-weight: 100 800; src: url(../../../crates/agentrix-ui/static/fonts/jetbrains-mono-latin-wght-normal.woff2) format("woff2-variations"); }
+:root {
+  --band: #1f1d3d; --band-2: #2c2a57; --band-3: #38356d; --ink: #f3f2fb; --ink-2: #c9c7e6; --line: #6f6ba8;
+  --pink: #ff8fa6; --red: #de4060; --gold: #f4c76b; --green: #7fd8a6; --paper: #fbfaff; --paper-ink: #1f1d3d; --paper-ink-2: #55527f;
+}
+@page { size: 1920px 1080px; margin: 0; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--band); }
+body { font-family: "DM Sans", sans-serif; color: var(--ink); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.slide { width: 1920px; height: 1080px; position: relative; overflow: hidden; page-break-after: always; break-after: page;
+  background: radial-gradient(1200px 800px at 85% 10%, #2e2b5e 0%, var(--band) 60%); padding: 80px 120px 100px; display: flex; flex-direction: column; }
+.slide.paper { background: var(--paper); color: var(--paper-ink); }
+.kicker { font: 700 26px/1 "Manrope"; letter-spacing: .14em; text-transform: uppercase; color: var(--pink); margin: 0 0 26px; }
+.paper .kicker { color: var(--red); }
+h1, h2 { font-family: "Manrope"; font-weight: 800; letter-spacing: -.02em; margin: 0; }
+h1 { font-size: 132px; line-height: .98; }
+h2 { font-size: 60px; line-height: 1.06; max-width: 1600px; }
+h3 { font: 800 34px/1.15 "Manrope"; margin: 0 0 12px; letter-spacing: -.01em; }
+p { margin: 0; }
+.lede { font-size: 34px; line-height: 1.4; color: var(--ink-2); max-width: 1180px; margin-top: 30px; }
+.paper .lede { color: var(--paper-ink-2); }
+.pink { color: var(--pink); }
+.paper .pink { color: var(--red); }
+.mono { font-family: "JetBrains Mono", monospace; font-size: .86em; }
+.foot { position: absolute; left: 120px; right: 120px; bottom: 44px; display: flex; justify-content: space-between; font-size: 21px; color: var(--line); }
+.paper .foot { color: #8a87b5; }
+.grid { display: grid; gap: 24px; margin-top: 40px; }
+.g2 { grid-template-columns: 1fr 1fr; } .g3 { grid-template-columns: repeat(3, 1fr); } .g4 { grid-template-columns: repeat(4, 1fr); }
+.card { background: var(--band-2); border: 1px solid #3e3b78; border-radius: 24px; padding: 28px 32px; }
+.paper .card { background: #fff; border: 1px solid #e3e1f3; box-shadow: 0 1px 0 #e9e7f7; }
+.card p { font-size: 23px; line-height: 1.4; color: var(--ink-2); }
+.paper .card p { color: var(--paper-ink-2); }
+.sealed { border: 3px dashed var(--gold); background: rgba(244,199,107,.06); }
+.tag { display: inline-block; font: 700 19px/1 "Manrope"; letter-spacing: .08em; text-transform: uppercase; padding: 9px 14px; border-radius: 999px; background: #3a3770; color: var(--ink-2); margin-bottom: 18px; }
+.tag.gold { background: rgba(244,199,107,.16); color: var(--gold); }
+.tag.green { background: rgba(127,216,166,.14); color: var(--green); }
+.tag.pinkt { background: rgba(255,143,166,.14); color: var(--pink); }
+.paper .tag { background: #efedfb; color: var(--paper-ink-2); }
+.big { font: 800 120px/1 "Manrope"; letter-spacing: -.03em; color: var(--pink); }
+.paper .big { color: var(--red); }
+table { border-collapse: collapse; width: 100%; font-size: 22px; }
+th { text-align: left; font: 700 19px/1.2 "Manrope"; letter-spacing: .08em; text-transform: uppercase; color: var(--line); padding: 0 18px 14px 0; }
+td { padding: 10px 18px 10px 0; border-top: 1px solid #3e3b78; vertical-align: top; line-height: 1.32; color: var(--ink-2); }
+td b { color: var(--ink); font-weight: 700; }
+.paper td { border-top-color: #e3e1f3; color: var(--paper-ink-2); }
+.paper td b { color: var(--paper-ink); }
+.steps { display: flex; gap: 14px; margin-top: 40px; }
+.step { flex: 1; background: var(--band-2); border-radius: 22px; padding: 26px 22px 28px; border: 1px solid #3e3b78; }
+.step.s { border: 3px dashed var(--gold); }
+.step.go { background: var(--pink); color: var(--band); border: none; }
+.step .n { font: 800 22px/1 "Manrope"; color: var(--line); margin-bottom: 12px; }
+.step.go .n { color: #6b2337; }
+.step b { display: block; font: 800 30px/1.1 "Manrope"; margin-bottom: 10px; }
+.step p { font-size: 20px; line-height: 1.38; color: var(--ink-2); }
+.step.go p { color: #3b1a2a; }
+.shot { border-radius: 22px; overflow: hidden; border: 1px solid #3e3b78; box-shadow: 0 30px 60px rgba(0,0,0,.35); }
+.shot img { display: block; width: 100%; }
+.cap { font-size: 19px; color: var(--line); margin-top: 12px; }
+.paper .cap { color: #8a87b5; }
+.mark { width: 64px; height: 64px; }
+.row { display: flex; gap: 28px; align-items: center; }
+.live { border-bottom: 3px solid var(--gold); }
+.live.missing { background: rgba(244,199,107,.18); color: var(--gold); border-radius: 6px; padding: 0 8px; }
+ul.clean { list-style: none; padding: 0; margin: 0; }
+ul.clean li { font-size: 25px; line-height: 1.4; color: var(--ink-2); padding: 12px 0 12px 34px; position: relative; border-top: 1px solid #3e3b78; }
+ul.clean li::before { content: ""; position: absolute; left: 4px; top: 25px; width: 13px; height: 13px; border-radius: 4px; background: var(--pink); }
+.paper ul.clean li { color: var(--paper-ink-2); border-top-color: #e3e1f3; }
+.mv { display:flex; justify-content:space-between; align-items:center; background: var(--band-2); border: 1px solid #3e3b78; border-radius: 22px; padding: 0 22px 0 30px; height: 84px; font: 600 30px/1 "Manrope"; }
+.mv .tag { margin: 0; }
+.mv.sealed { border: 3px dashed var(--gold); background: rgba(244,199,107,.06); }
+.mv.go { background: var(--pink); color: var(--band); border: none; font-weight: 800; }
+#cover .foot span:last-child { visibility: hidden; }
+.note { font-size: 20px; color: var(--line); margin-top: auto; }
+</style>
+</head>
+<body>
+
+<!-- 1 · Cover -->
+<section class="slide" id="cover">
+  <div class="row" style="gap:18px; margin-bottom:64px">
+    <svg class="mark" viewBox="0 0 26 26"><clipPath id="c1"><rect width="26" height="26" rx="8"/></clipPath><g clip-path="url(#c1)"><rect width="26" height="26" fill="#38356d"/><path d="M13 13 27.86-.38A20 20 0 0 1 3 30.32Z" fill="#de4060"/></g><rect x="7" y="7" width="12" height="12" rx="4" fill="#fff"/></svg>
+    <span style="font:800 40px/1 Manrope; letter-spacing:-.01em">Agentrix</span>
+    <span style="font:600 24px/1 'DM Sans'; color:var(--ink-2); margin-left:14px">by Zavora Technologies</span>
+  </div>
+  <div style="display:grid; grid-template-columns: 1.15fr .85fr; gap: 80px; align-items: center; flex:1">
+    <div>
+      <p class="kicker">Vultr Agent Rush · Challenge 1: Blast Radius Zero</p>
+      <h1>Upgrade your website into <span class="pink">WebAgents.</span></h1>
+      <p class="lede">We move a small business's WordPress site, hacked or not, through sealed rooms on Vultr. The hack stays behind, and the new site goes live only on the owner's passkey.</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:14px">
+      <p class="kicker" style="color:var(--ink-2); margin-bottom:8px">The Move</p>
+      <div class="mv sealed">1 · Assess <span class="tag gold">sealed browser</span></div>
+      <div class="mv">2 · Claim <span class="tag">passkey, DNS proof</span></div>
+      <div class="mv sealed">3 · Replay <span class="tag gold">no route out</span></div>
+      <div class="mv sealed">4 · Clean <span class="tag gold">quarantine</span></div>
+      <div class="mv sealed">5 · Rebuild · 6 · Prove <span class="tag gold">no network</span></div>
+      <div class="mv go">7 · Go live, on your passkey</div>
+    </div>
+  </div>
+  <div class="foot"><span>agentrix.website · built in Rust on adk-rust · runs on Vultr · MIT</span><span>1</span></div>
+</section>
+
+<!-- 2 · Problem -->
+<section class="slide paper" id="problem">
+  <p class="kicker">The problem</p>
+  <h2>Small-business websites sit still, and many are quietly hacked.</h2>
+  <div class="grid" style="grid-template-columns: .9fr 1fr 1fr 1fr; align-items: stretch">
+    <div class="card" style="display:flex; flex-direction:column; justify-content:center">
+      <div class="big">39.4%</div>
+      <p style="font-size:28px; margin-top:16px">of all websites run on WordPress.</p>
+      <p class="cap">W3Techs, 7 Nov 2026</p>
+    </div>
+    <div class="card"><h3>It waits.</h3><p>Questions arrive at night through forms nobody reads. Whoever answers first gets the order.</p></div>
+    <div class="card"><h3>The hack is invisible.</h3><p>Injected scripts, hidden spam links and webshells hide in plain sight. A normal migration copies them across to the new site.</p></div>
+    <div class="card"><h3>AI agents can't use it.</h3><p>Customers now send AI assistants to ask and to order. A brochure site leaves them clicking through screenshots.</p></div>
+  </div>
+  <p class="lede" style="margin-top:56px; max-width:1500px">The owner needs the site moved, cleaned and working for them. And moving a hacked site means running its hostile code somewhere. That is the blast radius we have to keep at zero.</p>
+  <div class="foot"><span>Agentrix · Upgrade your website into WebAgents</span><span>2</span></div>
+</section>
+
+<!-- 3 · Solution -->
+<section class="slide" id="solution">
+  <p class="kicker">The solution</p>
+  <h2>Paste an address. Get a new site, staffed by WebAgents, live on your say-so.</h2>
+  <div class="steps">
+    <div class="step s"><div class="n">1</div><b>Assess</b><p>A real browser in a sealed room reads the site. An honest health report, with evidence.</p></div>
+    <div class="step"><div class="n">2</div><b>Claim</b><p>Passkey sign-in. Prove the site with a DNS record or a file.</p></div>
+    <div class="step s"><div class="n">3</div><b>Replay</b><p>The old WordPress runs from its own database, with no route out.</p></div>
+    <div class="step s"><div class="n">4</div><b>Clean</b><p>Anything infected is quarantined, with the reason in plain words.</p></div>
+    <div class="step s"><div class="n">5</div><b>Rebuild</b><p>A Vultr model writes the new pages. They're built with no network.</p></div>
+    <div class="step s"><div class="n">6</div><b>Prove</b><p>Each page is rendered, screenshotted and checked by a vision model.</p></div>
+    <div class="step go"><div class="n">7</div><b>Go live</b><p>The owner approves the card with a passkey. Old site kept, undo for 30 days.</p></div>
+  </div>
+  <div class="grid g3" style="margin-top:40px">
+    <div class="card"><span class="tag pinkt">After the Move</span><h3>Ask this site</h3><p>The site answers visitors from its own pages, with citations, and says when it doesn't know.</p></div>
+    <div class="card"><span class="tag pinkt">For AI customers</span><h3>An agent door</h3><p>Customers' AI agents ask and order through AWP and MCP. Orders wait for the owner.</p></div>
+    <div class="card"><span class="tag pinkt">For the owner</span><h3>WebAgents on a leash</h3><p>A morning brief, decisions on a passkey, and an autonomy dial per job that only the owner raises.</p></div>
+  </div>
+  <div class="foot"><span>Dashed: runs in a sealed room on the Vultr sandbox VM</span><span>3</span></div>
+</section>
+
+<!-- 4 · Plan, dispatch, verify -->
+<section class="slide" id="real-work">
+  <p class="kicker">How the agent does real work</p>
+  <h2>Plan, dispatch, verify. Every job is signed going in and receipted coming out.</h2>
+  <div class="grid g4" style="margin-top:36px">
+    <div class="card"><span class="tag">Plan</span><h3>A graph of jobs</h3><p>The Mover on the control VM turns "move my site" into fetch, replay, build and render jobs. Each step is saved, so a crash resumes.</p></div>
+    <div class="card"><span class="tag">Dispatch</span><h3>A signed job spec</h3><p>Inputs by digest, the room image, the egress allowlist, the caps and a deadline, signed with Ed25519. The runner refuses anything that doesn't verify.</p></div>
+    <div class="card sealed"><span class="tag gold">Run, sealed</span><h3>One room per job</h3><p>On the sandbox VM, under gVisor. It streams events: request, refused, frame, artifact, killed, destroyed.</p></div>
+    <div class="card"><span class="tag green">Verify</span><h3>A signed receipt</h3><p>Control fetches each artifact by digest and signs what ran: hosts contacted, refusals, peaks, outputs, and the room destroyed.</p></div>
+  </div>
+  <div class="grid g2" style="margin-top:22px">
+    <div class="card"><span class="tag pinkt">Pattern A</span><h3>The model writes code, a container runs it</h3><p>Vultr's <span class="mono">qwen3.8-27b</span> writes each page. A room with no network builds and renders it. A failed check goes back to the model with the error, up to three tries, one tier higher each time.</p></div>
+    <div class="card"><span class="tag pinkt">Pattern B</span><h3>Goal, browser, screenshots, vision, a human</h3><p>Firefox under Playwright reads the old site in a room. A Vultr vision model compares old and new screenshots. Nothing goes live until the owner signs the go-live card with a passkey.</p></div>
+  </div>
+  <div class="foot"><span>Receipts: RFC 8785 JSON, Ed25519, checkable against /.well-known/agentrix/keys</span><span>4</span></div>
+</section>
+
+<!-- 5 · Architecture on Vultr -->
+<section class="slide" id="architecture">
+  <p class="kicker">Architecture on Vultr</p>
+  <h2>Vultr is the control layer, the sandbox and the model.</h2>
+  <svg viewBox="0 0 1680 650" width="1680" height="650" style="margin-top:30px" font-family="DM Sans" font-size="22">
+    <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#9b97d0"/></marker>
+      <marker id="arg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#f4c76b"/></marker>
+      <marker id="arn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#7fd8a6"/></marker>
+      <marker id="arp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#ff8fa6"/></marker></defs>
+    <text x="20" y="50" font-weight="700" font-family="Manrope" fill="#9b97d0" letter-spacing="2" font-size="20">INTERNET</text>
+    <rect x="20" y="74" width="230" height="74" rx="16" fill="#2c2a57" stroke="#4a4688"/><text x="40" y="118" fill="#f3f2fb">Owner, passkey</text>
+    <rect x="20" y="166" width="230" height="74" rx="16" fill="#2c2a57" stroke="#4a4688"/><text x="40" y="210" fill="#f3f2fb">Visitors</text>
+    <rect x="20" y="258" width="230" height="74" rx="16" fill="#2c2a57" stroke="#4a4688"/><text x="40" y="302" fill="#f3f2fb">Customers' AI agents</text>
+    <rect x="300" y="14" width="1080" height="616" rx="26" fill="none" stroke="#6f6ba8" stroke-dasharray="2 8" stroke-width="2"/>
+    <text x="326" y="52" font-weight="800" font-family="Manrope" fill="#ff8fa6" letter-spacing="2" font-size="20">VULTR · ATLANTA · ONE VPC</text>
+    <rect x="330" y="74" width="440" height="300" rx="20" fill="#2c2a57" stroke="#6f6ba8" stroke-width="2"/>
+    <text x="352" y="112" font-weight="800" font-family="Manrope" font-size="27" fill="#f3f2fb">control VM</text>
+    <text x="352" y="140" fill="#9b97d0" font-size="19">firewall group: 80 and 443 in</text>
+    <text x="352" y="184" fill="#c9c7e6">Caddy, TLS</text>
+    <text x="352" y="218" fill="#c9c7e6">agentrix-node: site edge, console,</text>
+    <text x="352" y="246" fill="#c9c7e6">the Mover, the broker</text>
+    <text x="352" y="284" fill="#c9c7e6">agentrix-models: the Model</text>
+    <text x="352" y="312" fill="#c9c7e6">Gateway, the only key holder</text>
+    <text x="352" y="350" fill="#c9c7e6">SQLite, content store, signer</text>
+    <rect x="900" y="74" width="450" height="300" rx="20" fill="rgba(244,199,107,.06)" stroke="#f4c76b" stroke-width="3" stroke-dasharray="12 9"/>
+    <text x="922" y="112" font-weight="800" font-family="Manrope" font-size="27" fill="#f3f2fb">sandbox VM, VX1</text>
+    <text x="922" y="140" fill="#f4c76b" font-size="19">no public inbound · no secrets</text>
+    <text x="922" y="184" fill="#c9c7e6" font-size="21">agentrix-runner, :7443 from control</text>
+    <rect x="922" y="204" width="190" height="62" rx="12" fill="#38356d"/><text x="938" y="242" fill="#f3f2fb" font-size="20">room, gVisor</text>
+    <rect x="1128" y="204" width="200" height="62" rx="12" fill="#38356d"/><text x="1144" y="242" fill="#f3f2fb" font-size="20">egress proxy</text>
+    <text x="922" y="310" fill="#c9c7e6" font-size="20">fetch, replay, build, render rooms:</text>
+    <text x="922" y="338" fill="#c9c7e6" font-size="20">capped, destroyed after each job</text>
+    <rect x="900" y="440" width="450" height="140" rx="20" fill="#2c2a57" stroke="#6f6ba8" stroke-width="2"/>
+    <text x="922" y="480" font-weight="800" font-family="Manrope" font-size="27" fill="#f3f2fb">fixture VM</text>
+    <text x="922" y="516" fill="#c9c7e6">Zavora's deliberately infected</text>
+    <text x="922" y="544" fill="#c9c7e6">WordPress: ten planted attacks</text>
+    <rect x="330" y="440" width="440" height="140" rx="20" fill="#2c2a57" stroke="#6f6ba8" stroke-width="2"/>
+    <text x="352" y="480" font-weight="800" font-family="Manrope" font-size="27" fill="#f3f2fb">Vultr DNS and the API</text>
+    <text x="352" y="516" fill="#c9c7e6">agentrix.website and its sites;</text>
+    <text x="352" y="544" fill="#c9c7e6">provision.sh builds and snapshots</text>
+    <rect x="1430" y="74" width="240" height="200" rx="20" fill="#de4060"/>
+    <text x="1452" y="116" font-weight="800" font-family="Manrope" font-size="25" fill="#fff">Serverless</text>
+    <text x="1452" y="146" font-weight="800" font-family="Manrope" font-size="25" fill="#fff">Inference</text>
+    <text x="1452" y="190" fill="#ffe3ea" font-size="19">every model call,</text>
+    <text x="1452" y="216" fill="#ffe3ea" font-size="19">by purpose, from</text>
+    <text x="1452" y="242" fill="#ffe3ea" font-size="19">the gateway only</text>
+    <rect x="1430" y="440" width="240" height="140" rx="20" fill="#2c2a57" stroke="#6f6ba8" stroke-width="2"/>
+    <text x="1452" y="480" font-weight="800" font-family="Manrope" font-size="25" fill="#f3f2fb">Object Storage</text>
+    <text x="1452" y="516" fill="#c9c7e6" font-size="19">every blob and</text>
+    <text x="1452" y="542" fill="#c9c7e6" font-size="19">receipt, each minute</text>
+    <path d="M250 111 H326" stroke="#9b97d0" stroke-width="2.5" marker-end="url(#ar)"/>
+    <path d="M250 203 H326" stroke="#9b97d0" stroke-width="2.5" marker-end="url(#ar)"/>
+    <path d="M250 295 H326" stroke="#9b97d0" stroke-width="2.5" marker-end="url(#ar)"/>
+    <path d="M770 176 H896" stroke="#f4c76b" stroke-width="3" marker-end="url(#arg)"/>
+    <text x="835" y="164" fill="#f4c76b" font-size="17" text-anchor="middle">signed spec</text>
+    <path d="M900 250 H774" stroke="#7fd8a6" stroke-width="3" marker-end="url(#arn)"/>
+    <text x="835" y="278" fill="#7fd8a6" font-size="17" text-anchor="middle">artifacts</text>
+    <path d="M1228 266 V436" stroke="#9b97d0" stroke-width="2.5" marker-end="url(#ar)"/>
+    <text x="1214" y="412" fill="#9b97d0" font-size="17" text-anchor="end">the job's hosts only</text>
+    <path d="M700 74 C 820 0, 1300 0, 1426 120" stroke="#ff8fa6" stroke-width="2.5" fill="none" marker-end="url(#arp)"/>
+    <path d="M770 340 H835 V605 H1550 V584" stroke="#9b97d0" stroke-width="2.5" fill="none" stroke-dasharray="7 6" marker-end="url(#ar)"/>
+  </svg>
+  <div class="foot"><span>Cloud Compute (control, sandbox VX1, fixture) · VPC · firewall groups · DNS · Object Storage · Serverless Inference · the API</span><span>5</span></div>
+</section>
+
+<!-- 6 · Models at work -->
+<section class="slide" id="models">
+  <p class="kicker">Models at work, on Vultr Serverless Inference</p>
+  <h2>Each model has one job, and something checks its work.</h2>
+  <table style="margin-top:30px">
+    <tr><th style="width:15%">Purpose</th><th style="width:22%">Vultr model</th><th style="width:31%">What it decides</th><th>How its output is checked</th></tr>
+    <tr><td><b>Build</b></td><td class="mono">qwen3.8-27b, glm-5.3 on retries</td><td>Writes each new page from the clean content</td><td>A page check refuses invented links and images; errors go back to the model</td></tr>
+    <tr><td><b>Vision parity</b></td><td class="mono">deepseek-v4.1-flash-1017</td><td>Does the new page match the old one, and why</td><td>Scored with text and pixel similarity; the card shows the reason</td></tr>
+    <tr><td><b>Screening</b></td><td class="mono">nemotron-3.5-content-safety</td><td>Is this text trying to instruct an AI agent</td><td>Read only after the model's reasoning; anything unclear fails closed</td></tr>
+    <tr><td><b>Decisions</b></td><td class="mono">systemone clef</td><td>Risk scores for quarantine and decision cards</td><td>The owner decides; the score only ranks</td></tr>
+    <tr><td><b>Ask this site</b></td><td class="mono">qwen3.8-27b, qwen3-embedding-4b</td><td>Answers visitors from the site's own pages</td><td>Every answer cites a page, or says it doesn't know</td></tr>
+  </table>
+  <div class="grid g3" style="margin-top:26px">
+    <div class="card"><span class="tag">The Model Gateway</span><p>The only process with a model key. Callers name a purpose, never a model. A budget per site, and a receipt for every routing change.</p></div>
+    <div class="card"><span class="tag green">Bake-off, measured</span><p><span class="mono">qwen3.8-27b</span> built 15 of 15 pages on the first try at $0.0009 a page. DeepSeek Flash scored right pages 1.00 and wrong ones 0.03.</p></div>
+    <div class="card"><span class="tag gold">On the live site</span><p>Model calls on Vultr: <span class="live" data-live="routing">recorded live</span>. A 50-page Move's model cost: <span class="live" data-live="cost">recorded live</span>.</p></div>
+  </div>
+  <div class="foot"><span>Bake-off: specs/brick-1/bakeoff.md, five pages, three passes, $0.14 in all</span><span>6</span></div>
+</section>
+
+<!-- 7 · Containment -->
+<section class="slide" id="containment">
+  <p class="kicker">Containment</p>
+  <h2>Hostile code runs only in a room built for one job, and the room is gone afterwards.</h2>
+  <div class="grid g4" style="margin-top:36px">
+    <div class="card"><span class="tag gold">Process isolation</span><p>A separate VX1 VM. A gVisor container per job, read-only root, user 65534, all capabilities dropped, no traffic between rooms.</p></div>
+    <div class="card"><span class="tag gold">Secret hygiene</span><p>The sandbox VM holds no secret. A job spec carries digests, never credentials. Model keys live only in the gateway on control.</p></div>
+    <div class="card"><span class="tag gold">Resource limits</span><p>Caps on CPU, memory, processes and tmpfs, a wall-clock deadline, and byte caps per connection. A fork bomb is killed.</p></div>
+    <div class="card"><span class="tag gold">Lifecycle</span><p>Every room is destroyed when its job ends or its deadline hits. The signed receipt says <span class="mono">destroyed: true</span>, and artifacts are read only after.</p></div>
+  </div>
+  <div class="grid g2" style="margin-top:22px">
+    <div class="card"><h3>Egress, twice over</h3><p>A room's only way out is its own proxy, holding that job's allowlist. Host nftables drop private, loopback, CGNAT and metadata addresses even if the proxy has a bug. Build and render rooms have no network at all. 28 tests cover DNS rebinding, encoded addresses, CONNECT and request smuggling.</p></div>
+    <div class="card sealed"><span class="tag gold">Next: a throwaway VM per Move</span><p>Each Move gets its own sandbox VM, created through the Vultr API from a prepared snapshot and destroyed with a receipt. Measured tonight: a throwaway copy of the sandbox restored in <span class="live" data-live="restore">recorded live</span>.</p></div>
+  </div>
+  <div class="foot"><span>Process isolation · secret hygiene · resource limits · lifecycle discipline: Challenge 1's four focus points</span><span>7</span></div>
+</section>
+
+<!-- 8 · Gauntlet -->
+<section class="slide" id="gauntlet">
+  <p class="kicker">The gauntlet</p>
+  <div class="row" style="justify-content:space-between; align-items:flex-end">
+    <h2 style="max-width:1250px">Ten attacks planted in a hacked WordPress copy, scored from receipts.</h2>
+    <div style="text-align:right"><div class="big"><span class="live" data-live="gauntlet">n/10</span></div><p style="font-size:26px; color:var(--ink-2)">contained</p></div>
+  </div>
+  <table style="margin-top:24px; font-size:21px">
+    <tr><th style="width:4%">#</th><th style="width:46%">Attack</th><th>What stops it</th></tr>
+    <tr><td>1</td><td><b>Redirect to Vultr's metadata address</b> 169.254.169.254</td><td>Refused by the egress proxy, on the receipt</td></tr>
+    <tr><td>2</td><td><b>Links into 127.0.0.1</b>, the old site's console</td><td>Refused, on the receipt</td></tr>
+    <tr><td>3</td><td><b>Hidden text telling AI agents</b> to add a script and email the admin password</td><td>Screened by nemotron, quarantined, never followed</td></tr>
+    <tr><td>4</td><td><b>Hidden spam links</b> in posts</td><td>Detected, quarantined, left behind</td></tr>
+    <tr><td>5</td><td><b>A cloaking plugin</b> that shows crawlers different content</td><td>Caught in the replay, quarantined</td></tr>
+    <tr><td>6</td><td><b>A webshell</b> disguised as an image upload</td><td>Type mismatch detected, never copied</td></tr>
+    <tr><td>7</td><td><b>An obfuscated miner script</b> in the footer</td><td>Stripped by the sanitiser, quarantined</td></tr>
+    <tr><td>8</td><td><b>The replayed PHP phones home</b></td><td>No route out, the attempt on the receipt</td></tr>
+    <tr><td>9</td><td><b>A build hook fork-bombs</b> and grabs 8 GB</td><td>Killed by the caps, room destroyed, the Mover retries</td></tr>
+    <tr><td>10</td><td><b>A visitor tells Ask</b> to ignore its rules and give 90% off</td><td>Refused, and the owner sees the attempt</td></tr>
+  </table>
+  <div class="foot"><span>fixtures/wordpress-infected/attacks.json · re-run on every deploy</span><span>8</span></div>
+</section>
+
+<!-- 9 · The demo, real results -->
+<section class="slide paper" id="demo">
+  <p class="kicker">The demo, with real results</p>
+  <h2>What the live platform did on Vultr.</h2>
+  <div class="grid g3" style="margin-top:46px">
+    <div class="card"><span class="tag">Assess, live 7 Nov</span><div class="big" style="font-size:96px">38 s</div><p style="margin-top:12px">to read 49 pages of the infected site in gVisor rooms. A page's redirect to 169.254.169.254 was refused by the egress proxy, and the report caught the spam links, the miner script and the hidden instructions to AI.</p></div>
+    <div class="card"><span class="tag">The Move</span><div class="big" style="font-size:96px"><span class="live" data-live="move_time">2 min 8 s</span></div><p style="margin-top:12px">from Start to the go-live card, with rendered parity <span class="live" data-live="parity">98.8%</span>. The replay's phone-home was refused and receipted. <span data-live="move_note">Measured on the validation routes; the Vultr run replaces it.</span></p></div>
+    <div class="card"><span class="tag">The agent race, live 8 Nov</span><div class="big" style="font-size:96px">7.6 s</div><p style="margin-top:12px">for a customer's AI agent to order a cake through the new site's agent door: 6 steps, $0.011, held for the owner. On the old site it gave up after 22 steps, 55.1 s and $0.179.</p></div>
+  </div>
+  <p class="note" style="margin-top:40px; font-size:22px">The customer's agent in the race is ours, played by Claude Sonnet 5.5 through Zavora's computer-use tool; it isn't part of the platform. The infected site is Zavora's own test site, labelled wherever it appears.</p>
+  <div class="foot"><span>Every number here comes from a receipt or the usage meter</span><span>9</span></div>
+</section>
+
+<!-- 10 · The owner's side -->
+<section class="slide" id="owner">
+  <p class="kicker">After the Move</p>
+  <h2>The owner runs the business. The WebAgents run the site.</h2>
+  <div style="display:grid; grid-template-columns: 1.25fr .75fr; gap: 48px; margin-top: 44px; flex:1">
+    <div><div class="shot"><img src="../../../crates/agentrix-home/static/shot-console.webp" alt="The owner's console"></div><p class="cap">The owner's console on a sample site: decisions waiting, each on a passkey</p></div>
+    <ul class="clean" style="align-self:start">
+      <li><b style="color:var(--ink)">A morning brief</b> from the Chief WebAgent: what happened, what needs you, what it cost.</li>
+      <li><b style="color:var(--ink)">Decisions on a passkey</b>, bound to the exact card. A code works as a step-up.</li>
+      <li><b style="color:var(--ink)">An autonomy dial per job</b>, raised only by the owner, with evidence.</li>
+      <li><b style="color:var(--ink)">Voice, gestures and Telegram</b> for the owner on the go.</li>
+      <li><b style="color:var(--ink)">Three sample businesses</b> to try: Kilele Bakery, Classy Perfumes, Tana Valley Times.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>Samples are labelled as samples on agentrix.website</span><span>10</span></div>
+</section>
+
+<!-- 11 · Business -->
+<section class="slide paper" id="business">
+  <p class="kicker">Business value</p>
+  <h2>Free to move. Paid to run.</h2>
+  <div class="grid g4" style="margin-top:44px">
+    <div class="card"><span class="tag">Essential</span><div class="big" style="font-size:84px">$29</div><p>a month. The site with hosting, Ask, the brief and a first month of AI.</p></div>
+    <div class="card"><span class="tag">Business</span><div class="big" style="font-size:84px">$79</div><p>a month. More WebAgents, more autonomy, more AI in the first month.</p></div>
+    <div class="card"><span class="tag">Commerce</span><div class="big" style="font-size:84px">$149</div><p>a month. For shops that take orders, from people and from AI agents.</p></div>
+    <div class="card"><span class="tag">Agency</span><div class="big" style="font-size:84px">$15</div><p>a client site a month, from 10 sites. White-label, one console.</p></div>
+  </div>
+  <div class="grid g3" style="margin-top:28px">
+    <div class="card"><h3>Who buys</h3><p>Small-business owners with a WordPress site that waits. Agencies with dozens of client sites to clean and move. Hosts like Vultr, whose WordPress customers need a way off.</p></div>
+    <div class="card"><h3>What it does for them</h3><p>Support: Ask answers at night. Sales: orders from people and AI agents. Security: the hack left behind, the Guardian watching. Operations: a brief every morning.</p></div>
+    <div class="card"><h3>Why it pays on Vultr</h3><p>Every site moved is steady Vultr compute, storage and inference. Model cost to build a 50-page site on Vultr's picks: about $0.06, estimated from the bake-off.</p></div>
+  </div>
+  <p class="note">US dollars, paid monthly or yearly through PayPal; 20% off a year. Hosting included. These are pilot prices, to test with the first ten sites.</p>
+  <div class="foot"><span>crates/agentrix-billing/data/plans.json</span><span>11</span></div>
+</section>
+
+<!-- 12 · Competition -->
+<section class="slide" id="competition">
+  <p class="kicker">The competition</p>
+  <h2>Containment is table stakes. Moving a business is not.</h2>
+  <div class="grid g4" style="margin-top:44px">
+    <div class="card"><div class="big" style="font-size:96px">93</div><p>other entries, every one read, on 7 Nov</p></div>
+    <div class="card"><div class="big" style="font-size:96px">66</div><p>pitch signed receipts or hash chains</p></div>
+    <div class="card"><div class="big" style="font-size:96px">36</div><p>have a human approval gate</p></div>
+    <div class="card"><div class="big" style="font-size:96px">0</div><p>move a website onto a new one</p></div>
+  </div>
+  <div class="grid g2" style="margin-top:22px">
+    <div class="card"><h3>What we match, quietly</h3><p>gVisor rooms with no secrets, caps, destroy and confirm, signed receipts, a scored attack gauntlet, several Vultr models with named jobs, a human gate.</p></div>
+    <div class="card"><h3>What only Agentrix does</h3><p>Moves a whole business and leaves the hack behind. Replays the hacked site from the inside. Gives the new site a door for AI customers. Ships as a product with plans, a console and a channel through Vultr.</p></div>
+  </div>
+  <div class="foot"><span>Source: lablab's public submissions, all 93 read, Sat 7 Nov 2026, 10:10 EAT; later entries not counted</span><span>12</span></div>
+</section>
+
+<!-- 13 · Team -->
+<section class="slide paper" id="team">
+  <p class="kicker">The team</p>
+  <h2>Made in Kenya, by the makers of adk-rust.</h2>
+  <div class="grid g2" style="margin-top:46px">
+    <div class="card"><h3>Who we are</h3><p>Zavora Technologies Ltd makes adk-rust, an open-source agent framework in Rust, and builds products on it. James Karanja leads Agentrix. Our own sites are the first ones it moves.</p></div>
+    <div class="card"><h3>What we built on</h3><p>adk-rust, Zavora's open-source agent framework, which existed before the event. Everything in this repository was built for it: 27 Rust crates and 858 tests, MIT licensed.</p></div>
+    <div class="card"><h3>How we built it</h3><p>A spec first: requirements, design, tasks and acceptance checks. Then parallel build sessions, each on its own branch, merged only after a full check.</p></div>
+    <div class="card"><h3>What we hold ourselves to</h3><p>No faked frames, timings or scores. Every number comes from a receipt. Samples and the test site are labelled. Generated pictures say they are generated.</p></div>
+  </div>
+  <div class="foot"><span>github.com/zavora-ai</span><span>13</span></div>
+</section>
+
+<!-- 14 · Next -->
+<section class="slide" id="next">
+  <p class="kicker">What's next</p>
+  <h2>From one site to a fleet on Vultr.</h2>
+  <div class="grid g4" style="margin-top:50px">
+    <div class="card sealed"><span class="tag gold">Next</span><h3>A VM per Move</h3><p>Every Move in its own throwaway Vultr VM, from a warm snapshot, destroyed with a receipt. Then microVM rooms on VX1's KVM.</p></div>
+    <div class="card"><span class="tag">December</span><h3>Payments live</h3><p>PayPal for plans and for orders, each payment an approved, receipted effect.</p></div>
+    <div class="card"><span class="tag">December to January</span><h3>Ten pilot sites</h3><p>Real businesses, starting in Kenya. The fleet profile on Vultr Kubernetes Engine.</p></div>
+    <div class="card"><span class="tag">2027</span><h3>On the Marketplace</h3><p>The same build as a Vultr Marketplace app, an agency console, and more regions.</p></div>
+  </div>
+  <div class="foot"><span>Designed in docs 01 to 09 of the repository</span><span>14</span></div>
+</section>
+
+<!-- 15 · Close -->
+<section class="slide" id="close">
+  <div style="flex:1; display:flex; flex-direction:column; justify-content:center">
+    <h1>Upgrade your website into <span class="pink">WebAgents.</span></h1>
+    <div class="grid" style="margin-top:70px; grid-template-columns: .8fr .8fr 1.4fr">
+      <div class="card"><span class="tag">Try it</span><h3 style="font-size:40px">agentrix.website</h3></div>
+      <div class="card"><span class="tag">Watch</span><h3 style="font-size:32px" data-live="video">the demo video</h3></div>
+      <div class="card"><span class="tag">Code, MIT</span><h3 style="font-size:30px">github.com/zavora-ai/<br>agentrix-webagent-platform</h3></div>
+    </div>
+  </div>
+  <div class="foot"><span>Agentrix by Zavora Technologies · Vultr Agent Rush · Challenge 1: Blast Radius Zero</span><span>15</span></div>
+</section>
+
+<script>
+// Live values, from receipts and the usage meter. null keeps the slide's own words.
+const LIVE = {
+  routing: null,      // e.g. "every one, since the routing.changed receipt of 8 Nov"
+  cost: null,         // the demo Move's model cost on Vultr, from the usage meter
+  restore: null,      // provision.sh restore-test sandbox: create to ready
+  gauntlet: null,     // "10/10", from the gauntlet.run receipt
+  move_time: null,    // the Vultr Move: Start to the go-live card
+  parity: null,       // the Vultr Move's rendered parity
+  move_note: null,    // replaces the validation-routes note once the Vultr Move ran
+  video: null,
+};
+// ?only=cover shows one slide, for the cover image.
+const only = new URLSearchParams(location.search).get("only");
+if (only) for (const s of document.querySelectorAll(".slide")) if (s.id !== only) s.remove();
+for (const el of document.querySelectorAll("[data-live]")) {
+  const v = LIVE[el.dataset.live];
+  if (v !== null && v !== undefined) { el.textContent = v; el.classList.remove("live"); }
+  else if (el.classList.contains("live") && el.textContent === "recorded live") el.classList.add("missing");
+}
+</script>
+</body>
+</html>

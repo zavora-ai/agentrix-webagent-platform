@@ -32,10 +32,12 @@ a separate Vultr VM, and nothing goes live until the owner approves with a passk
 |---|---|
 | Try it | https://agentrix.website: paste a site's address for a health report, or open a sample business |
 | Watch | TODO: the demo video link |
+| Slides | [`specs/submission/deck/agentrix-vultr-deck.pdf`](specs/submission/deck/agentrix-vultr-deck.pdf) |
 | Vultr services used | [Agentrix on Vultr](#9-agentrix-on-vultr-the-agent-rush-entry) |
 | Backend and deployment | [Architecture](#2-architecture) and [Deploy](#6-deploy) |
 | How real tasks execute | [How a Move flows](#24-how-a-move-flows) and [both of Challenge 1's patterns](#94-how-the-agent-does-real-work) |
 | Containment | [Containment](#4-containment) and [the gauntlet](#44-the-gauntlet) |
+| The submission's texts | [`specs/submission/`](specs/submission/): the form, the deck, the cover and the video's script |
 
 ## Contents
 
@@ -595,7 +597,7 @@ Agentrix moves becomes steady Vultr compute, storage and inference.
 | **Serverless Inference** | The agents' model calls, through the Model Gateway, by purpose and tier (9.2) | Live now (Phase 1): embeddings and rerank on Vultr; the other purposes run on Claude until the switch gate. TODO(live): every purpose on Vultr after the switch |
 | **Object Storage** | Every minute, `agentrix-node` mirrors every blob in the content-addressed store to `cas/sha256/<hex>`, and every signed receipt, byte for byte, to `receipts/<hex>.json`. If the control VM loses a file, the store reads it back, checks it against its digest and restores it. The S3 keys reach node as a systemd credential | Live: mirroring started on 7 Nov |
 | **DNS** | `agentrix.website`, `fixture.agentrix.website` and `*.agentrix.website`, written by `provision.sh`; Caddy's TLS for converted sites | Live |
-| **Vultr API** | [`deploy/provision.sh`](deploy/provision.sh) creates, reuses (by label) and destroys everything above. It also snapshots the VMs, sleeps the sandbox and fixture (a snapshot, then no instance) and wakes them from their snapshots, rewriting DNS and checking SSH host keys; `restore-test` times a throwaway copy of a VM from its snapshot and deletes it ([specs/platform/cost.md](specs/platform/cost.md) §2) | Scripted. On Sun 8 Nov the three VMs were snapshotted in the morning and restored from those snapshots in the evening. TODO(live): the measured restore times |
+| **Vultr API** | [`deploy/provision.sh`](deploy/provision.sh) creates, reuses (by label) and destroys everything above. It also snapshots the VMs, sleeps the sandbox and fixture (a snapshot, then no instance) and wakes them from their snapshots, rewriting DNS and checking SSH host keys; `restore-test` times a throwaway copy of a VM from its snapshot and deletes it ([specs/platform/cost.md](specs/platform/cost.md) §2) | Scripted. On Sun 8 Nov the three VMs were snapshotted in the morning; the evening's restore from those snapshots is in progress. TODO(live): the measured restore times |
 
 ### 9.2 Serverless Inference, by purpose
 
@@ -716,7 +718,7 @@ does the work Challenge 2 asks for.
 | **Platform thinking** | One platform for many sites, each with its own WebAgents, autonomy per job and signed releases, grown into cells for the managed fleet | Yes, as the single-node profile |
 
 Plan and scope: [docs/04-vultr-agent-rush.md](docs/04-vultr-agent-rush.md). The submission's
-texts and deck: [`submission/`](submission/).
+form, deck, cover and video script: [`specs/submission/`](specs/submission/).
 
 ## 10. Repository layout
 
@@ -728,9 +730,10 @@ fixtures/        the infected WordPress fixture and the three sample businesses'
 docs/            product, architecture, trust, WebAgents, website, console, control plane, data; ADRs; diagrams
 specs/brick-1/   the Vultr Agent Rush build: requirements, design, tasks, status, acceptance, bake-off
 specs/platform/  the platform build: plan, architecture, data, UI, channels, cost and runbooks, voice
+specs/submission/ the Vultr Agent Rush submission: form, deck, cover, video script and pipeline
 concept/         the HTML concepts every screen was drawn from
 scripts/         copy-lint, acceptance checks, merge and build helpers
-submission/      the hackathon submission: video script, deck, form texts
+submission/      Brick 1's submission work: checklist, deck, form texts, video script
 program/         the build boards used while the platform was made
 ```
 
