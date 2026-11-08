@@ -19,7 +19,7 @@ and an agent-driven migration process. The old site stays on standby, and undo i
 
 ## Contents
 
-1. [The problem and the solution](#1-the-problem-and-the-solution)
+1. [Why Agentrix WebAgent Platform?](#1-why-agentrix-webagent-platform)
 2. [Architecture](#2-architecture)
 3. [The main parts](#3-the-main-parts)
 4. [Containment](#4-containment)
@@ -37,7 +37,7 @@ and an agent-driven migration process. The old site stays on standby, and undo i
 
 ---
 
-## 1. The problem and the solution
+## 1. Why Agentrix WebAgent Platform?
 
 ### The problem
 
