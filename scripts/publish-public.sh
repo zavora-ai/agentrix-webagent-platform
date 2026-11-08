@@ -19,6 +19,7 @@
 # Any finding stops the run. It prints file names and rule names, never a matched value.
 #
 # It never pushes a branch or remote of this repository, and never rewrites public history.
+# A Cargo build folder (target/) in the public checkout is left alone: it is git-ignored there.
 set -euo pipefail
 
 ref=platform
@@ -111,7 +112,7 @@ done
 echo "  clean"
 
 echo "== changes against the public repo"
-rsync -a --checksum --delete --exclude '/.git' --dry-run --itemize-changes "$export_dir/" "$public/" \
+rsync -a --checksum --delete --exclude '/.git' --exclude '/target/' --dry-run --itemize-changes "$export_dir/" "$public/" \
   | awk '$1 ~ /^\*deleting/ {d++} $1 ~ /^>f\+/ {a++} $1 ~ /^>f[^+]/ {c++}
          END {printf "  %d added, %d changed, %d deleted\n", a, c, d}'
 
@@ -120,7 +121,7 @@ if [ "$yes" -ne 1 ]; then
   exit 0
 fi
 
-rsync -a --checksum --delete --exclude '/.git' "$export_dir/" "$public/"
+rsync -a --checksum --delete --exclude '/.git' --exclude '/target/' "$export_dir/" "$public/"
 git -C "$public" add -A
 if git -C "$public" diff --cached --quiet; then
   echo "the public repo already matches $ref ($short); nothing to publish"

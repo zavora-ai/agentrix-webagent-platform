@@ -14,8 +14,7 @@ When we move your existing website, we treat it as untrusted, as it may contain 
 or insecure code or data. The website is scanned, read, replayed and rebuilt inside contained and
 sealed sandboxes on Vultr with no secrets and no way out except a per-job allowlist. The new site goes
 live only when the owner approves it with a DNS verification and passkey, with an audit trail
-and an agent-driven migration process. The old site stays on standby, and undo is one tap for
-30 days.
+and an agent-driven migration process.
 
 ## Contents
 
