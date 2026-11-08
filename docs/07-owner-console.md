@@ -272,7 +272,7 @@ architecture to a non-technical owner.
   site's background at 3:1, and the glyph against the mark at 3:1 (WCAG 1.4.11). A colour that
   fails offers "Use the nearest shade that passes".
 - **Corners**, within the squircle range. It can never become a circle.
-- **Glyph**: a role icon, or a monogram in the site's display face. Brick 1 has no uploads.
+- **Glyph**: a role icon, or a monogram in the site's display face. The first release has no uploads.
   Owner-drawn glyphs come later, reduced in a sealed room (ADR-003) to plain single-colour
   paths.
 - **Name**: a role or product name, never a person's name (06 §4.3).
@@ -845,12 +845,12 @@ rules in `concept/console/gestures.js`):
 touch and voice equivalents. Dwell times can be lengthened in calibration. Reduced motion keeps
 the ring as a static progress bar.
 
-**Brick 1 (the Vultr demo) subset:**
+**The first release (the Vultr demo) subset:**
 - camera opt-in, the camera pill and auto-off;
 - engage, and **swipe** through the decision cards;
 - **thumb up** on the go-live card, which raises the passkey sheet; the owner then signs with
   Touch ID;
-- **open palm**, which stops everything after a 5-second countdown in the shell. In Brick 1 the
+- **open palm**, which stops everything after a 5-second countdown in the shell. In the first release the
   `StopAll` goes in with the web origin, so only the `surface.gesture` record ties it to a
   gesture, and the demo does not claim a server-side gesture policy until U22 lands;
 - a 20-second calibration (light and handedness);
@@ -997,7 +997,7 @@ The console's job is to make that visible and honest:
   log chain.
 
 **Without a passkey** (James, 7 Nov, `d-auth-passkey-first`; 02 §8). Passkeys stay primary,
-and the Brick 1 demo uses them. An owner on a device without one still approves:
+and the first release demo uses them. An owner on a device without one still approves:
 - The card shows the exact effect and a link: "No passkey on this device? Use a code from your
   authenticator app."
 - The owner types a fresh code. Control binds that single-use code to the fingerprint, and the
@@ -1026,7 +1026,7 @@ approval ceremony: the passkey where the device has one, and the step-up code wh
 - the audit records only `presence: "confirmed"` (`adk-surface/src/engine.rs:2336`).
 
 The claim above needs F1 before any demo says "signed". adk-rust-framework has taken F1 for
-the demo, with a target of Sunday morning. If it slips past Sunday midday, the Brick 1 go-live
+the demo, with a target of Sunday morning. If it slips past Sunday midday, the first release go-live
 card uses presence-only confirmation and the copy says "confirmed with your passkey", never
 "signed".
 
@@ -1221,13 +1221,13 @@ cake from London for KSh 5,250, paid by PayPal in USD at the rate in Kilele's pr
 |---|---|---|---|---|---|
 | O1 | **Discover, then assess** (01 rung 1) | Arrives from a "Made with Agentrix" footer, a friend's shared preview, an agency or the Vultr Marketplace. Types one address and watches the site read, rebuilt and answering in about three minutes. Talks to it | Nothing: no account. The preview lasts 7 days and is never indexed | Web | [owner-discover](../concept/journeys/owner-discover.html), [assess](../concept/assess.html) |
 | O2 | **"Keep it": create the account** | A passkey first. Without one: email and password, or Google, LinkedIn or GitHub, always with an authenticator app set up on the spot, and no magic links. The preview becomes a site in setup, the old site is untouched, and the Chief WebAgent introduces itself | The passkey, or the authenticator enrolment; a device-bound session (02 §8) | Web, then the PWA | [owner-account](../concept/journeys/owner-account.html) |
-| O3 | **Choose a plan and pay** | Three plans with what each includes. The Chief WebAgent suggests Commerce because the site takes paid custom orders, and says why. The AI budget is shown as a boundary the owner sets, beside an honest cost line ("about $4–12 a month to run a site like yours", 01 §6.2). Migration is free. Rails: **PayPal Subscriptions**, a card on Paystack's hosted page, or a monthly M-Pesa prompt | The owner approves the subscription on the provider's own page; no card data touches the platform. **The first charge is on go-live day.** An owner who never goes live is never charged (08 §4.1). **Brick 2** | PWA, provider page | [owner-plan](../concept/journeys/owner-plan.html) |
+| O3 | **Choose a plan and pay** | Three plans with what each includes. The Chief WebAgent suggests Commerce because the site takes paid custom orders, and says why. The AI budget is shown as a boundary the owner sets, beside an honest cost line ("about $4–12 a month to run a site like yours", 01 §6.2). Migration is free. Rails: **PayPal Subscriptions**, a card on Paystack's hosted page, or a monthly M-Pesa prompt | The owner approves the subscription on the provider's own page; no card data touches the platform. **The first charge is on go-live day.** An owner who never goes live is never charged (08 §4.1). **The fleet release** | PWA, provider page | [owner-plan](../concept/journeys/owner-plan.html) |
 | O4 | **Claim the domain** | Proves control with one uploaded file or one DNS TXT record, guided for the owner's registrar. The Caretaker checks and says what it found. Nothing changes on the live site yet | Domain proof, recorded. **Agentrix never asks for the registrar password** | PWA | [owner-domain](../concept/journeys/owner-domain.html) |
 | O5 | **The Move** (rung 2) | Replay in a sealed room, cleaning with quarantine in plain words, and the parity proof of at least 95%, watched in the Activity monitor | Sandbox receipts; parity report; quarantine list | PWA | [owner-move](../concept/journeys/owner-move.html), [move](../concept/move.html) |
 | O6 | **Go live** | One card: release, parity, what was left behind, the DNS switch, and "your Commerce plan starts today". Approve, then the site is live in seconds. Undo is one tap for 30 days | **Passkey, or the step-up code without one** (§5.2); the receipt names the method | PWA, phone | [owner-golive](../concept/journeys/owner-golive.html) |
 | O7 | **Day 1 and the first brief** (rung 3) | The first Night Time timeline, then the 07:00 brief on WhatsApp, email and the console, built only from recorded activity, with what needs her | — | WhatsApp, phone, desk | [owner-day1](../concept/journeys/owner-day1.html) |
-| O8 | **The first customer order** | Njeri's custom order arrives as a card (the Concierge held `request_custom_order`). Wanjiru approves it with the card open. Njeri pays by PayPal, and the card turns "Paid". The payout and PayPal's fee then appear in the books, with gross, fee, exchange rate and net. A refund under the Cashier's signed rule runs alone and shows in the brief; above it, a card. **The payment, payout and refunds are Brick 2** | The order approval (`reviewed`); the payment through the Effects Gateway; ledger postings | Phone, desk | [owner-order](../concept/journeys/owner-order.html) |
-| O9 | **Billing and ownership** (Brick 2) | Invoices and receipts (eTIMS), AI spend against the budget, changing plan, cancelling, and **exporting everything** (the platform is MIT, so the owner can run it herself) | Plan changes and cancellation as cards; a signed export bundle | PWA | [owner-billing](../concept/journeys/owner-billing.html) |
+| O8 | **The first customer order** | Njeri's custom order arrives as a card (the Concierge held `request_custom_order`). Wanjiru approves it with the card open. Njeri pays by PayPal, and the card turns "Paid". The payout and PayPal's fee then appear in the books, with gross, fee, exchange rate and net. A refund under the Cashier's signed rule runs alone and shows in the brief; above it, a card. **The payment, payout and refunds are the fleet release** | The order approval (`reviewed`); the payment through the Effects Gateway; ledger postings | Phone, desk | [owner-order](../concept/journeys/owner-order.html) |
+| O9 | **Billing and ownership** (the fleet release) | Invoices and receipts (eTIMS), AI spend against the budget, changing plan, cancelling, and **exporting everything** (the platform is MIT, so the owner can run it herself) | Plan changes and cancellation as cards; a signed export bundle | PWA | [owner-billing](../concept/journeys/owner-billing.html) |
 
 **Where the two journeys meet** (the map's meeting points): **the order card** (O8, Njeri's
 request held for Wanjiru), **the payment** (Njeri pays; Wanjiru sees it settle), **the payout**
@@ -1249,9 +1249,9 @@ hypotheses, like dunning):
   Undo works until closure, and there is no refund for the unused part of a period.
 - **The first charge is on go-live day.** The plan and subscription are approved at "Keep it".
 
-**Brick 1 and PayPal** (`d-paypal-brick1-scope`): this weekend PayPal is in the journeys and
-mockups only. The Brick 1 build and video end the custom order at Wanjiru's approval. The plan
-payment (O3), the payment, payout and refunds (O8), and billing (O9) are labelled Brick 2.
+**The first release and PayPal** (`d-paypal-first-scope`): this weekend PayPal is in the journeys and
+mockups only. The first release build and video end the custom order at Wanjiru's approval. The plan
+payment (O3), the payment, payout and refunds (O8), and billing (O9) are labelled the fleet release.
 
 ### 7.2 Running the site
 
@@ -1378,7 +1378,7 @@ Paths are relative to the adk-rust checkout.
 | F10 | `adk-surface` | One `Source` per engine (= U15) | A fan-out source over many TenantKernels for "All sites" | Agency |
 | F11 | — | No co-browsing primitive | Pointer events over the release anchor map (U18) are enough. Later, voice `VisualInputs` for "look at this" | Later |
 | F12 | `adk-kernel` | No app manifest lifecycle; listings are platform data | Keep listings in the platform (`WebAgentSpec`); converge on signed pack bundles, `DriverManifest` and `AgentRecord` fields | Later |
-| G1 (= U22) | `adk-surface` (`origin.rs`, `rules.rs`, `engine.rs`) | No gesture origin; `PauseAgent` shares `may_change_agents` (web and terminal only); `DecisionCard` lacks `expires_at` | `Origin::Gesture` with its own `Row`: no `allowed_answers`; `execute` accepts only `StopAll` and `PauseAgent`. A pause gate of its own, open to every human row. `expires_at` on `DecisionCard` for snooze limits. No framework delay on stops: the countdown is the shell's | Pilot (Brick 1 uses the web origin) |
+| G1 (= U22) | `adk-surface` (`origin.rs`, `rules.rs`, `engine.rs`) | No gesture origin; `PauseAgent` shares `may_change_agents` (web and terminal only); `DecisionCard` lacks `expires_at` | `Origin::Gesture` with its own `Row`: no `allowed_answers`; `execute` accepts only `StopAll` and `PauseAgent`. A pause gate of its own, open to every human row. `expires_at` on `DecisionCard` for snooze limits. No framework delay on stops: the countdown is the shell's | Pilot (the first release uses the web origin) |
 | G2 | `adk-surface` | Commands don't record the input modality | A content-free modality on commands and audit (web, voice, chat, gesture), for receipts and the ledger | Pilot |
 | G3 | — | Deliberately nothing camera-side: gestures never use `VisualInputs` or the voice camera channel | If adk-surface's web module serves the console, it must serve the pinned MediaPipe WASM and model from the same origin, with a CSP allowing `wasm-unsafe-eval` and no third-party fetches | Pilot |
 
@@ -1403,7 +1403,7 @@ pointer).
 
 | Stage | Console scope |
 |---|---|
-| **Brick 1, Vultr demo (target Sun 8 Nov, 20:00 EAT; lablab closes Mon 9 Nov, 02:00 EAT)** | One site. The go-live card and the quarantine decisions **signed with the passkey (F1)**, the Activity monitor (F2), presence in the dock (F3), the brief, Freeze. The shell layout from the concepts, with the Back office world and the lane. Front of house shows a read-only list of conversations. Gestures: camera opt-in and pill, swipe, thumb up → passkey sheet, open palm → stop everything (§3.9). Missions, Store, takeover and voice appear only as labelled concepts. If F1 slips past Sunday midday, the go-live card says "confirmed with your passkey" |
+| **The first release, Vultr demo (target Sun 8 Nov, 20:00 EAT; lablab closes Mon 9 Nov, 02:00 EAT)** | One site. The go-live card and the quarantine decisions **signed with the passkey (F1)**, the Activity monitor (F2), presence in the dock (F3), the brief, Freeze. The shell layout from the concepts, with the Back office world and the lane. Front of house shows a read-only list of conversations. Gestures: camera opt-in and pill, swipe, thumb up → passkey sheet, open palm → stop everything (§3.9). Missions, Store, takeover and voice appear only as labelled concepts. If F1 slips past Sunday midday, the go-live card says "confirmed with your passkey" |
 | **Pilot (Dec–Jan)** | The phone (Now, Decisions, Live, Apps); WhatsApp brief, cards and STOP; the Store with Sales, Reputation and Cashier; missions; takeover (U21); Chief WebAgent voice (F7); Swahili (F8); signed grants (F9) |
 | **Fleet (Q1 2027)** | Portfolio and Operator scopes (08 §7.1); "All sites" (F10); packs through release trains; walking the site with richer pointing |
 
@@ -1423,7 +1423,7 @@ pointer).
    - Should a **wave** read the brief aloud? It is left out of v1 because people wave while talking.
    - Should the phone's front camera offer gestures too, or only desk and tablet? (Proposed:
      desk and tablet only.)
-6. **Brick 1 copy.** Until F1 lands, say "confirmed with your passkey", not "signed".
+6. **The first release copy.** Until F1 lands, say "confirmed with your passkey", not "signed".
 7. **The daily card cap.** Proposed default: 5 individual cards per site per day, changeable by
    the owner. webagent-architecture accepts it as the pilot's starting point.
 

@@ -1,5 +1,5 @@
 #!/usr/sbin/nft -f
-# Agentrix Brick 1 · control VM host firewall (design §2, R14.2).
+# Agentrix · control VM host firewall (design §2, R14.2).
 #
 # Public: Caddy on 80 and 443. SSH is also accepted here, but the Vultr firewall group only lets
 # it in from ADMIN_CIDR (deploy/README.md, "SSH"). Nothing else listens publicly:

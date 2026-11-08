@@ -34,7 +34,7 @@ find "$CARGO_TARGET_DIR/debug/deps" -maxdepth 1 -type f -perm +111 ! -name '*.dy
   -mmin +60 -delete 2>/dev/null || true
 [ "$(free_gb)" -ge 15 ] || die "only $(free_gb) GB free; the floor is 15 GB. Free space first."
 
-# rustfmt on the Rust files this slice adds. Brick 1's files aren't formatted to the current
+# rustfmt on the Rust files this slice adds. The first release's files aren't formatted to the current
 # rustfmt and belong to their owners, so a slice is judged on its new files only.
 fmt_changed() {
   local files

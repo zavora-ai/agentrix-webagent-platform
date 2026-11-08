@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Agentrix Brick 1 · deploy a commit to the running stack (task S1-12; R14.1, R14.3).
+# Agentrix · deploy a commit to the running stack (task S1-12; R14.1, R14.3).
 #
 #   deploy/deploy.sh [COMMIT] [--secrets] [--email] [--films DIR] [--quick] [--no-gauntlet]
 #       Ships COMMIT (default HEAD) to control, builds it there (release, --locked), installs

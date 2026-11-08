@@ -24,10 +24,10 @@ Browsers resolve any `*.localhost` name to this Mac, so hosts work without editi
 
 | Page | Address | Notes |
 |---|---|---|
-| Home page (W10) | http://localhost:18050/home | Becomes `/` after Brick 1's handover |
+| Home page (W10) | http://localhost:18050/home | Becomes `/` after the first release's handover |
 | Paste an address (W4) | http://localhost:18050/start | Then Assess |
 | Owner sign-up (W4, W6) | http://localhost:18050/account/new | Passkey first; email codes go to the outbox |
-| Owner console (W5) | http://localhost:18050/os | After sign-in; Brick 1's console stays at `/console/today` |
+| Owner console (W5) | http://localhost:18050/os | After sign-in; the first release's console stays at `/console/today` |
 | Messages outbox (W9) | http://localhost:18050/console/messages | Every message, marked Not sent until a provider is set |
 | Status (W8) | http://localhost:18050/status | Health, gauntlet, spend |
 | Operator console (W3) | http://ops.localhost:18050/ | Needs `operators.txt` in `$AGENTRIX_DATA_DIR/agentrix-operator/` |

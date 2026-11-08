@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SC2016: the single-quoted ssh commands expand on the remote host, on purpose.
 # shellcheck disable=SC2016
-# Agentrix Brick 1 · stack smoke test, run from the operator's machine (task S1-12; R14.1–R14.3).
+# Agentrix · stack smoke test, run from the operator's machine (task S1-12; R14.1–R14.3).
 #
 #   deploy/smoke/stack.sh [EXPECTED_COMMIT] [--quick]
 #

@@ -1,4 +1,4 @@
-<title>Brick 1 Board</title>
+<title>the first release Board</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -123,7 +123,7 @@ aside { display: grid; gap: 16px; align-content: start; min-width: 0 }
   <div class="wrap">
     <div>
       <div class="eyebrow">Agentrix WebAgent Platform · Vultr Agent Rush</div>
-      <h1>Brick 1 Board</h1>
+      <h1>The first release Board</h1>
       <p>Spec-driven build of the single-node platform: requirements, design, five sprints. Sessions update their rows; status here is live.</p>
     </div>
     <div class="clock" aria-live="polite">
@@ -173,7 +173,7 @@ aside { display: grid; gap: 16px; align-content: start; min-width: 0 }
       </section>
     </aside>
   </div>
-  <p class="foot" id="foot">Spec: <span class="mono">specs/brick-1/</span> in the platform repo (requirements.md, design.md, tasks.md).</p>
+  <p class="foot" id="foot">Spec: <span class="mono">specs/first-release/</span> in the platform repo (requirements.md, design.md, tasks.md).</p>
 </main>
 
 <script>
@@ -268,7 +268,7 @@ aside { display: grid; gap: 16px; align-content: start; min-width: 0 }
   function renderTasks() {
     if (!st.live && !st.tasks.size) return;
     const list = filtered();
-    if (!st.tasks.size) { $("tasks").innerHTML = '<div class="empty">No tasks yet. The spec session seeds them from specs/brick-1/tasks.json.</div>'; return; }
+    if (!st.tasks.size) { $("tasks").innerHTML = '<div class="empty">No tasks yet. The spec session seeds them from specs/first-release/tasks.json.</div>'; return; }
     if (!list.length) { $("tasks").innerHTML = '<div class="empty">No task matches these filters.</div>'; return; }
     let groups;
     if (st.group === "sprint") {
@@ -301,7 +301,7 @@ aside { display: grid; gap: 16px; align-content: start; min-width: 0 }
     const qItems = [...qs.map((q) => esc(q)), ...jt.map((t) => `<span class="mono">${esc(t.id)}</span> ${esc(t.title)}`)];
     $("questions").innerHTML = qItems.length ? qItems.map((q) => `<li>${q}</li>`).join("") : "<li>Nothing waiting on James.</li>";
     $("gates").innerHTML = sprints().length ? sprints().map((s) => `<li><strong>${esc(s.id)}</strong> ${esc(s.gate)}</li>`).join("") : "<li>Gates appear once the board is seeded.</li>";
-    if (st.board?.specCommit) $("foot").innerHTML = `Spec: <span class="mono">specs/brick-1/</span> in the platform repo, commit <span class="mono">${esc(st.board.specCommit)}</span> (requirements.md, design.md, tasks.md).`;
+    if (st.board?.specCommit) $("foot").innerHTML = `Spec: <span class="mono">specs/first-release/</span> in the platform repo, commit <span class="mono">${esc(st.board.specCommit)}</span> (requirements.md, design.md, tasks.md).`;
   }
 
   function fillLanes() {

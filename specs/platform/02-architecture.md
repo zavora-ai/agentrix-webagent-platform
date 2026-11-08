@@ -1,20 +1,20 @@
-# Platform architecture: from Brick 1 to production
+# Platform architecture: from the first release to production
 
 Status: draft v0.1, Sat 7 Nov 2026, 23:52 EAT (from `date`). Read with
 [how-we-work.md](how-we-work.md) and [voice.md](voice.md). Sources: docs 02, 03, 05, 07, 08, 09,
-ADR-001 to ADR-031, `specs/brick-1/{requirements,design,tasks,status}.md`, every crate under
+ADR-001 to ADR-031, `specs/first-release/{requirements,design,tasks,status}.md`, every crate under
 `crates/`, `deploy/`, `.cargo/config.toml`, `Cargo.toml`, `README.md`. Line numbers are at
 `main` 98eb717; `status.md` is cited by section because it is edited live.
 
 This page answers five questions for the parallel build sessions: what production looks like,
-what Brick 1 already built, what one WebAgent needs, which UI stack to use, and who owns which
+what the first release already built, what one WebAgent needs, which UI stack to use, and who owns which
 files. It does not restate the docs. Where a doc already decides something, this page links it.
 
 ## 0. The short version
 
-1. Brick 1 is a real single-node product: sealed rooms, the egress proxy, signed receipts,
+1. The first release is a real single-node product: sealed rooms, the egress proxy, signed receipts,
    signed releases, passkey approvals bound to an effect fingerprint, the Move, and a
-   provider-agnostic Model Gateway. 286+ tests pass (`specs/brick-1/status.md`, "Code complete").
+   provider-agnostic Model Gateway. 286+ tests pass (`specs/first-release/status.md`, "Code complete").
 2. **There is no WebAgent runtime yet.** `adk-kernel`, `adk-harness`, `adk-website`,
    `adk-surface`, `adk-server`, `adk-sandbox` and `adk-browser` are pinned (`Cargo.toml:40-48`),
    but no crate depends on them and they are not in `Cargo.lock`. The Chief WebAgent is a
@@ -103,7 +103,7 @@ unchanged because the walls are the gateways, the key holder and the sandbox hos
 stay separate processes in both profiles.
 
 **Cells and release trains.** A cell is one region's full stack and the unit of blast radius.
-`atl-0` is Brick 1; `ams-1` is the first full cell and the global primary; `fra-1` is standby;
+`atl-0` is the first release; `ams-1` is the first full cell and the global primary; `fra-1` is standby;
 `jnb-1` is edge only (ADR-019, 08 §3.2). Every change ships as a signed artefact on a train:
 ring 0 is Zavora's own sites, then opted-in owners, then everyone in waves. Rollback is by pin.
 Migrations expand first and contract after the train completes (ADR-020, 08 §3.5).
@@ -125,7 +125,7 @@ Paths are under `crates/` unless they start with another folder. Short paths suc
 
 ### 2.1 Edge and sites
 
-| Component | Brick 1 built | Production needs | Gap | Size |
+| Component | The first release built | Production needs | Gap | Size |
 |---|---|---|---|---|
 | Release serving by Host | `site::router` (`agentrix-node/src/site/mod.rs:104`); release cache that verifies the signed checkpoint and the release's inclusion (`site/release.rs:154`, `:182-201`); Host dispatch (`agentrix-node/src/app.rs:294`); Caddy on-demand TLS via `/internal/tls-ask` (`site/mod.rs:116`, `deploy/caddy/control.Caddyfile`) | Own crate; reads from Object Storage behind the CDN; pointer switch plus purge in under 5 s (02 §9); security headers and CSP; content-free beacons (09 §5.3) | No CDN or purge; edge is a module of node; no CSP | M |
 | Ask this site | Pipeline in `site/ask.rs:1-20`: refusal policy, screen, rank, cite, honest "doesn't say"; model port `AskModel` (`site/ask.rs:35`); optional Vultr vector store | Desks per section from a signed desk manifest (U17); `PublicKit` per desk; durable threads; typed signals to the kernel; promise check (U20); LanceDB or pgvector (ADR-026); takeover (U21) | Not a governed agent; no threads, signals or per-visitor limits | L |
@@ -135,7 +135,7 @@ Paths are under `crates/` unless they start with another folder. Short paths suc
 
 ### 2.2 Console and control
 
-| Component | Brick 1 built | Production needs | Gap | Size |
+| Component | The first release built | Production needs | Gap | Size |
 |---|---|---|---|---|
 | Owner sign-in | Passkeys via webauthn-rs, password (argon2id) plus TOTP, sessions (`auth/routes.rs:44-53`, `auth/session.rs:42`); Origin check on POST (`auth/routes.rs:172`); in-memory throttle per email (`auth/routes.rs:90`) | Teams and roles (owner, manager, viewer, agency); social sign-in; recovery codes; device-bound sessions; password hashes and TOTP seeds sealed by `agentrix-keys` (ADR-025); email verification | argon2id hashes stored unsealed in `accounts` (`auth/schema.sql:10`), against ADR-025; TOTP seeds sealed with a node-local key (`auth/seal.rs:17`), not `agentrix-keys` | L |
 | Tenancy | `SiteId` on every site table (`agentrix-node/src/db/migrations/0001_control.sql:17`); one owner per site (`0001_control.sql:23`); the console shows the owner's first site only (`wiring/mod.rs:181`) | Tenant path types and checks (ADR-018); org owns sites; signed grants; partner roles; RLS on shared control tables | No org, roles, grants or multi-site owners | L |
@@ -145,7 +145,7 @@ Paths are under `crates/` unless they start with another folder. Short paths suc
 
 ### 2.3 The Move and onboarding
 
-| Component | Brick 1 built | Production needs | Gap | Size |
+| Component | The first release built | Production needs | Gap | Size |
 |---|---|---|---|---|
 | Assess | `agentrix-node/src/assess/` (router `assess/mod.rs:229`, `robots.rs`), sealed fetch rooms with live frames | Abuse controls for anonymous crawls; fleet-wide politeness per origin; Web Bot Auth crawler identity and its public page (03 §4); a queue | Anyone can point the crawler anywhere, unthrottled across users | M |
 | Claim | DNS TXT or file proof checked from the sandbox (`claim/mod.rs:534-535`, `broker/claim_probe.rs`) | Re-check at go-live; DNS cutover as an effect (Vultr DNS driver, CP10); guided records for other DNS hosts | No cutover | M |
@@ -154,7 +154,7 @@ Paths are under `crates/` unless they start with another folder. Short paths suc
 
 ### 2.4 Agents, gateways and keys
 
-| Component | Brick 1 built | Production needs | Gap | Size |
+| Component | The first release built | Production needs | Gap | Size |
 |---|---|---|---|---|
 | WebAgent runtime | None (§3). Framework crates pinned but unused (`Cargo.toml:40-48`) | TenantKernel per site, wake front, governed tool path, ladder, signals, team | Everything | XL |
 | Charter and dial | `Charter { jobs }` with `Level` and ceiling (`agentrix-types/src/records.rs:18-55`); charter v1 written on the go-live card (`agentrix-move/src/golive.rs:16`); shown read-only | `awp_types::Charter` with goals, KPIs, red lines, voice and budget; the ladder enforced; promotion and demotion (ADR-012) | Nothing reads the levels to decide anything | L |
@@ -164,7 +164,7 @@ Paths are under `crates/` unless they start with another folder. Short paths suc
 
 ### 2.5 Sealed rooms
 
-| Component | Brick 1 built | Production needs | Gap | Size |
+| Component | The first release built | Production needs | Gap | Size |
 |---|---|---|---|---|
 | Broker | In node (`agentrix-node/src/broker/mod.rs:327`, `for_node` at `:606`); the `agentrix-sandbox` library is a stub (`agentrix-sandbox/src/lib.rs:7`) | Broker as a library in `agentrix-sandbox`; queue with backpressure; per-site and per-partner caps; warm pools; several runner hosts | Single runner, no queue | M |
 | Runner and rooms | Verifies signed specs; Docker CLI with `runsc`, read-only root, non-root, caps, destroy and confirm (`agentrix-sandbox/src/bin/agentrix-runner.rs:1-15`, `agentrix-sandbox/src/bin/agentrix-runner/room.rs:1-20`); six images (`agentrix-sandbox/images/`) | mTLS between broker and runner (plain HTTP today, `agentrix-sandbox/src/bin/agentrix-runner/http.rs:1-8`); adk-sandbox `DockerClient` once #1347 is pinned; microVM class; throwaway VMs; signed images; autoscaled pools (08 §3.4) | No mTLS, no microVM, one host | L |
@@ -173,7 +173,7 @@ Paths are under `crates/` unless they start with another folder. Short paths suc
 
 ### 2.6 Data and operations
 
-| Component | Brick 1 built | Production needs | Gap | Size |
+| Component | The first release built | Production needs | Gap | Size |
 |---|---|---|---|---|
 | Relational store | One `control.db` (WAL) for every site and lane: 18 tables in `0001_control.sql`, plus `auth/schema.sql` and `claim/schema.sql` applied raw on every open (`db/mod.rs:46-77`) | Store traits with SQLite and Postgres implementations (ADR-007); a directory per site (09 §3.3); a schema and role per site in the fleet (ADR-025); expand-then-contract migrations | Site wall is a column, not a store | XL |
 | CAS and Object Storage | Local CAS that serves a blob only to its site (`db/cas.rs:28`, `:211`); read-through to Object Storage and a 60 s mirror (`objects.rs:285`, `app.rs:281-285`) | Per-site prefixes; C3 sealed with the site's data key; CDN; copier to the copy region; pointer switch only after mirror (09 §3.3) | No per-site encryption; switch does not wait for mirror | M |
@@ -195,7 +195,7 @@ A WebAgent is a governed kernel process with its own principal, not a chatbot (A
 05 §0). ADR-031 adds its look. This is what the runtime for one WebAgent must provide, and what
 exists.
 
-| Capability | What production needs | Built on (adk-rust) | Brick 1 today |
+| Capability | What production needs | Built on (adk-rust) | The first release today |
 |---|---|---|---|
 | Identity | Principal `urn:adk:agent:{site}/{webagent}`; operator WebAgents under `op:` (05 §3.1, ADR-017) | `AgentPrincipal`, `SitePartitions` | A string in `EffectRequest.webagent` (`agentrix-types/src/effect.rs:29`) |
 | Mandate | A signed charter: goals, KPIs, red lines, voice, budget; mandates are duties with limits (ADR-012) | `awp_types::Charter`, `CharterKit::install` | `Charter { jobs }` (`records.rs:52`), signed through the go-live card |
@@ -249,7 +249,7 @@ stopgaps behind traits where an item has not landed; never fork adk-rust.
 
 ## 4. The UI stack
 
-**Brick 1 uses:** axum + minijinja in strict mode, templates embedded at build time
+**The first release uses:** axum + minijinja in strict mode, templates embedded at build time
 (`crates/agentrix-console/build.rs`, `minijinja_embed::embed_templates!`), a `dev-reload`
 feature for editing, typed view models (`agentrix-console/src/view.rs`), one `Page` enum
 (`agentrix-console/src/lib.rs:27`), about 620 lines of plain JS islands with no framework or
@@ -341,9 +341,9 @@ agentrix-host  ← every crate that mounts routes or tasks ← agentrix-node (co
 ```
 
 - No crate depends on `agentrix-node`. Only W0 edits it.
-- A port trait lives in the crate that **uses** it, as Brick 1 does (`agentrix-move/src/ports.rs`).
+- A port trait lives in the crate that **uses** it, as the first release does (`agentrix-move/src/ports.rs`).
   The adapter lives in `agentrix-node/src/wiring/`.
-- No `include_str!` across crates. Brick 1 has two (`agentrix-move/src/theme.rs:12`,
+- No `include_str!` across crates. The first release has two (`agentrix-move/src/theme.rs:12`,
   `agentrix-gauntlet/src/lib.rs:23`); both move into their owners' crates.
 
 ### 5.3 Hot spots and their rules
@@ -354,13 +354,13 @@ agentrix-host  ← every crate that mounts routes or tasks ← agentrix-node (co
 | `Cargo.lock` | As in how-we-work.md: commit only your own lines when you add a dependency. W0 settles conflicts at merge from a clean export (`git archive` + `cargo metadata --locked`). Never hand-merge a lock |
 | `agentrix-node/src/{main,app,state}.rs`, `wiring/` | W0 only. Replace the 330-line hand wiring of `app.rs` with one seam in `agentrix-host`: each crate exports `pub fn module(ctx: &NodeContext) -> anyhow::Result<Mounted>`, where `Mounted` carries platform routes, site routes and background tasks. Adding a crate is then one line in `app.rs` |
 | `agentrix-types` | Each owner has its own module file; `lib.rs` re-exports are W0's. **Never change a signed type in place.** Receipts, fingerprints and job specs are signatures over RFC 8785 JSON, so a new field changes every fingerprint and breaks old receipts. Add a versioned type (`DecisionCardV2`) and keep the old one verifying |
-| Migrations | Today one migrator (`agentrix-node/src/db/migrations/0001…`, `0002…`) plus raw schema files applied on every open. Rules: (1) one database file per owning crate in the single node (`identity.db`, `decisions.db`, per-site `kernel.db`, `edge.db`, `records.db`), each with its own migrator in its own crate; (2) versions are UTC timestamps (`202611081530_orders.sql`), never 0003; (3) expand only until the train completes (ADR-020); (4) Brick 1's `control.db` is frozen at 0002, and a one-off importer moves its rows |
+| Migrations | Today one migrator (`agentrix-node/src/db/migrations/0001…`, `0002…`) plus raw schema files applied on every open. Rules: (1) one database file per owning crate in the single node (`identity.db`, `decisions.db`, per-site `kernel.db`, `edge.db`, `records.db`), each with its own migrator in its own crate; (2) versions are UTC timestamps (`202611081530_orders.sql`), never 0003; (3) expand only until the train completes (ADR-020); (4) the first release's `control.db` is frozen at 0002, and a one-off importer moves its rows |
 | `agentrix-console/src/lib.rs` (`Page` enum) and `view.rs` (753 lines) | W5 replaces the enum with a registry: each crate ships its templates under its own prefix and renders by name. View models live beside their handlers, not in one file |
 | `agentrix-console/static/app.css`, `concept/styles.css` | W7 only. Others use tokens and macros, never new colours or sizes |
 | `deploy/`, `.github/workflows/ci.yml` | W8 (single node) and W0 (CI). `deploy/fleet-template/` is W3's |
 | `crates/agentrix-models/recordings/` | Add-only. Recordings are keyed by digest, so files never collide |
 | `docs/` | Each doc keeps its owning session. Workstreams propose changes; they don't edit another's doc |
-| Local ports | Each workstream runs its preview on its own range: W1 18100, W2 18200 … W8 18800. Use `localhost`, never an IP: passkeys refuse IPs (`specs/brick-1/status.md`, "Integration") |
+| Local ports | Each workstream runs its preview on its own range: W1 18100, W2 18200 … W8 18800. Use `localhost`, never an IP: passkeys refuse IPs (`specs/first-release/status.md`, "Integration") |
 
 ---
 
@@ -388,12 +388,12 @@ Each is a type or trait with a fake, merged by W0 in the first two days. Code ag
 
 | Workstream | Needs | Can stub with |
 |---|---|---|
-| W1 | C5 (W8), C2 and C3 (W6), C4 (W5), C6 (W4) | Brick 1's per-site rows; an in-memory store; a fake gateway |
-| W2 | C10 (W7), C1 and visitor sign-in (W6), C7 (W1), C6 (W4), payments (W6) | Brick 1's Ask as the default `DeskRuntime`; held orders without payment |
+| W1 | C5 (W8), C2 and C3 (W6), C4 (W5), C6 (W4) | The first release's per-site rows; an in-memory store; a fake gateway |
+| W2 | C10 (W7), C1 and visitor sign-in (W6), C7 (W1), C6 (W4), payments (W6) | The first release's Ask as the default `DeskRuntime`; held orders without payment |
 | W3 | C1 and operator tokens (W6), metering (W8), payments (W6) | Read-only views over seed data marked "Sample" |
-| W4 | Sign-up (W6), C10 (W7), themes (W2), plans (W3), DNS effect (W6) | Brick 1's auth; one theme; a fixed plan |
-| W5 | C10 (W7), C9 feed (W1), approvals (W6), archetype apps (W2) | Brick 1's receipts and cards |
-| W6 | C5 (W8), C10 for sign-in pages (W7) | Brick 1's auth module as the base |
+| W4 | Sign-up (W6), C10 (W7), themes (W2), plans (W3), DNS effect (W6) | The first release's auth; one theme; a fixed plan |
+| W5 | C10 (W7), C9 feed (W1), approvals (W6), archetype apps (W2) | The first release's receipts and cards |
+| W6 | C5 (W8), C10 for sign-in pages (W7) | The first release's auth module as the base |
 | W7 | Nothing | — |
 | W8 | Nothing to start; C2 to finish the gateway | Header-based site id until C2 lands |
 
@@ -418,7 +418,7 @@ Each is a type or trait with a fake, merged by W0 in the first two days. Code ag
 [how-we-work.md](how-we-work.md) holds the process rules (branches, commits, the shared cache,
 the 15 GB bar). This section adds the technical facts behind them.
 
-**Disk.** About 32 GB free on 7 Nov at 23:50 EAT (`df -h /System/Volumes/Data`). Brick 1's own
+**Disk.** About 32 GB free on 7 Nov at 23:50 EAT (`df -h /System/Volumes/Data`). The first release's own
 `target/` is 6.2 GB. Use the shared cache from how-we-work.md:
 
 ```sh
@@ -464,7 +464,7 @@ cargo fmt --all -- --check
   `AGENTRIX_MODELS_MODE=record`. Never call live models from tests.
 - To run a local node: `AGENTRIX_DATA_DIR=<scratch> AGENTRIX_ORIGIN=http://localhost:<port>
   AGENTRIX_LISTEN=127.0.0.1:<port> AGENTRIX_INTERNAL_LISTEN=127.0.0.1:<port-1>`
-  (`specs/brick-1/status.md`, "Integration"), on your workstream's port range (§5.3).
+  (`specs/first-release/status.md`, "Integration"), on your workstream's port range (§5.3).
 - `scripts/acceptance.sh` is the end-to-end regression check against a running node.
 - Never `source .env`: one line in it breaks the shell. Only `agentrix-models` reads keys.
 
@@ -472,17 +472,17 @@ cargo fmt --all -- --check
 - **The live deploy at https://agentrix.website** (`atl-0`): no `deploy/deploy.sh`, no
   `deploy/provision.sh`, no SSH to `agx-control`, `agx-sandbox` or the fixture VM, no DNS or
   Vultr API changes, no builds on the control VM, nothing in `deploy/.state/`.
-- **`main`** and the Brick 1 checkout's working tree: no commits, merges or rebases onto
+- **`main`** and the first release checkout's working tree: no commits, merges or rebases onto
   `main`, and no file edits there (how-we-work.md). Platform work merges into `platform` only.
 - **The adk-rust pin** stays at `3e797c38` until W0 moves it after the hackathon.
 - **Secrets:** never print a key. The Vultr Inference key in git history (80905be) must be
-  rotated before the repo gets a remote (`specs/brick-1/status.md`, "Waiting on James").
+  rotated before the repo gets a remote (`specs/first-release/status.md`, "Waiting on James").
 
 ---
 
 ## 8. Production readiness checklist
 
-Owner in brackets. "Today" is Brick 1 at 98eb717.
+Owner in brackets. "Today" is the first release at 98eb717.
 
 | Area | Must be true before general availability | Today |
 |---|---|---|
@@ -506,5 +506,5 @@ Owner in brackets. "Today" is Brick 1 at 98eb717.
 1. **One binary with roles** for edge, control and kernel, instead of three binaries (§1).
 2. **W8 Platform core** as a ninth workstream, and W0 named as the integrator (§5.1).
 3. **The three sample archetypes**: local services, shop and company (§4)?
-4. **Brick 1's data:** import `atl-0`'s `control.db` into the new per-site layout, or start the
+4. **The first release's data:** import `atl-0`'s `control.db` into the new per-site layout, or start the
    pilot fresh and keep `atl-0` as the hackathon record.

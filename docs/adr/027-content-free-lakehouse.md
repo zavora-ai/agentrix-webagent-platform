@@ -17,7 +17,7 @@ Owners need trends (answers handled, orders, spend). Operators need fleet health
   - gold: aggregates per site, partner and fleet.
 - **Engines:** DataFusion inside platform services (the owner analytics API, the operator console, billing). DuckDB for analysts, BI tools and exports. No query engine is on the page-load or Ask path.
 - **Phasing:**
-  - Brick 1 has no lake: the site log and SQLite answer everything.
+  - The first release has no lake: the site log and SQLite answer everything.
   - The pilot writes date-partitioned Parquet that DuckDB reads directly.
   - The fleet adds Iceberg metadata over the same files, plus erasure deletes and compaction.
   - If iceberg-rust's writer lacks a feature the platform needs when it is built, the ingester writes Delta Lake through delta-rs behind the same interface.

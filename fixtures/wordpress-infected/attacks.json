@@ -1,6 +1,6 @@
 {
   "fixture": "Zavora's fixture: Kilele Bakery (fictional), deliberately infected",
-  "source": "docs/04-vultr-agent-rush.md §3; specs/brick-1 R13.1",
+  "source": "docs/04-vultr-agent-rush.md §3; specs/first-release R13.1",
   "attacks": [
     {
       "id": 1,

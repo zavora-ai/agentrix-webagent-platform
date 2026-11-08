@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Brick 1 acceptance: the automatable checks in specs/brick-1/acceptance.md.
+# The first release acceptance: the automatable checks in specs/first-release/acceptance.md.
 #
 #   BASE=https://agentrix.website FIXTURE=https://fixture.agentrix.website scripts/acceptance.sh
 #

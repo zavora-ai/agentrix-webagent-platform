@@ -1,5 +1,5 @@
 #cloud-config
-# Agentrix Brick 1 · control VM (design §1 D1, D8; §2). Rendered by deploy/provision.sh, which
+# Agentrix · control VM (design §1 D1, D8; §2). Rendered by deploy/provision.sh, which
 # fills the @@…@@ tokens. No secret is ever written here: the Vultr Inference key reaches the
 # Model Gateway's environment file at deploy time (task S1-12), never through cloud-init.
 #

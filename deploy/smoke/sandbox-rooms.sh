@@ -2,7 +2,7 @@
 # SC2016: the sh -c strings are single-quoted on purpose (they run in a child shell).
 # SC2329: as_egress and room are called through expect_ok and expect_refused.
 # shellcheck disable=SC2016,SC2329
-# Agentrix Brick 1 · containment smoke test, run ON the sandbox VM (as root, after cloud-init):
+# Agentrix · containment smoke test, run ON the sandbox VM (as root, after cloud-init):
 #
 #   ssh -F deploy/.state/ssh_config agx-sandbox 'sudo bash -s' < deploy/smoke/sandbox-rooms.sh
 #

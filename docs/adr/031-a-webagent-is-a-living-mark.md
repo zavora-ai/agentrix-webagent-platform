@@ -71,7 +71,7 @@ On 7 Nov James asked for a WebAgent's look to be unique and brandable, possibly 
 
 ### Uploads
 
-**Brick 1 offers role icons and monograms only.** Owner-drawn glyphs come later. An uploaded drawing is hostile input: a sealed room ([ADR-003](003-sandbox-plane.md)) reduces it to plain single-colour paths, with no scripts, links or embedded images.
+**The first release offers role icons and monograms only.** Owner-drawn glyphs come later. An uploaded drawing is hostile input: a sealed room ([ADR-003](003-sandbox-plane.md)) reduces it to plain single-colour paths, with no scripts, links or embedded images.
 
 ## Consequences
 

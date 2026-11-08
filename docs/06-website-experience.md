@@ -384,7 +384,7 @@ and in the site's brand. It has four layers:
 |---|---|---|
 | **Silhouette** | A squircle whose squareness starts from the site's corner radius, read at the Move. **Never a circle:** circles mean a person, like the owner's chip when they join a thread | Owner, within the squircle range |
 | **Signature** | A pattern seeded by the site, the WebAgent and a seed. The site picks one family (orbits, grain, strata, weave or facets), so its desks read as one team; each WebAgent's seed makes it unique. It shows from 28 px up, so 20 px marks are plain | Owner: the site's family, and a fresh seed for any WebAgent |
-| **Glyph** | A role line icon (cake, loaf, newspaper) or a monogram in the site's display face. Brick 1 offers only these; owner-drawn glyphs come later, reduced in a sealed room to single-colour paths | Owner |
+| **Glyph** | A role line icon (cake, loaf, newspaper) or a monogram in the site's display face. The first release offers only these; owner-drawn glyphs come later, reduced in a sealed room to single-colour paths | Owner |
 | **State** | The grammar below, the same on every site and in the console | Platform |
 
 - No face, no human name, no stock-photo avatar, no "Hi, I'm Sarah! 👋".
@@ -790,7 +790,7 @@ publish longevity".
 
 **What it runs on** (E3). Suggestions come from the static index built into the release.
 Requests use hybrid keyword and vector search with reranking
-([09 §4](09-data-architecture.md#4-vector-strategy)). Brick 1 uses Vultr's vector store,
+([09 §4](09-data-architecture.md#4-vector-strategy)). The first release uses Vultr's vector store,
 which returns a fixed 10 results with no scores or filters. That is enough for the demo, but
 not for fit badges at catalogue scale or the publisher's entitlement index (R17).
 
@@ -985,10 +985,10 @@ accounts and order safely, with PayPal as a payment rail. The concepts are in
 lane (built by the console work, [07](07-owner-console.md)) and the four points where they
 meet.
 
-**What ships when** (James, 7 Nov, d-paypal-brick1-scope). Brick 1, this weekend, ends the
+**What ships when** (James, 7 Nov, d-paypal-first-scope). The first release, this weekend, ends the
 custom order at the owner's approval card, with no payment. Paying, the payout and refunds
-(step 4, and the refund in step 5) are **Brick 2**: the Cashier through Steward, for 12 Nov. The
-concepts label those steps "Brick 2".
+(step 4, and the refund in step 5) are **the fleet release**: the Cashier through Steward, for 12 Nov. The
+concepts label those steps "the fleet release".
 
 **The story** (fictional, illustrative figures). Njeri lives in London. She orders from Kilele
 Bakery in Nairobi for her niece Amina's 7th birthday:
@@ -1007,8 +1007,8 @@ Bakery in Nairobi for her niece Amina's 7th birthday:
 | **2. An account when needed** | Ordering, saving a design or tracking an order asks her to sign in or create an account, and says why. A passkey is offered first | §4.10. The page lists what the site keeps and for how long. Each optional use (order updates on WhatsApp, account memory, offers) is a separate choice with its own consent receipt, and offers start off | — |
 | **3a. Order from the catalogue** | A basket with prices, stock and the delivery slot, each with its source | Every number comes from rules (the price list, stock and the delivery calendar); no model sets one. The quote is pinned to the release with a "valid until" | — |
 | **3b. Order something custom** | The cake from the creator (§5.1), then "Request this cake". The desk says "Waiting for Wanjiru's OK. Nothing charged." | `request_custom_order` raises a held call (the agent race's tool, [04](04-vultr-agent-rush.md)) | **The order card** (`meet-order`): Wanjiru approves with a passkey, or the MFA step-up without one |
-| **4. Pay** (Brick 2) | "Pay with PayPal" opens PayPal's own window; the amount, the payee (Kilele Bakery) and Kilele's rate are shown before it opens. M-Pesa and cards are the other rails | The Effects Gateway holds the PayPal keys. It creates a PayPal order for the exact amount under the order's fingerprint and captures it after Njeri approves. Desks never see a credential. For K-1043 the payment request appears only after Wanjiru approves | **The payment** (`meet-payment`) lands on the owner's order; **the payout** (`meet-payout`) settles in Kilele's PayPal balance |
-| **5. After the order** | A receipt she can verify, a status timeline, "Change the date" before the cut-off, and "Something's wrong" (refunds are Brick 2) | Changes are held for the owner unless a standing rule covers them. Refunds go back to the original payment method | **A refund** (`meet-refund`): under the Cashier's signed rule it runs alone and appears in the brief; above it, a card |
+| **4. Pay** (the fleet release) | "Pay with PayPal" opens PayPal's own window; the amount, the payee (Kilele Bakery) and Kilele's rate are shown before it opens. M-Pesa and cards are the other rails | The Effects Gateway holds the PayPal keys. It creates a PayPal order for the exact amount under the order's fingerprint and captures it after Njeri approves. Desks never see a credential. For K-1043 the payment request appears only after Wanjiru approves | **The payment** (`meet-payment`) lands on the owner's order; **the payout** (`meet-payout`) settles in Kilele's PayPal balance |
+| **5. After the order** | A receipt she can verify, a status timeline, "Change the date" before the cut-off, and "Something's wrong" (refunds are the fleet release) | Changes are held for the owner unless a standing rule covers them. Refunds go back to the original payment method | **A refund** (`meet-refund`): under the Cashier's signed rule it runs alone and appears in the brief; above it, a card |
 | **6. Her AI agent orders** | Her own assistant does the catalogue order through the agent door. She still pays on PayPal's page | The agent signs its requests (Web Bot Auth, `known` tier) and uses the door's tools. It gets a checkout link, never a payment credential. With an AP2 mandate, the chain in §12.4 binds the mandate to the checkout and the owner's approval | The payment, as in step 4; a custom order also meets the order card |
 | **7. Security moments** | Clear, calm screens for the four cases below | Below | — |
 
@@ -1224,7 +1224,7 @@ The framework work's response on 7 Nov:
 |---|---|---|
 | E1 | Visitor-facing words, defaults and consent analysis for edge analytics | Done in §4.9. Counter-proposal accepted: breakdowns under 5 visits show "fewer than 5" (09 §5.3, `3355a86`) |
 | E2 | Artifacts sealed with the site's data key in its content-addressed store; expiry by a retention job with a receipt; a provenance block on generated content | Accepted; §5.4 |
-| E3 | Suggestions from the static index; requests on hybrid search with rerank; Vultr's vector store for Brick 1 only | Accepted; §5.2 |
+| E3 | Suggestions from the static index; requests on hybrid search with rerank; Vultr's vector store for the first release only | Accepted; §5.2 |
 | E4 | Public threads are in memory today and are lost on restart (D15) | Accepted as a dependency. The owner's view of conversations (§7), their retention and thread resume (F2) need durable threads. The demo can live without them; the pilot cannot |
 
 ## 12. Standards we build on
@@ -1437,7 +1437,7 @@ the map and the customer's lane; the console work owns the owner's lane (`owner-
 | [customer-browse.html](../concept/journeys/customer-browse.html) | Step 1: a guest; desks say they are AI; a cited answer; visits counted without cookies |
 | [customer-account.html](../concept/journeys/customer-account.html) | Step 2: sign in or create an account only when needed; a passkey first; what the site keeps; a consent receipt per choice |
 | [customer-order.html](../concept/journeys/customer-order.html) | Step 3: a catalogue order with every number sourced; a custom cake held for Wanjiru's OK |
-| [customer-pay.html](../concept/journeys/customer-pay.html) | Step 4 (Brick 2): PayPal on its own page, in USD at Kilele's rate; M-Pesa and cards as the other rails |
+| [customer-pay.html](../concept/journeys/customer-pay.html) | Step 4 (the fleet release): PayPal on its own page, in USD at Kilele's rate; M-Pesa and cards as the other rails |
 | [customer-after.html](../concept/journeys/customer-after.html) | Step 5: a verifiable receipt, status, a held date change, refunds under and above the signed rule |
 | [customer-agent.html](../concept/journeys/customer-agent.html) | Step 6: her own assistant uses the agent door; she still pays on PayPal's page; the mandate chain |
 | [customer-security.html](../concept/journeys/customer-security.html) | Step 7: a takeover attempt, a changed payment link, a look-alike site, export and erasure |

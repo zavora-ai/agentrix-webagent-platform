@@ -4,14 +4,14 @@ Status: Proposed, 7 Nov 2026 (data, [09 §4](../09-data-architecture.md#4-vector
 
 ## Context
 
-Ask, agentic site search, "teach your site" and owner facts need retrieval. 02 §7 listed Vultr's Serverless Inference vector store for the single node and pgvector for the fleet (since aligned with this ADR in `4a41c30`). Brick 1 lists "Concierge on Vultr vector store" as a Should (04). The options are Vultr's managed vector store, pgvector in Managed PostgreSQL, an embedded Rust index, and Qdrant (a Vultr Cloud Alliance partner). They differ on isolation, export, erasure, residency, latency and cost.
+Ask, agentic site search, "teach your site" and owner facts need retrieval. 02 §7 listed Vultr's Serverless Inference vector store for the single node and pgvector for the fleet (since aligned with this ADR in `4a41c30`). The first release lists "Concierge on Vultr vector store" as a Should (04). The options are Vultr's managed vector store, pgvector in Managed PostgreSQL, an embedded Rust index, and Qdrant (a Vultr Cloud Alliance partner). They differ on isolation, export, erasure, residency, latency and cost.
 
 ## Decision
 
 - **Fleet: pgvector in the site's own Postgres schema**, beside the rows the vectors come from, isolated by the same schema and per-site role ([ADR-025](025-data-classes-and-the-content-free-boundary.md)). A chunk and its source row are written and erased in one transaction.
 - **Single node: an embedded LanceDB index in the site's own directory** (`data/sites/<site>/vectors/`, adk-rag's `LanceDBVectorStore`), so a site is still one directory to back up, export or delete. LanceDB deletes are logical until `purge_deleted` runs, so erasure always runs it. Zavora's SQLRight (embedded SQLite with HNSW) is evaluated in the pilot as a `VectorStore` backend. If it passes on recall, latency and erasure, it replaces LanceDB and a site's vectors move into its own SQLite.
 - **Both sit behind adk-rag's `VectorStore` trait** (`adk-rag/src/vectorstore.rs:151`) with one `Scope` per site. The platform records index metadata on every collection: the embedding model, dimensions, the release or source version, and the index version. A model change re-embeds into a new index version, and reads switch only when the new index is complete.
-- **Vultr's vector store is an optional adapter for C0 corpora only** (the signed release's public text). Brick 1 may use it for the Concierge demo. It never holds owner facts, conversations or visitor data:
+- **Vultr's vector store is an optional adapter for C0 corpora only** (the signed release's public text). The first release may use it for the Concierge demo. It never holds owner facts, conversations or visitor data:
   - its location is not published;
   - export and erasure depend on its API;
   - its search returns a fixed 10 results with no scores or filters;

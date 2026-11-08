@@ -12,4 +12,4 @@ The single-node profile uses one control VM plus one sandbox VM, SQLite and a lo
 
 ## Consequences
 
-Brick 1 is real product code, not a demo. Every store trait needs two implementations and CI that runs both.
+The first release is real product code, not a demo. Every store trait needs two implementations and CI that runs both.

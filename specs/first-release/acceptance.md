@@ -1,4 +1,4 @@
-# Brick 1: Acceptance checks
+# The first release: Acceptance checks
 
 Status: v1, Sat 7 Nov 2026. Owner: spec session (task S3-02). Spec chain: requirements →
 design → tasks → **acceptance (this file)**.

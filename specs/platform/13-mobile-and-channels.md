@@ -102,7 +102,7 @@ Every one of these is a W9 catalogue message, recorded in W9's outbox before it 
 | Message | When | Buttons |
 |---|---|---|
 | `owner.morning_brief` | Right after linking (the latest brief), then each morning when quiet hours end | Open the console |
-| `owner.decision_waiting` | A new waiting card on the site (W5's v2 cards and Brick 1's held orders), once per card | **Open in the console** (`/d/{card}`), **Decline** |
+| `owner.decision_waiting` | A new waiting card on the site (W5's v2 cards and the first release's held orders), once per card | **Open in the console** (`/d/{card}`), **Decline** |
 | `owner.question_passed` | A desk passes a visitor's question it couldn't answer | Answer it (console) |
 | `owner.frozen` | Someone freezes the site, from any surface | Open the console |
 

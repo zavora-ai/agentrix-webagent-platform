@@ -316,7 +316,7 @@ billing, the operator tenant, the console API and the partner API.
 
 | Cell | Region | Role | When |
 |---|---|---|---|
-| `atl-0` | Atlanta | Brick 1 single-node: control VM + sandbox VM, next to Inference ([02 §11.3](02-architecture.md#113-regions)) | 9 Nov |
+| `atl-0` | Atlanta | The first release single-node: control VM + sandbox VM, next to Inference ([02 §11.3](02-architecture.md#113-regions)) | 9 Nov |
 | `ams-1` | Amsterdam | First full cell; global layer primary | Pilot |
 | `fra-1` | Frankfurt | **Standby for compute and the database**: VKE, a runner pool, Valkey and a read-only replica of `ams-1`'s Postgres, promoted on failover; global layer standby. Frankfurt has no Object Storage (and no NVMe block storage), so `fra-1` holds no buckets and no home sites. On failover it serves from the copies in the copy region | Pilot (warm) |
 | `jnb-1` | Johannesburg | **Edge cell**: edge and CDN origin for African sites. Kernels stay in `ams-1` until Johannesburg offers what a full cell needs (no VX1 or Object Storage there today, survey §7.2) | Launch |
@@ -610,7 +610,7 @@ businesses' sites and messages. Abuse handling protects third parties, Vultr and
 |---|---|---|
 | Control and kernel stores (Postgres) | Managed PostgreSQL PITR (14 days on Business), a failover replica in the cell and a read-only replica in `fra-1`; a nightly logical export **per site schema**, sealed with the site's key, to the backups bucket in the copy region (`agx-<dr>-backups`), which also makes per-site restore and export cheap | RPO ≤ 5 min; RTO ≤ 1 h per cell |
 | Releases and evidence (CAS) | Copied to the copy region by the platform's copier; a release pointer may switch only when every object in the release has a copy receipt; immutable by digest | RPO 0 for releases; other CAS objects ≤ 5 min |
-| Single-node SQLite (Brick 1, self-host) | Continuous WAL shipping or snapshots to Object Storage | RPO ≤ 15 min |
+| Single-node SQLite (the first release, self-host) | Continuous WAL shipping or snapshots to Object Storage | RPO ≤ 15 min |
 | Operator ledger, receipts | Hash-chained, replicated, exported daily; verified by `agentrix audit verify` | RPO 0 for committed entries |
 | `zavora-fleet` repository and Terraform state | Git remotes plus encrypted state in Object Storage with versioning | — |
 | Signing keys | Release root offline on hardware keys held by two directors; online intermediates rotated quarterly | — |
@@ -750,7 +750,7 @@ platform: providers' hosted pages or STK prompts only.
 | **M-Pesa** (Kenya) | Safaricom Daraja | STK Push per invoice is already built in zavora-era (`payments/daraja.rs:145`). Recurring needs a standing-order product (to verify) or a monthly STK prompt the owner taps |
 | **Cards** (Africa and elsewhere) | Paystack | Already integrated in zavora-era (card, M-Pesa, bank; signed webhook). Stripe is used nowhere in Zavora's systems today; adding it is a decision (§13) |
 | **PayPal Subscriptions** (the plan fee) | PayPal | The owner approves the subscription on PayPal's own page. The Effects Gateway creates, revises and cancels it as effects, each with a receipt. PayPal collects each period, and its verified webhooks post each payment to the ledger against `agentrix-billing`'s invoice. Overage and other one-off charges never go on the subscription |
-| **PayPal one-off charges and payouts** | PayPal through **Steward** | Steward's governed path: the policy file, `GovernedTool` executing only against an unused approval for the exact call digest, `PayPal-Request-Id` from the receipt, a hash-chained ledger (`steward/crates/steward-core/src/governed.rs:25`, `ledger.rs:25`; `steward-paypal/src/client.rs:238`). Brick 2 brings it into the platform |
+| **PayPal one-off charges and payouts** | PayPal through **Steward** | Steward's governed path: the policy file, `GovernedTool` executing only against an unused approval for the exact call digest, `PayPal-Request-Id` from the receipt, a hash-chained ledger (`steward/crates/steward-core/src/governed.rs:25`, `ledger.rs:25`; `steward-paypal/src/client.rs:238`). The fleet release brings it into the platform |
 
 **Plan changes and cancellation** (*hypothesis* policy; each is a card the owner approves):
 - **The first charge is on go-live day.** The owner chooses a plan and approves the
@@ -873,7 +873,7 @@ The Operator Chief WebAgent's weekly business review states the method beside ea
 
 ### 4.5 The Vultr Marketplace listing
 
-- **The image:** the single-node profile ([02 §11.1](02-architecture.md#111-single-node-profile-brick-1-self-host-marketplace)).
+- **The image:** the single-node profile ([02 §11.1](02-architecture.md#111-single-node-profile-first-release-self-host-marketplace)).
   Marketplace apps deploy one instance, but the sandbox plane must be a separate host
   ([ADR-003](adr/003-sandbox-plane.md)).
   - The first-run wizard asks for a **scoped** Vultr API key (instances, firewall), stores it
@@ -1415,14 +1415,14 @@ site (§12, CP8).
 
 ## 10. Roadmap
 
-| | **Brick 1** (Vultr Agent Rush, 9 Nov) | **Pilot / MVP** (Dec–Jan, 10 sites) | **Launch → scale** (Q1 2027 →) |
+| | **The first release** (Vultr Agent Rush, 9 Nov) | **Pilot / MVP** (Dec–Jan, 10 sites) | **Launch → scale** (Q1 2027 →) |
 |---|---|---|---|
 | Tenancy | `TenantPath` types in `agentrix-types` with `SiteId`; one org, one site | Operator and org levels; support grants; break-glass ceremony | Partners (agency, reseller, referral); white-label; dedicated sub-accounts |
 | Fleet | `atl-0` single node from Terraform/cloud-init, reproducible; IAM: a scoped key, assume-role on the sandbox VM; Audit Logs on | `ams-1` cell; `fra-1` warm standby (compute and a Postgres replica); the Milan copy region and the copier; `zavora-fleet` GitOps; reconciler v0 (plan, approve, apply) | Multi-cell; `jnb-1` edge cell; inventory reaper; cell moves |
 | Rollouts | Pin recorded in the build; manual deploy | Trains with ring 0 (zavora.ai, classyperfumes.shop, synthetic sites) and ring 1; manual canary review | Rings 0–4 with automated canary analysis (CP6); pack channels; expedited trains |
 | SLOs and incidents | The freeze switch and receipts demonstrated | SLO dashboards, burn alerts, severity process, WhatsApp on-call, status page | Per-partner status pages; quarterly game days |
-| Operator WebAgents | **None.** Brick 1 ships the seams (receipts, freeze, per-site spend) | Operator Chief WebAgent (ops brief), SRE (watch and reversible levers), Release (ring 0), Support (desk), Billing (drafts only) | Capacity, Growth, Security & Abuse, Partner Success, Compliance; partner operator tenants |
-| Money | Per-site AI spend shown (needs CP1) | Billing WebAgent drafts; invoices through zavora-era with eTIMS; M-Pesa and Paystack; PayPal via Steward after Brick 2 | `agentrix-billing` for partners; reseller invoices; payouts; revenue analytics |
+| Operator WebAgents | **None.** The first release ships the seams (receipts, freeze, per-site spend) | Operator Chief WebAgent (ops brief), SRE (watch and reversible levers), Release (ring 0), Support (desk), Billing (drafts only) | Capacity, Growth, Security & Abuse, Partner Success, Compliance; partner operator tenants |
+| Money | Per-site AI spend shown (needs CP1) | Billing WebAgent drafts; invoices through zavora-era with eTIMS; M-Pesa and Paystack; PayPal via Steward after the fleet release | `agentrix-billing` for partners; reseller invoices; payouts; revenue analytics |
 | Tooling | — | `agentrix` CLI v0 (status, release, hold, audit verify); pack SDK alpha with Zavora CLI | Pack marketplace for certified partners; hosted dev rooms; `agentrix mcp serve` |
 | Distribution | — | — | Vultr Marketplace listing; Vultr partner programme |
 | Compliance | — | SOC 2 Type I mapping starts; Kenya ODPC registration; DPA | SOC 2 Type I report; access reviews by the Compliance WebAgent |
@@ -1474,7 +1474,7 @@ queued as pilot or fleet work.
 
 | # | Crate | Missing today | Why the control plane needs it | Urgency |
 |---|---|---|---|---|
-| CP1 | `adk-model` | No Vultr `PriceVendor` and no Vultr prices in `PricingCatalog::standard()` (`pricing.rs:109,559`); the Vultr preset is on `feat/webagent-platform` only | Priced usage for per-site spend; overlaps U3 | **Brick 1: accepted.** `PriceVendor::Vultr` at the flat $0.55/$2.75 per 1M, in the Vultr preset PR |
+| CP1 | `adk-model` | No Vultr `PriceVendor` and no Vultr prices in `PricingCatalog::standard()` (`pricing.rs:109,559`); the Vultr preset is on `feat/webagent-platform` only | Priced usage for per-site spend; overlaps U3 | **The first release: accepted.** `PriceVendor::Vultr` at the flat $0.55/$2.75 per 1M, in the Vultr preset PR |
 | CP2 | `adk-core` | `SpendKey {org, agent, vendor, period}` (`spend.rs:105`) has no site or partner dimension | Metering by tenant path | Pilot |
 | CP3 | `adk-core`, `adk-kernel` | `GovernanceScope = Org \| Tenant \| Agent` (`governance_state.rs:52`); no partner, cell or fleet scope | A fleet or partner hold as one recorded decision fanning out to N kernels | Pilot |
 | CP4 | `adk-kernel` (`managed`) | `ManagedKernels` (`tenant.rs:1579`) is an in-memory map: no persistence, placement, version labels or health aggregation | The fleet registry the rollout controller targets | Fleet |
@@ -1484,7 +1484,7 @@ queued as pilot or fleet work.
 | CP8 | `adk-surface` | One `Source` per `SurfaceEngine` (`engine.rs:736`); `AlarmRouter` is per site | Portfolio and Operator scopes (U15), on-call paging with acknowledgement and escalation | Pilot |
 | CP9 | `awp-types`, `adk-kernel` charter | Roles are per site only; no partner-wide roles; no time-boxed, scoped grants | Agency roles across client sites; support grants | Pilot |
 | CP10 | `adk-drivers` | Only `Rfc2136Dns` for DNS; no cloud-infra driver class | Vultr DNS for go-live cutover; infra effects under `DriverCapPolicy` | Pilot (DNS); fleet (infra) |
-| CP11 | `adk-payments` | No PayPal, M-Pesa, Paystack or Stripe adapters; no usage → invoice, subscriptions or payouts | Zavora Cloud billing; Steward's core already covers PayPal | Brick 2 (PayPal); pilot |
+| CP11 | `adk-payments` | No PayPal, M-Pesa, Paystack or Stripe adapters; no usage → invoice, subscriptions or payouts | Zavora Cloud billing; Steward's core already covers PayPal | The fleet release (PayPal); pilot |
 | CP12 | `adk-auth` | `Permission` is `Tool \| AllTools \| Agent \| AllAgents` (`permission.rs:7`), with no resource or tenant scoping | Operator tokens scoped by target and verb, attenuable | Pilot |
 
 **Also needed from [05 §10](05-webagents.md#10-upstream-enhancements-to-adk-rust-v3):**

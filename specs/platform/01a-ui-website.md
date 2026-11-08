@@ -115,7 +115,7 @@ admin:
 
 | Sample | Why this one |
 |---|---|
-| **Kilele Bakery** (local services) | The most-drawn site. It carries the Brick 1 demo (the agent race ends at Wanjiru's card), the custom-order hold, the catalogue order, PayPal in USD at a posted rate, M-Pesa, refunds under a signed rule, and all four security moments. The fixture already exists as its "old site". |
+| **Kilele Bakery** (local services) | The most-drawn site. It carries the first release demo (the agent race ends at Wanjiru's card), the custom-order hold, the catalogue order, PayPal in USD at a posted rate, M-Pesa, refunds under a signed rule, and all four security moments. The fixture already exists as its "old site". |
 | **Classy Perfumes** (shop) | The only drawn shop: agentic search, honest fit, comparisons, a shared gift plan with per-person permissions, and the request that turns five choices into one order. It exercises artifacts (R10) and catalogue scale that Kilele doesn't. |
 | **Tana Valley Times** (local news, weekly) with The Kestrel Post's drawn patterns | It is the third team in the identity reference. A local weekly can be seeded honestly with about 60 stories; a "national" paper with 60 stories would look fake. It exercises subscriber accounts, entitlements, device memory, corrections and a digest with double opt-in, which neither shop covers. Port news.html's catch-me-up, story timeline, digest contract and house rules onto Tana's brand. |
 
@@ -309,7 +309,7 @@ subscriber list and entitlements, digest rules and the send ("Ask me first" at s
 issue dates for Archive; two seed readers (one subscriber, one not) with device-memory items
 "Last visit" and "Follows"; one confirmed digest subscription.
 
-**Open decision.** Paid subscriptions need recurring billing, which no brick plans. For the
+**Open decision.** Paid subscriptions need recurring billing, which no release plans yet. For the
 sample, make "subscriber" an entitlement granted by the owner or by a one-time sandbox payment;
 recurring billing waits for the pilot (§8, D4).
 
@@ -492,7 +492,7 @@ here because their states apply page by page.
 - **Drawn:** `concept/journeys/customer-order.html:96-140`; Orders desk in checkout `:144-166`.
 - **Components:** basket lines, each with its sources ("Price list, 2 Nov", "Stock: Sat 14 Nov bake (live)", "Available Sat 14 Nov"); delivery line; delivery-slot radio group from the live calendar with a full slot disabled and labelled; total; pinned-quote line ("Quote pinned to Kilele's release of 2 Nov (price list v14). Valid until Sat 14 Nov 08:00."); pay note ("Pay USD 19.77 at Kilele's rate…"); "Continue to pay"; rails note; Orders desk with the scope line "Orders sees this basket's items, slot and area. It can't see your account or payment details." (`:150`).
 - **Data:** price list, stock per bake day, delivery calendar, zones and fees, posted rate; the quote (`quote.create`, pinned with `release_seq` and `valid_until`).
-- **Actions:** change slot → re-quote; "Continue to pay" → create order K-1042 with its quote → K-10 (Brick 2); ask Orders "Can you make the bake box gluten-free?" → "No…", cites the menu, offers what exists.
+- **Actions:** change slot → re-quote; "Continue to pay" → create order K-1042 with its quote → K-10 (the fleet release); ask Orders "Can you make the bake box gluten-free?" → "No…", cites the menu, offers what exists.
 - **Not drawn:** adding and removing items, quantities, the empty basket, address and recipient entry ("Amina's home" appears with no form), guest-or-sign-in choice, stock gone at submit, slot taken at submit, quote expired (G-15 to G-19).
 
 **K-07 · `/orders` · Your orders** · G C · Drawn · W2 W8 W6
@@ -515,7 +515,7 @@ here because their states apply page by page.
 - From 06 §5.6: "details only after the visitor proves it's them (a one-time code to the number on the order)" (`docs/06-website-experience.md:883`). Proving one order is not signing in (`:706-707`).
 - **Needs:** code sent by WhatsApp or SMS to the number on the order, a code field, rate limits, wrong-code and expired-code states, "Continue on this device only".
 
-**K-10 · `/orders/{id}/pay` · Pay** · C · Drawn · W6 (Brick 2)
+**K-10 · `/orders/{id}/pay` · Pay** · C · Drawn · W6 (the fleet release)
 
 - **Drawn:** `concept/journeys/customer-pay.html:90-150`, after approval `:182-230`, other rails `:232-251`, flow `:253-265`.
 - **Components:** "Pay for K-1042", pill "Not paid yet"; amount in USD with KSh and the rate; payee; order summary; source line; "Pay with PayPal"; "M-Pesa"; "Card"; small print about dollars; PayPal's window as a labelled placeholder; return screen with "Confirmed", "Paid · USD 19.77 · PayPal" and a receipt preview.
@@ -535,7 +535,7 @@ here because their states apply page by page.
 - **After the cut-off:** "Changes closed Thu 12 Nov, 18:00. Amina's cake is being made." and "Talk to Wanjiru" (a person; a desk can't move an order after the cut-off).
 - **Not drawn:** approved change (the payment request is voided and reissued if the price changes), declined change.
 
-**K-13 · `/orders/{id}/help` · Something's wrong** · C · Drawn · W1 W6 W8 (refunds Brick 2)
+**K-13 · `/orders/{id}/help` · Something's wrong** · C · Drawn · W1 W6 W8 (refunds the fleet release)
 
 - **Drawn:** `concept/journeys/customer-after.html:248-310`.
 - **Components:** Orders thread; message; photo upload (drawn as a placeholder); handover line "The Cashier works behind the scenes. It sees the order and the request, not your account."; refund offer with amount in KSh and USD at the pinned rate; "Refund the bake box"; the rule check panel (amount, recipient, frequency, expiry, signature and cap); result "Refunded USD 10.47 to your PayPal. Receipt R-1042-1."; above the rule: "That's above what can be refunded without Wanjiru. She will decide; you'll hear by Sun 15 Nov, 20:00. Nothing has been refunded yet." → **owner card**.
@@ -731,7 +731,7 @@ checkout, account, artifact):
 ## 3. The customer journey, end to end
 
 Worked on Kilele with Njeri (`docs/06-website-experience.md:956-1029`;
-`concept/journeys/index.html`). Phases: **B1** Brick 1 (this weekend), **B2** Brick 2 (12 Nov,
+`concept/journeys/index.html`). Phases: **B1** the first release (this weekend), **B2** the fleet release (12 Nov,
 payments and refunds), **P** pilot.
 
 | Step | What Njeri sees | Screens | Backend capabilities required | Owner meets | Phase | Built today |
@@ -998,7 +998,7 @@ section applies it to the website.
 | `concept/site.html:212` | "You're chatting with an AI concierge. It only uses this site's pages and never guesses prices or dates. Ask for Wanjiru anytime; she replies on WhatsApp." | "chatting", "AI concierge" (06 says WebAgent and Front desk); differs from the fixed disclosure; no wait time | "You're talking to AI. It answers only from this site and never guesses prices, dates or allergens. Wanjiru replies on WhatsApp, usually within 2 hours (7:00–20:00)." |
 | `concept/site.html:199` | "AI concierge · answers from this site" | Wrong term | "Front desk · AI · answers from this site" |
 | `concept/site.html:273` | "This site uses an AI concierge" | Wrong term; 06 §4.6 fixes the footer line | "The WebAgents on this site are AI." |
-| `concept/site.html:274` | "Made with Agentrix · Move your site in 2 minutes →" | Unbacked claim: the assessment takes about 3 minutes and a Move up to 10 (`specs/brick-1/requirements.md`, N1) | "Made with Agentrix · Get a free check of your own site" |
+| `concept/site.html:274` | "Made with Agentrix · Move your site in 2 minutes →" | Unbacked claim: the assessment takes about 3 minutes and a Move up to 10 (`specs/first-release/requirements.md`, N1) | "Made with Agentrix · Get a free check of your own site" |
 | `concept/site.html:371` | "Happy to help. Celebration cakes need two days' notice…" | Banned opener ([voice.md](voice.md)) | "Celebration cakes need two days' notice, and Wanjiru confirms every order. The order form is below." |
 | `concept/site.html:248`; `concept/experience/creator.html:451` | "Then pay by M-Pesa to lock it in." | Sales phrase | "Then you pay by M-Pesa, and the order is confirmed." |
 | `concept/experience/creator.html:421` | "Lovely. From Kilele's options I've picked …" | Flattery opener | "From Kilele's options: forest-green ombré buttercream and fresh berries." |
@@ -1106,7 +1106,7 @@ the voice 06 already uses:
 |---|---|---|
 | D1 | Kilele's canonical facts (A2 to A7) | Seed the sample from the journeys and 06 §6.3 values (§1.4); leave the fixture untouched as the "old site"; the difference becomes the owner's confirmed price-list change, with receipts |
 | D2 | The news sample's brand (A1) | Tana Valley Times, built with The Kestrel Post's drawn patterns |
-| D3 | Payment rails for the samples | PayPal sandbox (Brick 2) for all three; M-Pesa Daraja sandbox for Kilele and Classy if W6 has capacity; card later |
+| D3 | Payment rails for the samples | PayPal sandbox (the fleet release) for all three; M-Pesa Daraja sandbox for Kilele and Classy if W6 has capacity; card later |
 | D4 | News subscriptions | An entitlement granted by the owner or a one-time sandbox payment; recurring billing in the pilot |
 | D5 | Classy Perfumes (A12) | Run the sample on a Zavora sample host with a fictional catalogue and a "Sample" band; keep `classyperfumes.shop` for the real store |
 | D6 | Password reset without magic links (G-05) | An emailed one-time code plus the authenticator code; passkey users never need it |

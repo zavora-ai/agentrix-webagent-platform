@@ -217,11 +217,11 @@ h2 { font: 700 15px/1.3 var(--display); margin: 0; letter-spacing: -0.005em; }
   }
 
   function renderClocks() {
-    const target = (data.milestones.find((m) => m.id === "brick1-submit") || {}).due || TARGET;
-    const hard = (data.milestones.find((m) => m.id === "brick1-close") || {}).due || HARD;
+    const target = (data.milestones.find((m) => m.id === "the first release-submit") || {}).due || TARGET;
+    const hard = (data.milestones.find((m) => m.id === "the first release-close") || {}).due || HARD;
     const hot = time(target) - Date.now() < 12 * 3600000;
     $("clocks").innerHTML =
-      `<div class="clock${hot ? " hot" : ""}"><span>Brick 1 · target submit</span><b>${esc(until(target))}</b></div>` +
+      `<div class="clock${hot ? " hot" : ""}"><span>The first release · target submit</span><b>${esc(until(target))}</b></div>` +
       `<div class="clock"><span>lablab closes</span><b>${esc(until(hard))}</b></div>`;
   }
 

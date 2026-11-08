@@ -13,7 +13,7 @@ The fleet profile ([ADR-007](007-two-profiles.md)) must grow past one cluster an
 - A thin **global layer** (fleet registry, rollout controller, billing, the operator tenant, console and partner APIs) runs in the primary cell with a standby in a second.
 - Placement follows residency, latency and headroom. A cell has a site cap (a hypothesis to measure); beyond it a new cell opens.
 - Moving a site between cells is a scripted migration with a seconds-long hold, shown to the owner as a platform notice.
-- Planned cells: `atl-0` (Brick 1), `ams-1` (first full cell, global primary), `fra-1` (standby and DR), `jnb-1` (edge only until Johannesburg offers VX1 and Object Storage).
+- Planned cells: `atl-0` (the first release), `ams-1` (first full cell, global primary), `fra-1` (standby and DR), `jnb-1` (edge only until Johannesburg offers VX1 and Object Storage).
 
 ## Consequences
 

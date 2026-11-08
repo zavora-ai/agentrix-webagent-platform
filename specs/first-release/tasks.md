@@ -1,9 +1,9 @@
-# Brick 1: Tasks and sprints
+# The first release: Tasks and sprints
 
 Status: v1.0 for James's review, Sat 7 Nov 2026. Spec chain: [requirements.md](requirements.md) →
 [design.md](design.md) → **tasks (this file)**.
 
-Generated from [tasks.json](tasks.json), the single source. Live status is on the **Brick 1
+Generated from [tasks.json](tasks.json), the single source. Live status is on the **the first release
 board** artifact; sessions update their task rows there (`todo` → `doing` → `review` →
 `done`, or `blocked` with a note). A task is `done` only when its *done when* holds and the
 spec session has checked it.
@@ -18,7 +18,7 @@ attribution; stop local builds if free disk < 10 GB.
 | Lane | Who |
 |---|---|
 | `james` | James |
-| `spec` | Brick 1 spec session (this board's owner) |
+| `spec` | The first release spec session (this board's owner) |
 | `coordinator` | Coordinator (integration lead) |
 | `data` | Data architecture session |
 | `architecture` | WebAgent architecture session (sandbox plane) |
@@ -42,13 +42,13 @@ attribution; stop local builds if free disk < 10 GB.
 | S0-03 | `james` | M | Choose the platform domain and the fixture domain; delegate both to Vultr DNS | R3.3, R14.1 | 0.25 | — | Domains named on the board; NS records point to Vultr |
 | S0-04 | `control-plane` | M | cloud-init and provisioning script for control, sandbox (VX1) and fixture VMs, VPC and firewall groups; James approves creation | R14.1, R14.2 | 2 | S0-02, S0-03 | Three VMs reachable over the VPC; firewall groups as in design §2; script in deploy/ |
 | S0-05 | `data` | M | Confirm Vultr model ids via GET /v1/models; fix the routing table and the embedding model | R11.2 | 0.5 | S0-02 | Routing table in design §4.3 updated with confirmed ids and tool/vision support |
-| S0-06 | `coordinator` | M | Workspace scaffold: every Brick 1 crate as a compiling skeleton, adk-rust pinned rev, shared deps, CI (fmt, clippy, test); later tasks never edit root files | N10 | 1.5 | — | cargo check --workspace passes; CI green; crates per design §3 exist |
+| S0-06 | `coordinator` | M | Workspace scaffold: every the first release crate as a compiling skeleton, adk-rust pinned rev, shared deps, CI (fmt, clippy, test); later tasks never edit root files | N10 | 1.5 | — | cargo check --workspace passes; CI green; crates per design §3 exist |
 | S0-07 | `control-plane` | M | Passkey spike: adk-surface WebAuthn verification vs webauthn-rs; record decision D9 | R2.1 | 0.5 | S0-06 | Decision written in design D9 with the reason |
 | S0-08 | `data` | M | agentrix-types: JobSpec, JobResult, Receipt, Finding, DecisionCard, EffectRequest; Ed25519 + RFC 8785 signing | R12.5, R10.3 | 1.5 | S0-06 | Types and sign/verify round-trip tests pass |
 | S0-09 | `data` | M | SQLite schema and migrations (design §5) and the CAS store | N9, R12.5 | 1.5 | S0-06 | Migrations run on a fresh DB; CAS put/get by digest tested |
 | S0-10 | `disk` | M | Free disk on James's Mac to >= 25 GB (stale target dirs), with James's OK per deletion | N6 | 0.5 | — | df shows >= 25 GB free |
 | S0-11 | `framework` | M | Land #1348; rerun #1345, #1347, #1349; tell the coordinator the adk-rust rev to pin | D3 | 1 | — | Pinned rev builds the scaffold; PR states on the board |
-| S0-12 | `spec` | M | Spec committed; Brick 1 board live; lanes briefed | all | 1 | — | Board shows every task; each lane has its brief |
+| S0-12 | `spec` | M | Spec committed; the first release board live; lanes briefed | all | 1 | — | Board shows every task; each lane has its brief |
 
 ## S1 · Vertical slice (Sat 22:00 – Sun 04:00 EAT)
 

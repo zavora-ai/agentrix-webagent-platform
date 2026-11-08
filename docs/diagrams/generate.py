@@ -213,11 +213,11 @@ def walls():
 
 def deployment():
     s = Svg(1280, 720, "Deployment on Vultr",
-            "Single-node profile for Brick 1 and self-hosting, and the fleet profile for the managed service.")
+            "Single-node profile for the first release and self-hosting, and the fleet profile for the managed service.")
     s.text(24, 38, "Deployment on Vultr · one codebase, two profiles", size=21, weight=800, fill=C["indigo"])
     s.text(24, 60, "Single-node runs the hackathon entry and Marketplace self-host. Fleet runs Zavora Cloud. Same binaries, different stores.", size=12, fill=C["muted"])
     # single node
-    s.panel(24, 80, 600, 620, "SINGLE-NODE · Brick 1 · self-host · Marketplace · Vultr Atlanta")
+    s.panel(24, 80, 600, 620, "SINGLE-NODE · the first release · self-host · Marketplace · Vultr Atlanta")
     s.box(44, 112, 270, 330, "control VM", ["VX1 or High Frequency", "", "agentrix-edge", "agentrix-control", "agentrix-kernel", "agentrix-models (Model Gateway)", "agentrix-effects (Effects Gateway)", "sandbox broker", "Caddy (TLS) · SQLite · local CAS", "", "firewall group: in 80/443 only", "to sandbox VM: private VPC, mTLS"])
     s.box(336, 112, 268, 330, "sandbox VM", ["VX1 · nested virtualisation", "", "agentrix-runner", "agentrix-egress", "gVisor (runsc)", "Microsandbox microVMs", "no secrets · no public inbound", "in: broker port from control only", "out: proxy only (nftables)", "", "destroyed rooms, signed receipts"], kind="sealed")
     s.arrow("M314,300 H334", color="amber")

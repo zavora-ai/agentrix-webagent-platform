@@ -48,7 +48,7 @@
 <text x="574" y="156" font-size="11.5" font-weight="400" fill="#5d5a78" text-anchor="start">site corpus · owner facts</text>
 <text x="574" y="173" font-size="11.5" font-weight="400" fill="#5d5a78" text-anchor="start">1-node: LanceDB in site dir</text>
 <text x="574" y="190" font-size="11.5" font-weight="400" fill="#5d5a78" text-anchor="start">fleet: pgvector, same schema</text>
-<text x="574" y="207" font-size="11.5" font-weight="400" fill="#5d5a78" text-anchor="start">Brick 1: Vultr vector store</text>
+<text x="574" y="207" font-size="11.5" font-weight="400" fill="#5d5a78" text-anchor="start">the first release: Vultr vector store</text>
 <rect x="322" y="240" width="226" height="116" rx="12" fill="#eef4ff" stroke="#0b6cff" stroke-width="1.6"/>
 <text x="336" y="264" font-size="13.5" font-weight="700" fill="#0752c4" text-anchor="start">Objects (CAS)</text>
 <text x="336" y="284" font-size="11.5" font-weight="400" fill="#5d5a78" text-anchor="start">releases · evidence · artifacts</text>

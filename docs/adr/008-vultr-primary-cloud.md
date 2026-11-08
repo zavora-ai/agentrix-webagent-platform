@@ -8,7 +8,7 @@ The platform needs inference with tool calling, vision, embeddings, safety and d
 
 ## Decision
 
-Run on Vultr. Brick 1 in Atlanta, the MVP control plane in Amsterdam, and African serving from Johannesburg. Frankfurt holds standby compute and a database replica only, because it has no Object Storage (7 Nov 2026). Every model call uses Vultr's Inference API. Self-hosted models on GPUs are out of scope (James, 7 Nov 2026). Vultr does not publish where Inference runs, so owners are told the region is unconfirmed until Vultr confirms it in writing ([02 §6](../02-architecture.md#6-the-model-plane)).
+Run on Vultr. The first release in Atlanta, the MVP control plane in Amsterdam, and African serving from Johannesburg. Frankfurt holds standby compute and a database replica only, because it has no Object Storage (7 Nov 2026). Every model call uses Vultr's Inference API. Self-hosted models on GPUs are out of scope (James, 7 Nov 2026). Vultr does not publish where Inference runs, so owners are told the region is unconfirmed until Vultr confirms it in writing ([02 §6](../02-architecture.md#6-the-model-plane)).
 
 ## Consequences
 

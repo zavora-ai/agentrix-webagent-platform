@@ -1,5 +1,5 @@
 #!/usr/sbin/nft -f
-# Agentrix Brick 1 · sandbox VM host firewall (design §2, R12, R14.2).
+# Agentrix · sandbox VM host firewall (design §2, R12, R14.2).
 #
 # Vultr firewall groups filter only the public interface, so this file is what limits VPC
 # traffic. Tokens @@…@@ are filled by deploy/provision.sh.

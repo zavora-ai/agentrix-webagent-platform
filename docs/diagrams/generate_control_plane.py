@@ -91,7 +91,7 @@ def control_plane():
     cells = [("ams-1 · Amsterdam", ["VKE: edge · control · kernels", "Postgres · Valkey · Kafka · CDN", "a TenantKernel per site"]),
              ("fra-1 · Frankfurt", ["standby: compute · DB replica", "no Object Storage in Frankfurt", "copies kept in Milan"]),
              ("jnb-1 · Johannesburg", ["edge cell for African sites", "kernels stay in ams-1"]),
-             ("atl-0 · Atlanta", ["Brick 1 · single node", "control VM + sandbox VM"])]
+             ("atl-0 · Atlanta", ["the first release · single node", "control VM + sandbox VM"])]
     for i, (t, ls) in enumerate(cells):
         s.box(40 + i * 224, 774, 212, 96, t, ls, kind="vultr", title_size=13)
     s.panel(40, 884, 888, 100, "SANDBOX RUNNER POOLS · NO SECRETS · OUTSIDE KUBERNETES", kind="sealed")

@@ -1,9 +1,9 @@
-# Brick 1: the Vultr Agent Rush entry
+# The first release: the Vultr Agent Rush entry
 
 Status: plan v0.1, Sat 7 Nov 2026. Submissions close **Mon 9 Nov 2026, 02:00 EAT** (Sun 8 Nov,
 23:00 UTC). Target: submitted by **Sun 20:00 EAT**.
 
-Brick 1 is the **single-node profile** of the platform ([02-architecture.md §11.1](02-architecture.md#111-single-node-profile-brick-1-self-host-marketplace)).
+The first release is the **single-node profile** of the platform ([02-architecture.md §11.1](02-architecture.md#111-single-node-profile-first-release-self-host-marketplace)).
 It is not a separate demo. Everything built here stays in the product.
 
 > **Pitch:** "Your WordPress site was hacked. We moved it anyway, without carrying the hack
@@ -11,10 +11,10 @@ It is not a separate demo. Everything built here stays in the product.
 
 ## 1. Challenge 1 requirements, line by line
 
-| Vultr asks | Brick 1 delivers |
+| Vultr asks | The first release delivers |
 |---|---|
 | A web-based agent that performs real work, writing and running code or operating a real browser | The Move: browsers render real sites in sealed rooms; the legacy WordPress replays in a sealed gVisor room; a builder agent writes the new site's code, which is rendered and checked; a converted site goes live |
-| Every action inside an isolated sandbox on Vultr | Sealed rooms on a separate **VX1** sandbox VM: gVisor (`runsc`) for every room, the WordPress replay included (KVM is available on VX1 for microVM replays after Brick 1); no keys; per-job egress allowlist; caps; destroyed after each job |
+| Every action inside an isolated sandbox on Vultr | Sealed rooms on a separate **VX1** sandbox VM: gVisor (`runsc`) for every room, the WordPress replay included (KVM is available on VX1 for microVM replays after the first release); no keys; per-job egress allowlist; caps; destroyed after each job |
 | Centralised control layer: plan → dispatch → verifiable output | `agentrix-control` + the Mover plan the job graph; the sandbox broker dispatches; every job returns content-addressed artifacts and a signed receipt |
 | Agent LLM calls through **Vultr Serverless Inference** | All model calls go through the Model Gateway to Vultr: `glm-5.3` (build), `qwen3.8-27b` (concierge, vision parity), `nemotron-3.5-content-safety` (screening), **systemone** decision models (quarantine and approval risk), vector store + RAG chat (Concierge), embeddings |
 | Backend on a Vultr Cloud Compute VM; web app deployed on Vultr | `control` VM (console, edge, gateways) + `sandbox` VM (VX1), in Atlanta, behind HTTPS |
@@ -25,18 +25,18 @@ It is not a separate demo. Everything built here stays in the product.
 | One containment moment in the video | The containment gauntlet (§3): 10 attacks from a deliberately compromised WordPress site, each stopped and receipted, scored live |
 | Public GitHub repo, README on Vultr usage, demo URL, video, slides | This repository (MIT); README "How we use Vultr"; a live URL; ~4-minute video; slides |
 
-**Challenge 2, Future of Work.** Brick 1 is entered under Challenge 1 only: an entry takes one
+**Challenge 2, Future of Work.** The first release is entered under Challenge 1 only: an entry takes one
 path, and every entry is judged on the same four criteria. The platform also does the work
 Challenge 2 asks for. The README's table,
 [The Vultr Agent Rush challenges](../README.md#the-vultr-agent-rush-challenges), maps it.
-In Brick 1 that covers:
+In the first release that covers:
 - Customer Support;
 - the Move as a multi-step workflow;
 - the web product;
 - the VM backend;
 - platform thinking.
 
-Sales and Procurement come with the pilot, and Finance with payments in Brick 2. That table is
+Sales and Procurement come with the pilot, and Finance with payments in the fleet release. That table is
 the single source; this section only points to it.
 
 ## 2. Scope
@@ -58,7 +58,7 @@ the single source; this section only points to it.
 | **Should** | Live frames from the sealed browser on the Assess screen, through adk-browser's sealed mode. If that isn't ready, the sealed screenshotter runs in a loop, about one frame a second over SSE |
 | **Should** | The agent race: the agent door takes a custom-order request end to end and raises the owner's approval card, with no payment. Computer use on James's Mac plays the customer's agent |
 | **Could** | Throwaway VM via the Vultr API for the replay; WhatsApp brief; voice |
-| **Won't (this weekend)** | Payments (Brick 2), multi-site fleet view, DNS cutover automation, VKE, billing. PayPal is designed into both customer journeys and shown in their mockups (`concept/journeys/`, James 7 Nov), but the Brick 1 build and video end the custom order at the owner's approval |
+| **Won't (this weekend)** | Payments (the fleet release), multi-site fleet view, DNS cutover automation, VKE, billing. PayPal is designed into both customer journeys and shown in their mockups (`concept/journeys/`, James 7 Nov), but the first release build and video end the custom order at the owner's approval |
 
 ## 3. The containment gauntlet (the video's containment moment)
 

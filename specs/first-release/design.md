@@ -1,4 +1,4 @@
-# Brick 1: Design
+# The first release: Design
 
 Status: v1.0 for James's review, Sat 7 Nov 2026. Spec chain: [requirements.md](requirements.md) →
 **design (this file)** → [tasks.md](tasks.md).
@@ -7,7 +7,7 @@ This is the build design for the single-node profile. It narrows the platform de
 01–09, ADRs 001–030) to what ships on Sunday, and every choice here is one the fleet profile
 keeps. Where this file is silent, the docs govern.
 
-## 1. Design decisions for Brick 1
+## 1. Design decisions for the first release
 
 | # | Decision | Why | Platform doc |
 |---|---|---|---|
@@ -246,7 +246,7 @@ AGENTRIX_TTS=vultr:qwen3-tts-12hz-1.7b             # speech (alternatives: auk, 
 AGENTRIX_VIDEO=vultr:minimax-h3                    # video (not this weekend)
 ```
 
-| Capability | Brick 1 use | Requirement |
+| Capability | The first release use | Requirement |
 |---|---|---|
 | Embeddings, vector store, rerank | Ask this site retrieval | R8.2, R11.5 |
 | Image generation | Sketches and product images, an owner opt-in (06 S1) | Could |
@@ -304,7 +304,7 @@ What S0-05 found that the gateway (S1-04) must handle:
 - **Errors to back off on** include 529 (overloaded), as well as 429 and the other 5xx codes.
   A 402 means the account is not funded, and is shown in plain words with no retry.
 - **Every model is served from the US** (`datacenters` in `GET /v1/models`: `sea`, `sjc` or
-  `atl`). This settles the "location not published" question for Brick 1. The platform docs
+  `atl`). This settles the "location not published" question for the first release. The platform docs
   are updated separately.
 
 Budgets per site and purpose; usage rows `{site, purpose, model, tokens_in, tokens_out,
@@ -407,13 +407,13 @@ stateDiagram-v2
 Each transition writes a `move_steps` row and a receipt. A crash resumes from the last
 completed step (N9). The Mover asks at every irreversible step; it never goes live by itself.
 
-## 7. Security design (the four walls, Brick 1 cut)
+## 7. Security design (the four walls, the first release cut)
 
-| Wall | Brick 1 enforcement | Verified by |
+| Wall | The first release enforcement | Verified by |
 |---|---|---|
 | Action | Separate sandbox VM; gVisor/microVM rooms; read-only root; caps; per-job allowlist via `agentrix-egress` + nftables; destroy and confirm; signed job specs | Gauntlet 1, 2, 8, 9; egress review (R12.6) |
 | Release | Agents produce candidates only; the go-live card's passkey signature is required to sign a release; the edge serves only verified releases | R7, R8.1; tamper test |
-| Site | One site in Brick 1; `SiteId` in every key and table; per-site budget | Schema review |
+| Site | One site in the first release; `SiteId` in every key and table; per-site budget | Schema review |
 | Owner | Model Gateway is the only key holder; approvals bound to fingerprints; charter v1 signed; Concierge has no authority to discount | Gauntlet 3, 10; R7.2 |
 
 **Egress review cases (blocking, R12.6):** DNS rebinding; redirect to a refused host;
@@ -423,7 +423,7 @@ header and request smuggling (CL/TE, absolute-form URIs, Host mismatch). One tes
 
 ## 8. UI: screens to port
 
-The `concept/` screens are the design source of truth. Brick 1 ports these, with real data:
+The `concept/` screens are the design source of truth. The first release ports these, with real data:
 
 | Screen | Source | Req |
 |---|---|---|

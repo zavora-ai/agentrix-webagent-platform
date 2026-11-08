@@ -38,7 +38,7 @@
   ],
   "lanes": {
     "james": "James",
-    "spec": "Brick 1 spec session (this board's owner)",
+    "spec": "the first release spec session (this board's owner)",
     "coordinator": "Coordinator (integration lead)",
     "data": "Data architecture session",
     "architecture": "WebAgent architecture session (sandbox plane)",
@@ -139,7 +139,7 @@
       "sprint": "S0",
       "lane": "coordinator",
       "priority": "M",
-      "title": "Workspace scaffold: every Brick 1 crate as a compiling skeleton, adk-rust pinned rev, shared deps, CI (fmt, clippy, test); later tasks never edit root files",
+      "title": "Workspace scaffold: every the first release crate as a compiling skeleton, adk-rust pinned rev, shared deps, CI (fmt, clippy, test); later tasks never edit root files",
       "reqs": [
         "N10"
       ],
@@ -237,7 +237,7 @@
       "sprint": "S0",
       "lane": "spec",
       "priority": "M",
-      "title": "Spec committed; Brick 1 board live; lanes briefed",
+      "title": "Spec committed; the first release board live; lanes briefed",
       "reqs": [
         "all"
       ],

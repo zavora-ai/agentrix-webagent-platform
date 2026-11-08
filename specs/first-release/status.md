@@ -1,12 +1,12 @@
-# Brick 1: Status and handover
+# The first release: Status and handover
 
 Written Sat 7 Nov 2026, about 22:20 EAT, before an account switch; updated about 22:45 EAT. Owner: the spec session
-("Brick 1 spec and board"), which also holds integration while the coordinator is blocked.
-Read this first when picking up any Brick 1 role; then the board.
+("the first release spec and board"), which also holds integration while the coordinator is blocked.
+Read this first when picking up any the first release role; then the board.
 
 - **Board (live task status):** https://claude.ai/artifact/9fJmUUr4EnXRCckKiprkm5
-- **Platform program board** (the full WebApp Platform, built on Brick 1 by the "Agentrix WebAgent Platform" session; it merges through a `platform` branch and takes main only after the Brick 1 handover): https://claude.ai/artifact/VtypxBSWCYBSvVqPPR9U7a. Its windows are A, the live run; B, the Vultr switch; C, the video; D, the Sun 17:00 to 20:00 freeze.
-- **Spec:** `specs/brick-1/requirements.md` → `design.md` → `tasks.md` → `acceptance.md`
+- **Platform program board** (the full WebApp Platform, built on the first release by the "Agentrix WebAgent Platform" session; it merges through a `platform` branch and takes main only after the first release handover): https://claude.ai/artifact/VtypxBSWCYBSvVqPPR9U7a. Its windows are A, the live run; B, the Vultr switch; C, the video; D, the Sun 17:00 to 20:00 freeze.
+- **Spec:** `specs/first-release/requirements.md` → `design.md` → `tasks.md` → `acceptance.md`
 - **Acceptance script:** `scripts/acceptance.sh` (BASE, FIXTURE, SITE)
 - **Deck:** https://claude.ai/artifact/Pqz4zFxV2tXx79RxF46a1w · video script `submission/video-script.md`
 - **Deadline:** submit by Sun 8 Nov 20:00 EAT; lablab closes Mon 9 Nov 02:00 EAT.
@@ -87,7 +87,7 @@ The Coulds (voice, WhatsApp, Marketplace) are out of scope per requirements §5.
   - 7 pass and 0 fail live; R14 and R2.3 pass by inspection. The board row S3-02 has the evidence.
   - The rest needs the live Move.
 - **In flight:**
-  - the Move builder: S3-10 bake-off, written to `specs/brick-1/bakeoff.md`;
+  - the Move builder: S3-10 bake-off, written to `specs/first-release/bakeoff.md`;
   - the gauntlet builder: the fixture's WP home/siteurl moves to fixture.agentrix.website (Assess reads 4 pages until then), then S3-06 Vultr retrieval behind `AGENTRIX_RETRIEVAL=vultr`;
   - the assess lane: confirms frames live after the deploy (R1.4).
 - **After the live Move:**

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-# Brick 1 crates (specs/brick-1/design.md §3). Root files belong to the integration lead:
+# The first release crates (specs/first-release/design.md §3). Root files belong to the integration lead:
 # ask the coordinator for a root change instead of editing this file.
 members = [
     "crates/agentrix-types",
@@ -137,7 +137,7 @@ unsafe_code = "forbid"
 missing_docs = "warn"
 
 [workspace.lints.clippy]
-# Rust 1.95's clippy asks for nested `if let`s to become edition-2024 let-chains. Brick 1's
+# Rust 1.95's clippy asks for nested `if let`s to become edition-2024 let-chains. The first release's
 # auth/ and claim/ have four; their owner rewrites them when it next touches those files.
 collapsible_if = "allow"
 

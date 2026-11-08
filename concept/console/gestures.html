@@ -281,8 +281,8 @@
     <p class="small muted" style="margin-top:10px">This concept page is not the product: it loads MediaPipe Tasks Vision 0.10.14 from jsDelivr and the hand model from Google's model store, pinned by version but not self-hosted. Its rules are tested on synthetic hands (<code class="mono">gestures.test.js</code>), not yet on recorded clips.</p>
   </section>
 
-  <section class="notes" style="margin-top:0" aria-label="Brick 1">
-    <article class="card"><h3>Brick 1 subset</h3><ul><li>Camera opt-in, pill and auto-off</li><li>Swipe through the decision cards</li><li>Thumb up on the go-live card raises the passkey sheet; Touch ID signs</li><li>Open palm stops everything after a 5-second countdown. The stop goes in through the web surface, so only the <code class="mono">surface.gesture</code> record ties it to a gesture. The demo doesn't claim a server-side gesture policy</li><li>A 20-second light-and-hand check</li></ul></article>
+  <section class="notes" style="margin-top:0" aria-label="the first release">
+    <article class="card"><h3>The first release subset</h3><ul><li>Camera opt-in, pill and auto-off</li><li>Swipe through the decision cards</li><li>Thumb up on the go-live card raises the passkey sheet; Touch ID signs</li><li>Open palm stops everything after a 5-second countdown. The stop goes in through the web surface, so only the <code class="mono">surface.gesture</code> record ties it to a gesture. The demo doesn't claim a server-side gesture policy</li><li>A 20-second light-and-hand check</li></ul></article>
     <article class="card"><h3>The safety line</h3><p>Gestures run shell verbs and two server commands, stop everything and pause one WebAgent. Approving needs a real tap on "Use passkey" and the passkey's user verification, or a code typed from your authenticator app, and no hand shape can produce any of them.</p></article>
     <article class="card"><h3>Accessible by design</h3><p>Gestures are optional and never the only way to do anything. Every one has a key, a tap and a word. Hold times can be lengthened, and reduced motion shows a static progress bar.</p></article>
   </section>

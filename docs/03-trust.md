@@ -120,7 +120,7 @@ ISO 27001, PCI) are inherited.
     every receipt names its issuer:
     - the edge signs conversation artifacts and consent receipts;
     - control signs job receipts and decisions;
-    - the Effects Gateway signs effect receipts (payments, refunds, messages). In Brick 1
+    - the Effects Gateway signs effect receipts (payments, refunds, messages). In the first release
       there is no Effects Gateway yet, so control signs everything.
   - **One check verifies any receipt:** the Verify button in the browser, or
     `agentrix audit verify --receipt <digest>`, with `--site` for a site's whole chain.

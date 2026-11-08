@@ -1,11 +1,11 @@
-# Brick 1: Requirements
+# The first release: Requirements
 
-Status: v1.0 for James's review, Sat 7 Nov 2026, 18:30 EAT. Owner: the Brick 1 spec session.
+Status: v1.0 for James's review, Sat 7 Nov 2026, 18:30 EAT. Owner: the first release spec session.
 Spec chain: **requirements (this file)** → [design.md](design.md) → [tasks.md](tasks.md).
-Progress is tracked on the Brick 1 board artifact; this file defines what "done" means.
+Progress is tracked on the first release board artifact; this file defines what "done" means.
 
-Brick 1 is the single-node profile of Agentrix WebAgent Platform
-([02 §11.1](../../docs/02-architecture.md#111-single-node-profile-brick-1-self-host-marketplace)),
+The first release is the single-node profile of Agentrix WebAgent Platform
+([02 §11.1](../../docs/02-architecture.md#111-single-node-profile-first-release-self-host-marketplace)),
 entered in the Vultr Agent Rush (Challenge 1). It is the first shippable product, not a demo:
 every requirement here stays in the product. Submissions close **Mon 9 Nov 2026, 02:00 EAT**;
 the target is **Sun 8 Nov, 20:00 EAT**.
@@ -16,7 +16,7 @@ across, and nothing it tried got out.*
 
 ## 1. Who must be convinced, and by what
 
-Brick 1 is judged by people who could buy it. Each buyer needs to see one thing work for real.
+The first release is judged by people who could buy it. Each buyer needs to see one thing work for real.
 
 | Buyer | What convinces them | Proved by |
 |---|---|---|
@@ -27,13 +27,13 @@ Brick 1 is judged by people who could buy it. Each buyer needs to see one thing 
 
 **Vultr as a customer.** The same single-node build is a Vultr Marketplace app (self-host)
 and the unit of Zavora's managed service on Vultr. Vultr could run it for its own sites and
-offer it to its customers' WordPress sites. Brick 1 must therefore install from a documented,
+offer it to its customers' WordPress sites. The first release must therefore install from a documented,
 repeatable recipe (R14), not by hand.
 
 ## 2. Conventions
 
 - Requirements use EARS: *WHEN* (event), *WHILE* (state), *IF … THEN* (unwanted behaviour),
-  *WHERE* (option); otherwise ubiquitous. "The platform" means the Brick 1 deployment.
+  *WHERE* (option); otherwise ubiquitous. "The platform" means the first release deployment.
 - Priority: **M** must ship Sunday; **S** should ship Sunday; **C** could; **W** won't this
   weekend (kept for the pilot).
 - Each criterion has an id (`R3.2`). Tasks in [tasks.md](tasks.md) cite these ids; the board
@@ -260,7 +260,7 @@ both, so the gateway ships with two: Vultr Serverless Inference and Anthropic.*
 
 ## 5. Out of scope this weekend (W)
 
-Payments (Brick 2; PayPal appears in journey mockups only), the fleet view and multi-site
+Payments (the fleet release; PayPal appears in journey mockups only), the fleet view and multi-site
 operation, DNS cutover automation, VKE, billing, social sign-in, WhatsApp, voice, fleet
 learning. Each is designed in docs 01–09 and returns in the pilot.
 

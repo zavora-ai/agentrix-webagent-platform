@@ -1,7 +1,7 @@
 # W4 wiring for agentrix-node: Assess, the claim and the Move render agentrix-onboarding's pages.
 #
-# Apply on platform after Brick 1's handover (assess/ is Brick 1 Assess and broker's, claim/ the
-# control-plane session's, pages/ Brick 1 spec's): `git apply specs/platform/patches/w4-assess-wiring.patch`.
+# Apply on platform after the first release's handover (assess/ is the first release Assess and broker's, claim/ the
+# control-plane session's, pages/ the first release spec's): `git apply specs/platform/patches/w4-assess-wiring.patch`.
 # Made against platform 6c621a7 (node already depends on agentrix-onboarding and mounts it in
 # wiring/host.rs). With it applied on W4's branch node's lib tests pass (134); Assess and the
 # signed-in claim page were checked through a local node, the Move page in W4's preview.

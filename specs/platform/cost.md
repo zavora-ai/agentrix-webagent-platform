@@ -36,7 +36,7 @@ compressed size, so less).
 
 ### Model calls
 
-Brick 1's gateway meters every call into `control.db`'s `usage` table. W8 is building the read
+The first release's gateway meters every call into `control.db`'s `usage` table. W8 is building the read
 API (`agentrix_store::metrics`); until it lands, the numbers come from that table.
 
 | | Calls | Cost |
@@ -112,7 +112,7 @@ own usage rows, live mode, Sun 8 Nov from 00:40 EAT, reported at 08:22 EAT.
 
 | Period | control | sandbox | fixture |
 |---|---|---|---|
-| Now to Sun 8 Nov 20:00 EAT (Brick 1's windows A to D) | up | up | up |
+| Now to Sun 8 Nov 20:00 EAT (the first release's windows A to D) | up | up | up |
 | Sun 20:00 to Mon 9 Nov 02:00 (lablab closes) | up | up | up |
 | **Judging** (from Mon 02:00 until lablab's results are final) | up | up | up |
 | After judging, between working sessions | up | asleep | asleep |
@@ -201,10 +201,10 @@ now.
 
 #### Restore runbook
 
-From the Brick 1 checkout. It needs James's yes. W12 runs it, or James runs it with W12
+From the first release checkout. It needs James's yes. W12 runs it, or James runs it with W12
 watching.
 
-Until W12's `deploy/` commits are merged, run W12's copy of the script against the Brick 1
+Until W12's `deploy/` commits are merged, run W12's copy of the script against the first release
 checkout's settings and state:
 
 ```sh
@@ -293,7 +293,7 @@ word, from the snapshots taken at 07:19 to 07:23. The times are from `deploy/.st
   - `wake` now runs `docker compose start` in `/opt/fixture` (c9716e5).
   - It reports a VM as serving only when that VM's check passes, and exits non-zero otherwise.
   - The lasting fix is `restart: unless-stopped` on `db` and `wordpress` in the fixture's compose
-    file. That file belongs to the Brick 1 Gauntlet builder, so it's an ask on the board.
+    file. That file belongs to the first release Gauntlet builder, so it's an ask on the board.
 - **Host keys:** `ssh_deletekeys: false` didn't keep control's key. Expect to check a new key in
   Vultr's web console after a restore.
 
@@ -303,7 +303,7 @@ fixture).
 
 ### 2.6 The commands
 
-All in `deploy/provision.sh`, run from the Brick 1 checkout. Each is a dry run without `--yes`.
+All in `deploy/provision.sh`, run from the first release checkout. Each is a dry run without `--yes`.
 
 ```sh
 deploy/provision.sh costs                          # read only, any time
@@ -315,7 +315,7 @@ deploy/provision.sh wake sandbox fixture [--yes]   # back from the latest snapsh
 
 ## 3. Rules for acting
 
-- **Snapshots** cost little and change nothing. W12 takes them outside Brick 1's windows A to D
+- **Snapshots** cost little and change nothing. W12 takes them outside the first release's windows A to D
   and logs each one on the board.
 - **Sleeping, waking, restore tests and destroying** need James's yes on the board first. The ask
   names the exact command, what goes down, the saving per day and the restore time.
@@ -323,7 +323,7 @@ deploy/provision.sh wake sandbox fixture [--yes]   # back from the latest snapsh
   every deploy needs the fixture. `SLEEP_NOT_BEFORE` enforces it.
 - **Never during a deploy.** `snapshot` and `sleep` check the deploy lock
   (`deploy/deploy.sh --status`) and refuse while it is held.
-- Only W12 runs these commands, and only from the Brick 1 checkout. Merging them goes through the
+- Only W12 runs these commands, and only from the first release checkout. Merging them goes through the
   control-plane session's review (they are `deploy/` changes).
 
 ## 4. Cost rules for every session
@@ -367,7 +367,7 @@ per-site and per-purpose budgets, record and replay).
 
 - A site's model spend at 50%, 80% and 100% of its monthly budget, and of the daily cap.
 - **A fleet-wide daily cap** in `agentrix-models`, plus one shared cap for the sample sites, which
-  bill to the operator. Brick 1 gives each site its own $5 a day, and nothing caps the total.
+  bill to the operator. The first release gives each site its own $5 a day, and nothing caps the total.
   W8 built both caps (38b7dd2 on its branch), and the coordinator merges them before any sample
   goes live. The settings and their defaults:
   - `AGENTRIX_FLEET_DAILY_CAP_USD`, **$8** for all sites together per UTC day. That holds a bad

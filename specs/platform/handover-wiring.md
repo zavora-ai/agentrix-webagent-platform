@@ -1,7 +1,7 @@
-# Wiring that waits for Brick 1's handover
+# Wiring that waits for the first release's handover
 
-Changes to files Brick 1 sessions still own (`how-we-work.md`, "Files Brick 1 owns"). W0 applies
-them on `platform` once Brick 1 spec hands over `main`, in this order, each with the full check
+Changes to files the first release sessions still own (`how-we-work.md`, "Files the first release owns"). W0 applies
+them on `platform` once the first release spec hands over `main`, in this order, each with the full check
 (`scripts/platform-merge.sh --check`) and a local node run, and with the owner's agreement where
 the owner is back. Kept current by W0.
 
@@ -20,7 +20,7 @@ clippy (`-D warnings`) and tests pass on that branch. The "Applied" column names
 
 1. **Deploy A:** branch `platform-deploy-a` (36cff41): `main` as of 976b0e7 plus only the
    tolerant migrator in `db/mod.rs` and its test (no new migrations, no new routes). `main` can't
-   fast-forward to `575aae9` because Brick 1 kept committing, so this branch is rebuilt on the
+   fast-forward to `575aae9` because the first release kept committing, so this branch is rebuilt on the
    latest `main` if it moves again. The gauntlet must stay 10/10. After this, the binary a
    rollback returns to starts on a database with newer versions.
 2. **Deploy B:** `main` fast-forwarded to the checked `platform` head. New tables arrive (0100,
@@ -90,11 +90,11 @@ the path runs as before.
 | 4.9 | `AGENTRIX_MODELS_URL` set for node (the gateway on loopback); the gateway rebuilt with W8's `x-agentrix-webagent` and `x-agentrix-job` usage columns | W8, W1 |
 | 4.10 | `AGENTRIX_FREEZE_ENFORCED=1` in node's environment once 2b.1 is deployed, so the console and gestures offer Freeze | W5, W0 |
 
-## 4a. Fixes in Brick 1 files (found on the platform walk, Sun 8 Nov)
+## 4a. Fixes in the first release files (found on the platform walk, Sun 8 Nov)
 
 | # | Fix | Found by | Files |
 |---|---|---|---|
-| 4a.1 | Passkey registration attaches the new passkey to whoever is signed in, whatever email was typed. James hit it: his passkey landed on a test account. Refuse when the typed email isn't the signed-in account's, and have Brick 1's `/auth/register` page say who is signed in, as W4's pages now do (81b7a97) | W0, W4 | `crates/agentrix-node/src/auth/routes.rs` (passkey register start), the `/auth/register` template |
+| 4a.1 | Passkey registration attaches the new passkey to whoever is signed in, whatever email was typed. James hit it: his passkey landed on a test account. Refuse when the typed email isn't the signed-in account's, and have the first release's `/auth/register` page say who is signed in, as W4's pages now do (81b7a97) | W0, W4 | `crates/agentrix-node/src/auth/routes.rs` (passkey register start), the `/auth/register` template |
 | 4a.2 | The claim's error message ends in a doubled full stop because it joins `{e}.` onto an error that already ends in one. W4 tidies it on its page; fix it at the source | W4 | `crates/agentrix-node/src/claim/mod.rs` |
 
 ## 5. Reviews owed by sessions that were stopped
@@ -103,5 +103,5 @@ the path runs as before.
 |---|---|
 | W3's operator sign-in through the public approvals API with a second sign-in context | Agentrix WebAgent Control Plane |
 | `OwnerAccounts` (one re-export in `auth/mod.rs`) for W6's email and recovery codes | Agentrix WebAgent Control Plane |
-| Receipt kinds and `Subject::Account` added to `agentrix-types` | Brick 1 spec, Data architecture |
-| `collapsible_if` allowed workspace-wide | Brick 1 spec |
+| Receipt kinds and `Subject::Account` added to `agentrix-types` | The first release spec, Data architecture |
+| `collapsible_if` allowed workspace-wide | The first release spec |

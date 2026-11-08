@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Agentrix Brick 1 · provision the Vultr substrate (task S0-04; design §2; R14.1–R14.2).
+# Agentrix · provision the Vultr substrate (task S0-04; design §2; R14.1–R14.2).
 #
 #   deploy/provision.sh [plan]         Dry run: prices, what would be created, rendered
 #                                      cloud-init. Needs no key and creates nothing.
@@ -33,7 +33,7 @@ ENV_FILE=${AGENTRIX_DEPLOY_ENV:-$DEPLOY_DIR/.env}
 STATE_DIR=${AGENTRIX_DEPLOY_STATE:-$DEPLOY_DIR/.state}   # the checkout that ran apply holds it
 API=https://api.vultr.com/v2
 PREFIX=agx-b1
-TAGS='["agentrix","brick-1"]'
+TAGS='["agentrix","agentrix-platform"]'
 
 die() { printf 'provision: %s\n' "$*" >&2; exit 1; }
 say() { printf '%s\n' "$*"; }
@@ -167,7 +167,7 @@ for p in sys.argv[1:]:
 # --- plan --------------------------------------------------------------------------------
 
 cmd_plan() {
-  say "Agentrix Brick 1 · provisioning plan (dry run: nothing is created)"
+  say "Agentrix · provisioning plan (dry run: nothing is created)"
   say ""
   local avail plans
   avail=$(public "/regions/$REGION/availability") || die "region $REGION not found"
@@ -640,7 +640,7 @@ cmd_snapshot() {
       say "  $PREFIX-$role ($id): $(snap_cost "$gb") (Vultr bills the compressed size)"
       say "    already: $(snapshots_of "$role" | awk -F'\t' 'END { print NR " snapshot(s)" }')"
     done
-    say "Take them outside Brick 1's windows A to D and log each on the board; then: deploy/provision.sh snapshot ${ROLES[*]} --yes"
+    say "Take them outside the first release's windows A to D and log each on the board; then: deploy/provision.sh snapshot ${ROLES[*]} --yes"
     return 0
   fi
   require_lock_free

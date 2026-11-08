@@ -1,5 +1,5 @@
 #!/usr/sbin/nft -f
-# Agentrix Brick 1 · fixture VM host firewall (design §2).
+# Agentrix · fixture VM host firewall (design §2).
 #
 # The fixture is deliberately infected (the gauntlet's ten planted attacks), so it is treated
 # as hostile: public 80/443 for the sealed rooms to crawl, SSH only from control's VPC address,

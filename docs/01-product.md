@@ -267,9 +267,9 @@ Marketplace listing, the service-provider partner track and Cloud Alliance co-ma
 
 ## 10. Plan to prove it
 
-1. **Brick 1 (9 Nov):** the Move on Vultr, end to end for one WordPress site, built for the
+1. **The first release (9 Nov):** the Move on Vultr, end to end for one WordPress site, built for the
    Vultr Agent Rush ([04-vultr-agent-rush.md](04-vultr-agent-rush.md)).
-2. **Brick 2 (12 Nov):** the Cashier, via Steward, for the PayPal AI Hackathon.
+2. **The fleet release (12 Nov):** the Cashier, via Steward, for the PayPal AI Hackathon.
 3. **Pilot (Dec–Jan):** 10 sites, starting with zavora.ai (site one, "company number one"),
    classyperfumes.shop and Kenyan SMEs. Measure every metric in §8 weekly.
 4. **Launch (Q1 2027):** Agency tier, Vultr Marketplace listing, billing, multi-region.

@@ -40,7 +40,7 @@ def data_architecture():
     # Column 2 · inside the site wall
     s.panel(306, 84, 500, 648, "INSIDE THE SITE WALL · ONE SITE · C0–C3")
     stores = [("Records", ["conversations · leads · orders", "facts · drafts · kernel runs", "1-node: SQLite file per site", "fleet: Postgres schema + role"], "svc"),
-              ("Vectors", ["site corpus · owner facts", "1-node: LanceDB in site dir", "fleet: pgvector, same schema", "Brick 1: Vultr vector store"], "svc"),
+              ("Vectors", ["site corpus · owner facts", "1-node: LanceDB in site dir", "fleet: pgvector, same schema", "the first release: Vultr vector store"], "svc"),
               ("Objects (CAS)", ["releases · evidence · artifacts", "legacy archive (Archive tier)", "1-node: local dir, mirrored", "fleet: Object Storage prefix"], "vultr"),
               ("Site keys", ["a data key per site, wrapped", "personal blobs · exports", "backups · archive", "destroyed = crypto-shredded"], "key"),
               ("Fast state", ["rate limits · wake queues", "presence · cache pub/sub", "1-node: in process", "fleet: Valkey · TTL · no records"], "vultr"),

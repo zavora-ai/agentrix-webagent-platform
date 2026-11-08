@@ -4,7 +4,7 @@ Status: architecture v0.1, 7 Nov 2026. Product: [01-product.md](01-product.md). 
 [03-trust.md](03-trust.md). WebAgents: [05-webagents.md](05-webagents.md). Diagrams:
 [`docs/diagrams/`](diagrams/).
 
-This architecture is built to last past the hackathon. Brick 1 (the Vultr Agent Rush entry)
+This architecture is built to last past the hackathon. The first release (the Vultr Agent Rush entry)
 is the single-node profile of exactly this design, not a separate demo.
 
 ---
@@ -31,7 +31,7 @@ is the single-node profile of exactly this design, not a separate demo.
    - receipts (hash chain plus signature);
    - our crawler's identity (Web Bot Auth / HTTP Message Signatures).
 8. **One codebase, two profiles.** *Single-node* (one or two VMs; SQLite and a local object
-   store; self-host, Marketplace, Brick 1) and *Fleet* (VKE, managed Postgres, Valkey, Object
+   store; self-host, Marketplace, the first release) and *Fleet* (VKE, managed Postgres, Valkey, Object
    Storage, CDN).
 9. **Speed is measured, not claimed.** Performance budgets (§9) are enforced by benchmarks in
    CI. Rust runs the whole hot path.
@@ -245,7 +245,7 @@ following design.
     the broker, as content-addressed blobs;
   - rooms hold no credential the platform issued, so nothing in a room can act as us at an
     allowed origin;
-  - **`agentrix-egress` gets a hard security review before Brick 1 ships.** The review covers
+  - **`agentrix-egress` gets a hard security review before the first release ships.** The review covers
     DNS pinning and rebinding, redirects, IPv6 and encoded addresses, CONNECT handling,
     header smuggling and the caps. The containment gauntlet
     ([04 §3](04-vultr-agent-rush.md#3-the-containment-gauntlet-the-videos-containment-moment))
@@ -339,8 +339,8 @@ lakehouse, visualisation, tenancy and lifecycle. This table summarises it.
 | Content-addressed objects | `releases/<site>/<seq>/…` + `current.pointer` (adk-site PrefixPointer); evidence; job artifacts; exports; encrypted legacy archive | Local directory | **Vultr Object Storage** (Standard; Archive tier for legacy archives) |
 | Fast state | Rate limits, sessions, queues, gateway counters, cache-invalidation pub/sub | In-process | **Vultr Managed Valkey** |
 | Events | Content-free, typed events (`agentrix-events`) for analytics and audit fan-out | An outbox written in each change's transaction; the site log | The outbox relayed to **Vultr Managed Kafka** by `agentrix-lake` |
-| Lake | Content-free analytics history | None in Brick 1; date-partitioned Parquet at pilot | Apache Iceberg on Object Storage, per cell ([ADR-027](adr/027-content-free-lakehouse.md)) |
-| Retrieval | Per-site corpus, memory facts | **LanceDB** beside the site's records; Vultr's Inference vector store for public text in Brick 1 only | **pgvector** beside the records ([ADR-026](adr/026-vectors-beside-their-records.md)) |
+| Lake | Content-free analytics history | None in the first release; date-partitioned Parquet at pilot | Apache Iceberg on Object Storage, per cell ([ADR-027](adr/027-content-free-lakehouse.md)) |
+| Retrieval | Per-site corpus, memory facts | **LanceDB** beside the site's records; Vultr's Inference vector store for public text in the first release only | **pgvector** beside the records ([ADR-026](adr/026-vectors-beside-their-records.md)) |
 
 **Ownership:** a full export (content, customers, built site, receipts) is a one-click job.
 Deletion propagates across every store.
@@ -442,7 +442,7 @@ The Model Gateway never trusts a price table alone. It meters tokens per site fr
 
 ![Vultr deployment](diagrams/vultr-deployment.svg)
 
-### 11.1 Single-node profile (Brick 1, self-host, Marketplace)
+### 11.1 Single-node profile (the first release, self-host, Marketplace)
 
 - **`control` VM** (VX1 or High Frequency): edge, control, kernel, Model Gateway, Effects
   Gateway and broker; Caddy for TLS; SQLite; local CAS mirrored to Object Storage.
@@ -468,7 +468,7 @@ The Model Gateway never trusts a price table alone. It meters tokens per site fr
 
 | Use | Region |
 |---|---|
-| Brick 1 | **Atlanta**: VX1 and Object Storage |
+| The first release | **Atlanta**: VX1 and Object Storage |
 | MVP control plane | **Amsterdam**: VX1 and Object Storage, midway between Africa and Europe. **Frankfurt** has no Object Storage (7 Nov 2026), so it holds standby compute and a Postgres replica only; backups and release copies go to Milan (EU) or London ([09 §8.4](09-data-architecture.md#84-residency)) |
 | African serving | **Johannesburg** edge and compute (no VX1 or Object Storage there; releases replicate in) |
 
@@ -492,7 +492,7 @@ primary cell, with a standby in a second cell. It holds:
 - the console and partner APIs.
 
 Release trains move cell by cell. A cell has a site cap, and past it a new cell opens. The
-Brick 1 single node counts as cell `atl-0`. The plan is `ams-1` first, then `fra-1` as the
+The first release single node counts as cell `atl-0`. The plan is `ams-1` first, then `fra-1` as the
 standby for compute and the database (its backups and release copies live in Milan or London,
 since Frankfurt has no Object Storage), then `jnb-1` as an edge cell for African sites. Details:
 [08 §3.2](08-control-plane.md#32-cells-and-regions).

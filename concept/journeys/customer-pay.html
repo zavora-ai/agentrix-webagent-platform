@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pay with PayPal</title>
-<meta name="description" content="Customer journey, step 4 (Brick 2): Njeri sees the amount, the payee and Kilele's rate, then pays in US dollars on PayPal's own page. The cake's payment request appears only after Wanjiru approves.">
+<meta name="description" content="Customer journey, step 4 (the fleet release): Njeri sees the amount, the payee and Kilele's rate, then pays in US dollars on PayPal's own page. The cake's payment request appears only after Wanjiru approves.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Manrope:wght@600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -15,8 +15,8 @@
   .kilele [hidden] { display: none !important; }
   .kilele a:focus-visible, .kilele button:focus-visible { outline: 2px solid var(--k-brown); outline-offset: 2px; box-shadow: none; }
   .j-note.never { margin: 0; display: block; }
-  .j-cap > span:not(.n):not(.j-brick) { min-width: 0; }
-  .j-cap .j-brick { margin-left: auto; flex: none; }
+  .j-cap > span:not(.n):not(.j-first) { min-width: 0; }
+  .j-cap .j-first { margin-left: auto; flex: none; }
   #pp-1042, #pp-1043, #rails { scroll-margin-top: 80px; }
 
   .k-me { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--k-brown); color: #fff; font: 700 11px/1 var(--font-text); }
@@ -74,7 +74,7 @@
 <nav class="j-steps" aria-label="Customer journey" data-steps></nav>
 <main class="wrap j-main">
   <header class="j-head">
-    <p class="eyebrow">Step 4 of 7 · Customer <span class="j-brick">Brick 2</span></p>
+    <p class="eyebrow">Step 4 of 7 · Customer <span class="j-first">The fleet release</span></p>
     <h1>Pay with PayPal</h1>
     <p class="lead">Kilele's page shows the amount, the payee and the rate first. Then PayPal opens its own window, where Njeri signs in and approves. Kilele and its desks never see her PayPal details.</p>
   </header>
@@ -89,7 +89,7 @@
       <div role="tabpanel" id="p-1042" aria-labelledby="tab-1042">
         <div class="j-screens">
           <div class="j-screen">
-            <p class="j-cap"><span class="n">1</span><span>Kilele's pay step. The amount, the payee and the rate come first.</span><span class="j-brick">Brick 2</span></p>
+            <p class="j-cap"><span class="n">1</span><span>Kilele's pay step. The amount, the payee and the rate come first.</span><span class="j-first">The fleet release</span></p>
             <div class="j-device kilele">
               <div class="j-url"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>kilele-bakery.example/orders/K-1042/pay</span></div>
               <div class="k-bar">
@@ -114,7 +114,7 @@
           </div>
 
           <div class="j-screen" id="pp-1042">
-            <p class="j-cap"><span class="n">2</span><span>PayPal's own window. Kilele isn't in it.</span><span class="j-brick">Brick 2</span></p>
+            <p class="j-cap"><span class="n">2</span><span>PayPal's own window. Kilele isn't in it.</span><span class="j-first">The fleet release</span></p>
             <div class="j-provider" role="group" aria-label="PayPal's window, shown as a placeholder">
               <div class="bar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>paypal.com</span></div>
               <div class="body">
@@ -127,7 +127,7 @@
           </div>
 
           <div class="j-screen">
-            <p class="j-cap"><span class="n">3</span><span>Back on Kilele: paid, confirmed, with a receipt.</span><span class="j-brick">Brick 2</span></p>
+            <p class="j-cap"><span class="n">3</span><span>Back on Kilele: paid, confirmed, with a receipt.</span><span class="j-first">The fleet release</span></p>
             <div class="j-device kilele">
               <div class="j-url"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>kilele-bakery.example/orders/K-1042</span></div>
               <div class="k-bar">
@@ -157,7 +157,7 @@
       <div role="tabpanel" id="p-1043" aria-labelledby="tab-1043" hidden>
         <div class="j-screens">
           <div class="j-screen">
-            <p class="j-cap"><span class="n">1</span><span>Before Wanjiru's OK there is nothing to pay. Brick 1 ends here.</span></p>
+            <p class="j-cap"><span class="n">1</span><span>Before Wanjiru's OK there is nothing to pay. The first release ends here.</span></p>
             <div class="j-device kilele">
               <div class="j-url"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>kilele-bakery.example/orders</span></div>
               <div class="k-bar">
@@ -179,7 +179,7 @@
           </div>
 
           <div class="j-screen">
-            <p class="j-cap"><span class="n">2</span><span>Wanjiru approves. Only then does a payment request appear, on Njeri's orders page.</span><span class="j-brick">Brick 2</span></p>
+            <p class="j-cap"><span class="n">2</span><span>Wanjiru approves. Only then does a payment request appear, on Njeri's orders page.</span><span class="j-first">The fleet release</span></p>
             <div class="j-device kilele">
               <div class="j-url"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>kilele-bakery.example/orders</span></div>
               <div class="k-bar">
@@ -208,7 +208,7 @@
           </div>
 
           <div class="j-screen" id="pp-1043">
-            <p class="j-cap"><span class="n">3</span><span>The same PayPal flow, for USD 40.70.</span><span class="j-brick">Brick 2</span></p>
+            <p class="j-cap"><span class="n">3</span><span>The same PayPal flow, for USD 40.70.</span><span class="j-first">The fleet release</span></p>
             <div class="j-provider" role="group" aria-label="PayPal's window, shown as a placeholder">
               <div class="bar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>paypal.com</span></div>
               <div class="body">
@@ -231,7 +231,7 @@
 
       <!-- ===== The other rails ===== -->
       <section class="x-box" id="rails" aria-labelledby="rails-h">
-        <div class="x-head"><h2 id="rails-h">The other rails</h2><span class="j-brick">Brick 2</span></div>
+        <div class="x-head"><h2 id="rails-h">The other rails</h2><span class="j-first">The fleet release</span></div>
         <div class="x-rails">
           <div class="x-rail">
             <h3>M-Pesa <small>STK Push</small></h3>
@@ -263,7 +263,7 @@
     </section>
 
     <aside class="j-notes" aria-label="What happens underneath">
-      <div class="j-note"><h3><span class="j-brick">Brick 2</span> Mockups this weekend</h3><p>Brick 1 ends the custom order at the owner's approval; paying is Brick 2 (12 Nov).</p></div>
+      <div class="j-note"><h3><span class="j-first">The fleet release</span> Mockups this weekend</h3><p>The first release ends the custom order at the owner's approval; paying is the fleet release (12 Nov).</p></div>
       <a class="j-meet" href="index.html#meet-payment"><span>Meets the owner lane</span><b>The payment lands on Wanjiru's order</b></a>
       <a class="j-meet" href="index.html#meet-payout"><span>Meets the owner lane</span><b>The payout settles in Kilele's PayPal balance</b></a>
       <div class="j-note"><h3>Dollars on PayPal, and why</h3><p>PayPal's list of supported currencies has no Kenyan shilling, so PayPal charges US dollars. The rate is the one Kilele posts in its price list, 1 USD = KSh 129.00, pinned on each order. A refund uses the same rate.</p></div>

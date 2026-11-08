@@ -224,7 +224,7 @@ Control plans the Move as a graph of jobs and sends each job to a sealed room:
 | Go live | Control, after the owner's passkey | The release is signed and the site switched over. The old site is kept; undo is one tap for 30 days |
 
 More detail: [docs/02-architecture.md §4.4](docs/02-architecture.md),
-[specs/brick-1/design.md](specs/brick-1/design.md) and
+[specs/first-release/design.md](specs/first-release/design.md) and
 [section 9.4](#94-how-the-agent-does-real-work).
 
 ## 3. The main parts
@@ -273,8 +273,8 @@ fetched from the web, and code a model writes.
 | Rule | What the platform does | Where |
 |---|---|---|
 | **Process isolation** | A separate VM. Every job gets its own container under gVisor (`runsc`) with a read-only root, user 65534, `--cap-drop ALL` and `no-new-privileges`. No traffic between containers | [`crates/agentrix-sandbox`](crates/agentrix-sandbox), [`deploy/docker/sandbox-daemon.json`](deploy/docker/sandbox-daemon.json) |
-| **Secret hygiene** | The sandbox holds no secret. A room's environment holds only its proxy settings. Job specs carry digests, never credentials. The Model Gateway is the only model-key holder. The Object Storage keys reach node as a systemd credential, never in its environment. The egress proxy refuses Vultr's instance metadata address | [docs/adr/004](docs/adr/004-two-key-holders.md), [design D6](specs/brick-1/design.md) |
-| **Resource limits** | Caps on CPU, memory (swap included), process count and tmpfs, and a wall-clock deadline for every job. The proxy caps bytes and lifetime per connection. The gateway enforces a daily model budget per site, for the samples and for the whole platform | [design §3.1](specs/brick-1/design.md) |
+| **Secret hygiene** | The sandbox holds no secret. A room's environment holds only its proxy settings. Job specs carry digests, never credentials. The Model Gateway is the only model-key holder. The Object Storage keys reach node as a systemd credential, never in its environment. The egress proxy refuses Vultr's instance metadata address | [docs/adr/004](docs/adr/004-two-key-holders.md), [design D6](specs/first-release/design.md) |
+| **Resource limits** | Caps on CPU, memory (swap included), process count and tmpfs, and a wall-clock deadline for every job. The proxy caps bytes and lifetime per connection. The gateway enforces a daily model budget per site, for the samples and for the whole platform | [design §3.1](specs/first-release/design.md) |
 | **Lifecycle discipline** | When its job ends, or it is killed at the deadline, the room is destroyed. The signed receipt confirms it, and artifacts are read only after that | [docs/adr/003](docs/adr/003-sandbox-plane.md) |
 
 ### 4.2 Egress
@@ -595,7 +595,7 @@ are:
 
 | Purpose | Vultr endpoint and model | What it does |
 |---|---|---|
-| `build` | `/v1/chat/completions`, standard tier (`qwen3.8-27b`, the [bake-off](specs/brick-1/bakeoff.md)'s pick: 15 of 15 pages on the first try); raised to deep (`glm-5.3`) on retries, large inputs or complex pages | Writes the new site's page code |
+| `build` | `/v1/chat/completions`, standard tier (`qwen3.8-27b`, the [bake-off](specs/first-release/bakeoff.md)'s pick: 15 of 15 pages on the first try); raised to deep (`glm-5.3`) on retries, large inputs or complex pages | Writes the new site's page code |
 | `vision-parity` | `/v1/chat/completions`, fast tier (`deepseek-v4.1-flash-1017`, the bake-off's pick), with images | Compares old and new screenshots and explains the verdict in one line |
 | `concierge`, `brief` | `/v1/chat/completions`, standard tier (`qwen3.8-27b`) | *Ask this site*, and the Chief WebAgent's morning brief |
 | `screen` | `/v1/chat/completions`, `nemotron-3.5-content-safety` | Screens untrusted text for instructions aimed at AI agents |
@@ -618,7 +618,7 @@ that the owner sees, giving the reason: "Agentrix moved its language models from
 Vultr Inference, which runs them in the US." The gateway never switches providers silently.
 
 **What a Move costs in model calls.** The latest live Move, run before the switch to Vultr, moved
-50 pages for $0.23 in model calls. The [bake-off](specs/brick-1/bakeoff.md) measured the Vultr
+50 pages for $0.23 in model calls. The [bake-off](specs/first-release/bakeoff.md) measured the Vultr
 models at about $0.0011 a page for build and vision parity.
 
 ### 9.3 Live on Vultr
@@ -713,7 +713,7 @@ apps/            Flutter workspace: owner app, customer app, shared packages
 deploy/          provision.sh, deploy.sh, cloud-init, systemd units, Caddy, nftables, smoke tests
 fixtures/        the infected WordPress fixture and the three sample businesses' seeds
 docs/            product, architecture, trust, WebAgents, website, console, control plane, data; ADRs; diagrams
-specs/brick-1/   the single-node build: requirements, design, tasks, status, acceptance, bake-off
+specs/first-release/ the first release (deprecated): requirements, design, tasks, acceptance, bake-off
 specs/platform/  the platform build: plan, architecture, data, UI, channels, cost and runbooks, voice
 specs/submission/ the Vultr Agent Rush submission: form, deck, cover, video script and pipeline
 concept/         the HTML concepts every screen was drawn from
@@ -733,7 +733,7 @@ program/         the build boards used while the platform was made
 7. [The owner console](docs/07-owner-console.md) ([concepts](concept/console/))
 8. [The control plane: how Zavora, agencies and resellers run the fleet](docs/08-control-plane.md) ([concepts](concept/control-plane/))
 9. [Data architecture: stores, vectors, the content-free lakehouse, erasure and export](docs/09-data-architecture.md)
-10. Build specs: [the single-node build](specs/brick-1/) and [the platform](specs/platform/), starting at
+10. Build specs: [the first release](specs/first-release/) (deprecated) and [the platform](specs/platform/), starting at
     [00-plan.md](specs/platform/00-plan.md) and
     [02-architecture.md](specs/platform/02-architecture.md) (what is built against what
     production needs)

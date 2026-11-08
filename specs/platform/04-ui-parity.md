@@ -227,7 +227,7 @@ a fact check.
 | `fixtures/samples/tools/tana.py:93` (writes `manifest.json:147`); `apps/customer/lib/src/flavour.dart:71` | Tana Valley Times's published stories | Tana Valley Times' published stories | generator script and Dart |
 | `fixtures/samples/tools/kilele.py` (writes `kilele-bakery/manifest.json:170`) | Visit desk: Hours, directions, parking and where Kilele delivers. | I know the hours, directions, parking and where Kilele delivers. (the other desks speak as "I") | generator script |
 | `crates/agentrix-messages/templates/owner/{weekly_review,budget_reached,new_device,signin_method_changed,role_changed,plan_started,plan_changed}.txt` | Buttons to `{console_url}/review`, `/webagents/budget`, `/trust/devices`, `/trust/people`, `/billing`, where `console_url` is `{origin}/os` | Point at routes that exist: `/console/{site}/…`, `/billing` | dead links; needs the site id in `src/identity.rs:134` |
-| `crates/agentrix-messages/templates/owner/decision_waiting.txt:2`, `decision_expiring.txt:2` | push link `/console/decisions` | `/console/{site}/decisions` | lands on the old Brick 1 list; needs the site id |
+| `crates/agentrix-messages/templates/owner/decision_waiting.txt:2`, `decision_expiring.txt:2` | push link `/console/decisions` | `/console/{site}/decisions` | lands on the old the first release list; needs the site id |
 | `crates/agentrix-home/templates/how.html:245-253` | Phone mock and tab list of the old five-tab console | The console's current apps | needs a fact check |
 | `crates/agentrix-onboarding/templates/onboarding/move.html:28` | {host} on WordPress | depends on fix 9 below | the home page promises Shopify and React |
 
@@ -238,7 +238,7 @@ The ten gaps that most hurt a real owner or customer.
 1. **No preview before sign-up.** Owners create an account without seeing their rebuilt site.
    `crates/agentrix-onboarding/templates/onboarding/assess.html`, with a preview route in
    `crates/agentrix-node/src/assess/mod.rs`.
-2. **Two consoles.** The Move, receipts and decision push links open Brick 1 pages with the old
+2. **Two consoles.** The Move, receipts and decision push links open the first release pages with the old
    five-tab nav. `crates/agentrix-shell/src/routes.rs:529`, `crates/agentrix-shell/src/control.rs:780`,
    `crates/agentrix-console/templates/console/base.html`.
 3. **Owner emails link to pages that don't exist** (`/os/webagents/budget`, `/os/trust/devices`,

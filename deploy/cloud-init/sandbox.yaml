@@ -1,5 +1,5 @@
 #cloud-config
-# Agentrix Brick 1 · sandbox VM, VX1 (design §1 D1, D6; §2; §3.1). Rendered by
+# Agentrix · sandbox VM, VX1 (design §1 D1, D6; §2; §3.1). Rendered by
 # deploy/provision.sh, which fills the @@…@@ tokens after control exists, so this host's
 # firewall can name control's VPC address.
 #

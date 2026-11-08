@@ -1,4 +1,4 @@
-# Agentrix Brick 1 · control VM. Caddy terminates TLS (automatic HTTPS) and forwards to
+# Agentrix · control VM. Caddy terminates TLS (automatic HTTPS) and forwards to
 # agentrix-node on loopback. Tokens @@…@@ are filled by deploy/provision.sh; until the platform
 # domain is chosen (task S0-03) the site address is ":80" and no certificate is requested.
 #

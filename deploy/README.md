@@ -1,6 +1,6 @@
-# Deploying Brick 1 on Vultr
+# Deploying the first release on Vultr
 
-This folder creates the Vultr substrate for Brick 1 (design §2, R14):
+This folder creates the Vultr substrate for the Agentrix WebAgent Platform (first-release design §2, R14):
 - three VMs in one region, on one VPC: `control`, `sandbox` (VX1) and `fixture`;
 - the firewall groups and each host's nftables;
 - Caddy, and Docker with gVisor;
@@ -42,7 +42,7 @@ The rules and the numbers are in [specs/platform/cost.md](../specs/platform/cost
 
 ```sh
 deploy/provision.sh costs                          # read only: this month's bill, run rate, snapshots
-deploy/provision.sh snapshot [ROLE…] [--yes]       # changes nothing; outside Brick 1's windows A-D
+deploy/provision.sh snapshot [ROLE…] [--yes]       # changes nothing; outside the first release's windows A-D
 deploy/provision.sh sleep sandbox fixture [--yes]  # fresh snapshot, then delete (James's yes)
 deploy/provision.sh wake [control] sandbox fixture [--yes]   # recreate from the latest snapshots, control first (James's yes)
 ```

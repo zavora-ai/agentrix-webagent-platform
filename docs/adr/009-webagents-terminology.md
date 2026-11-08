@@ -10,7 +10,7 @@ The product called its AI workers "staff" and their lead the "Chief of Staff". T
 
 - The AI workers are **WebAgents** (one **WebAgent**), always written as one capitalised word. The product is the **Agentrix WebAgent Platform** and the company is **Zavora**. The console tab "Staff" becomes "WebAgents", and the tagline becomes "Move your website. Meet your WebAgents."
 - The lead WebAgent is the **Chief WebAgent** (James). Owners read a chief as the one who leads the others, and the title carries the product's own word.
-- Considered and not chosen: **Coordinator**, proposed first because it matches adk-rust's term for the role (`TeamSpec::coordinator`, the partition coordinator), but plain; **Steward**, adk-website's name for the role, because it collides with Zavora's Steward payments and receipts engine (Brick 2); **Manager**, because it collides with the human "manager" team role; keeping **Chief of Staff**, because it keeps the old word.
+- Considered and not chosen: **Coordinator**, proposed first because it matches adk-rust's term for the role (`TeamSpec::coordinator`, the partition coordinator), but plain; **Steward**, adk-website's name for the role, because it collides with Zavora's Steward payments and receipts engine (the fleet release); **Manager**, because it collides with the human "manager" team role; keeping **Chief of Staff**, because it keeps the old word.
 - Runtime principals keep the role's technical name: the Chief WebAgent is `urn:adk:agent:{site}/coordinator`, because in the runtime it is the team's coordinator. Only surfaces and documents say "Chief WebAgent".
 
 ## Consequences

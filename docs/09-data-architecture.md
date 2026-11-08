@@ -32,7 +32,7 @@ and capacities are **hypotheses** until the pilot measures them.
     buckets with a prefix per site, and Managed Kafka for content-free events.
 - **Vectors live beside their records** (§4, [ADR-026](adr/026-vectors-beside-their-records.md)):
   pgvector in the fleet, LanceDB on a single node, one adk-rag `VectorStore` trait. Vultr's
-  vector store is an optional adapter for public text only; Brick 1 may use it. Qdrant is the
+  vector store is an optional adapter for public text only; the first release may use it. Qdrant is the
   escape hatch for very large corpora.
 - **A content-free lakehouse per cell** (§5, [ADR-027](adr/027-content-free-lakehouse.md)):
   - an outbox written in the same transaction as each change, relayed to Kafka;
@@ -211,7 +211,7 @@ store hold sealed blobs and call a verifier, never plaintext seeds or hashes.
 | **Fast state** | In process | Managed Valkey per cell | adk-session `RedisSessionService` etc. (not used for records) | Rate limits, wake-front queues, presence, cache invalidation, gateway pre-checks |
 | **Site log and outbox** | `data/sites/<site>/data/log.db` (the site log on `AuditLogStore`) and an outbox table in `records.db` | Site log rows in the site schema; one shared `platform.outbox` table per cell | `AuditLogStore` (Merkle log), kernel `LedgerStore` | Receipts; content-free events waiting for the relay |
 | **Events** | In-process channel | Managed Kafka per cell | — (kernel `EventBus` is in-process) | Content-free events (§3.6) |
-| **Lakehouse** | None (Brick 1); Parquet under `data/lake/` (pilot) | Iceberg tables on Object Storage per cell | — | C0–C1 history (§5) |
+| **Lakehouse** | None (the first release); Parquet under `data/lake/` (pilot) | Iceberg tables on Object Storage per cell | — | C0–C1 history (§5) |
 | **Observability** | Local OTLP endpoint or none | OTel collector per cell; backend on Object Storage | `adk-telemetry` `init_with_otlp` | M7 |
 
 ### 3.2 What adk-rust v3 already stores
@@ -279,7 +279,7 @@ data/
     site/                         adk-site DirectoryHost: objects/ (content-addressed), manifests/,
                                   log/ tiles, checkpoints/, current.pointer
   cas/sha256/<aa>/<bb>/<digest>   evidence, artifacts, exports (C3 blobs sealed with the site key)
-  lake/                           pilot: Parquet partitioned by date (no lake in Brick 1)
+  lake/                           pilot: Parquet partitioned by date (no lake in the first release)
 ```
 
 - **Releases** are written by `DirectoryHost` locally, which the edge serves. They are also
@@ -462,7 +462,7 @@ conversations in bulk, and anything from the owner's connected tools (M10).
 | Latency from the edge | A cross-region call | In-cell, a few ms (*hypothesis*) | In-process | In-cell |
 | Cost | Bundled with the subscription (to verify) | Shares the cell database; memory per HNSW index | Disk only | A separate cluster to run |
 | Operations | None | None beyond Postgres | None | A stateful system per cell |
-| Fit | Brick 1, public text | **Fleet default** | **Single-node default** | Very large corpora |
+| Fit | The first release, public text | **Fleet default** | **Single-node default** | Very large corpora |
 
 **Vultr's vector store is simpler than its name** (its API docs, 7 Nov 2026):
 - **Search:** takes only the query text and returns a fixed 10 results, with no scores, no
@@ -474,7 +474,7 @@ conversations in bulk, and anything from the owner's connected tools (M10).
   the embedding model it uses is not named.
 
 It cannot do hybrid search, scoped search (U18), citations with anchors or reranking, which
-Ask and agentic search need. It suits a demo over public pages, which is how Brick 1 uses it.
+Ask and agentic search need. It suits a demo over public pages, which is how the first release uses it.
 
 **Qdrant on Vultr** means Qdrant Hybrid Cloud on VKE: Qdrant's agent runs in the cluster and
 is managed from Qdrant's control plane.
@@ -504,7 +504,7 @@ own SQLRight (an embedded SQLite engine with HNSW and hybrid search, §9) would 
 vectors inside its own SQLite, which is simpler still. The pilot evaluates it as an adk-rag
 `VectorStore` backend on recall, latency and erasure, and adopts it if it passes.
 
-Vultr's vector store remains an **adapter for C0 only**. Brick 1 lists it as a Should
+Vultr's vector store remains an **adapter for C0 only**. The first release lists it as a Should
 ([04](04-vultr-agent-rush.md)), so the demo may answer from it. It never holds facts,
 conversations or visitor data. **Qdrant** on Vultr is the escape hatch for a site whose corpus
 outgrows pgvector (a large publisher), measured against the Ask budget. It goes behind the same
@@ -580,7 +580,7 @@ flowchart LR
 - **Cadence:** bronze commits every few minutes (*hypothesis*: 5). Silver and gold rebuild
   their affected partitions hourly and at day close.
 - **Single node:** the relay writes to an in-process channel, and the ingester writes local
-  Parquet, from the pilot onwards. Brick 1 has no lake.
+  Parquet, from the pilot onwards. The first release has no lake.
 
 ### 5.3 Edge analytics without trackers
 
@@ -699,7 +699,7 @@ Metabase and ClickHouse are not.
 
 | Phase | Lake | Events | Analytics |
 |---|---|---|---|
-| **Brick 1** (9 Nov) | None | Site log only | The console reads the site's records and the kernel's KPI store directly |
+| **The first release** (9 Nov) | None | Site log only | The console reads the site's records and the kernel's KPI store directly |
 | **Pilot** (10 sites) | Date-partitioned Parquet in Object Storage, read by DuckDB | Outbox and relay; Kafka optional | `agentrix-analytics` over records plus Parquet; the first metric catalogue |
 | **Fleet** | Iceberg tables, erasure deletes, compaction, per cell | Managed Kafka per cell | Operator BI, partner views, the privacy gate for fleet learning |
 
@@ -935,7 +935,7 @@ Other exports:
 
 | Data | Where |
 |---|---|
-| A site's records, vectors, objects, site log | Its home cell: `ams-1` (EU) for the pilot; `atl-0` (US) for Brick 1. `fra-1` is a standby for compute and the database only, with no buckets and no home sites; a second active cell would be `lhr-1` ([08 §3.2](08-control-plane.md#32-cells-and-regions)) |
+| A site's records, vectors, objects, site log | Its home cell: `ams-1` (EU) for the pilot; `atl-0` (US) for the first release. `fra-1` is a standby for compute and the database only, with no buckets and no home sites; a second active cell would be `lhr-1` ([08 §3.2](08-control-plane.md#32-cells-and-regions)) |
 | Backups and release copies | The copy region, written by the platform's copier, which reads each copy back and compares digests: Milan (EU), or London. Not Frankfurt, which has no Object Storage |
 | Lake | Per cell; the global layer receives gold aggregates only |
 | Control database (owner accounts and contacts: C3) | Global layer, `ams-1`, standby `fra-1` |
@@ -1108,7 +1108,7 @@ behind features, and keep core tenant-agnostic. The result:
 - **Later:** 1 consolidation, which waits for a release boundary.
 - **Platform-side or no work:** 6 items.
 
-None is needed for Brick 1. Its notes, with file and line evidence, are in the session notes
+None is needed for the first release. Its notes, with file and line evidence, are in the session notes
 (`adk-rust-data-gaps-triage.md`).
 
 | # | Crate | Missing today | Why the platform needs it | Urgency | Framework verdict (7 Nov) |
@@ -1153,13 +1153,13 @@ the Program Hub as one `requirements` row per workstream (`r-data-to-…`).
 `r-platform-auth-to-data`):
 - §2.3 classifies the sign-in material, and §3 holds it.
 - A8 goes to architecture and D20 to the framework. Both are open.
-- A9 (Inference runs in the US) followed from Brick 1's model check (S0-05). It is open.
+- A9 (Inference runs in the US) followed from the first release's model check (S0-05). It is open.
 
 **webagent-architecture (02, 03, 05):**
 
 | # | Ask | Priority |
 |---|---|---|
-| A1 | 02 §7: point at this document, and correct three rows. Single-node retrieval becomes LanceDB, with Vultr's vector store for public text in Brick 1 only. "Row-level security on `site_id`" becomes "a schema and a role per site; row-level security on shared tables", since adk-rust's tables have no tenant column. Events go through an outbox to Kafka | MVP |
+| A1 | 02 §7: point at this document, and correct three rows. Single-node retrieval becomes LanceDB, with Vultr's vector store for public text in the first release only. "Row-level security on `site_id`" becomes "a schema and a role per site; row-level security on shared tables", since adk-rust's tables have no tenant column. Events go through an outbox to Kafka | MVP |
 | A2 | 02 §2 and §13: add `agentrix-lake` (relay and ingester), `agentrix-analytics`, the `agentrix-events` crate and the document service | MVP |
 | A3 | 02 §6, 03 §5: Vultr does not publish where Inference runs; "the US" is unconfirmed. Confirm with Vultr before the DPA | MVP |
 | A4 | 02 §11.3: Frankfurt has no Object Storage ("Amsterdam / Frankfurt: VX1 and Object Storage" holds for Amsterdam only) | MVP |
@@ -1175,7 +1175,7 @@ the Program Hub as one `requirements` row per workstream (`r-data-to-…`).
 |---|---|---|
 | E1 | The words, defaults and consent analysis for edge analytics (§5.3), built on adk-server's AWP beacon | MVP |
 | E2 | Artifacts (06 §5.4) are sealed with the site's key in its CAS, expire by a retention job that leaves a receipt, and carry a provenance block when generated | MVP |
-| E3 | Search (06 §5.2): suggestions from a static index built into the release; requests use hybrid vector and keyword search with rerank. Vultr's vector store cannot do scoped, scored or filtered search, so it serves Brick 1 only | MVP |
+| E3 | Search (06 §5.2): suggestions from a static index built into the release; requests use hybrid vector and keyword search with rerank. Vultr's vector store cannot do scoped, scored or filtered search, so it serves the first release only | MVP |
 | E4 | Public conversations are in memory in adk-website today (D15). 06's owner review and the 90-day retention need durable threads | MVP |
 
 **owner-console (07):**
@@ -1225,6 +1225,6 @@ the Program Hub as one `requirements` row per workstream (`r-data-to-…`).
 
 | When | Data work |
 |---|---|
-| **Brick 1** (9 Nov) | SQLite per site, local CAS mirrored to Object Storage; Vultr's vector store for the Concierge (C0); the kernel's KPI store and ledger in the console; no lake |
+| **The first release** (9 Nov) | SQLite per site, local CAS mirrored to Object Storage; Vultr's vector store for the Concierge (C0); the kernel's KPI store and ledger in the console; no lake |
 | **Pilot** | Platform records and their `SubjectDataStore` adapters; LanceDB and pgvector behind `VectorStore` (D1–D3; the reranker on the platform); per-site data keys for objects; outbox and relay; Parquet lake with DuckDB; `agentrix-analytics` with the first metric catalogue; the export bundle; the erasure orchestrator and ledger; the data catalogue and its CI checks |
 | **Fleet** | Schema and role per site (D7); Managed Kafka; Iceberg with erasure deletes and compaction; operator BI and partner views; Grafana and the observability backend; a per-tenant key resolver if adk-rust adds one (D6, deferred); restore drills with erasure replay |

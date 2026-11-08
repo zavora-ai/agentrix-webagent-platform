@@ -1,5 +1,5 @@
 #cloud-config
-# Agentrix Brick 1 · fixture VM (design §2): the deliberately infected WordPress with the
+# Agentrix · fixture VM (design §2): the deliberately infected WordPress with the
 # gauntlet's ten planted attacks, on Zavora's fixture domain. Rendered by deploy/provision.sh.
 #
 # The WordPress itself (fixtures/wordpress-infected, Docker Compose) is installed by the deploy

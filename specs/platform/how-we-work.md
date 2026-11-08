@@ -3,29 +3,29 @@
 The rules for every Agentrix WebApp Platform session. Read this before your first commit.
 
 **Why this matters now.** James decided on Sat 7 Nov (23:50 EAT) that the platform built here is
-part of the Vultr Agent Rush submission, because Brick 1 shows only a subset of the product, and
+part of the Vultr Agent Rush submission, because the first release shows only a subset of the product, and
 that it ships to https://agentrix.website. Lablab closes Mon 9 Nov 02:00 EAT; the target is
 Sun 8 Nov 20:00 EAT. Build in slices that are usable on their own and can go live one by one.
 
-## Building on Brick 1
+## Building on the first release
 
-- Brick 1 is the foundation: the Move, Assess, the claim, the console slice, the Model Gateway,
+- The first release is the foundation: the Move, Assess, the claim, the console slice, the Model Gateway,
   sealed rooms, receipts and the live stack at agentrix.website. Extend it; don't fork or
-  rewrite it. Read `specs/brick-1/status.md` and the code you touch before changing it.
-- The Brick 1 sessions ("Brick 1 spec and board", "Brick 1 Move builder", "Brick 1 Assess and
-  broker", "Brick 1 Gauntlet builder", "Brick 1 Submission package") and the design sessions
+  rewrite it. Read `specs/first-release/status.md` and the code you touch before changing it.
+- The first release sessions ("the first release spec and board", "the first release Move builder", "the first release Assess and
+  broker", "the first release Gauntlet builder", "the first release Submission package") and the design sessions
   ("Agentrix WebAgent Control Plane", "Owner console: Agentrix OS reinvented", "Agent-first
   website experience and concepts", "WebAgent architecture for Agentrix platform", "Data
   architecture for Agentrix platform") know the code and the design. Ask them by name.
-- Brick 1's live run (the live Move, the gauntlet, the switch to Vultr, the video) comes first.
+- The first release's live run (the live Move, the gauntlet, the switch to Vultr, the video) comes first.
   Nothing a platform session does may break it.
 
 ## Branches
 
 - **Your branch.** Each workstream works in its own git worktree, on its own branch cut from
-  `platform`, which always holds Brick 1's `main` plus every merged slice and this plan. Your
-  worktree sits under the Brick 1 checkout's `.claude/worktrees/`, but it is a separate
-  checkout: work only inside it. Never edit files in the Brick 1 checkout itself
+  `platform`, which always holds the first release's `main` plus every merged slice and this plan. Your
+  worktree sits under the first release checkout's `.claude/worktrees/`, but it is a separate
+  checkout: work only inside it. Never edit files in the first release checkout itself
   (`/Users/jameskaranja/Developer/hackathons/agentrix-webagent-platform`), and never touch the
   Vultr VMs or `deploy/.state`.
 - **Staying current.** Bring in `platform` at the start of each working block and before asking
@@ -34,25 +34,25 @@ Sun 8 Nov 20:00 EAT. Build in slices that are usable on their own and can go liv
 - **`platform`** is the staging branch, checked out at
   `/Users/jameskaranja/Developer/hackathons/agentrix-platform`. Only the coordinator (this
   program's lead session, "Agentrix WebApp Platform") commits there. It merges `main` in first,
-  then your slice, runs the full checks, and fast-forwards `main` from `platform` when the Brick 1
+  then your slice, runs the full checks, and fast-forwards `main` from `platform` when the first release
   sessions say the checkout is clear.
-- **Deploys** to agentrix.website go through `deploy/deploy.sh` from the Brick 1 checkout, with
-  its lock, run only by the coordinator or the control-plane session, and never during Brick 1's
+- **Deploys** to agentrix.website go through `deploy/deploy.sh` from the first release checkout, with
+  its lock, run only by the coordinator or the control-plane session, and never during the first release's
   live run. Build sessions don't deploy. If your slice needs a new binary, route, unit, setting
   or Caddy rule, put it in your branch under `deploy/` and say so in your merge request.
 
-## Files Brick 1 owns
+## Files the first release owns
 
 These lanes are still editing these paths. Stay out, or ask the owner first (by session name):
 
 | Paths | Owner |
 |---|---|
-| `crates/agentrix-node/src/{main,app,state}.rs`, `wiring/`, `routing.rs`, `objects.rs`, `pages/`; all of `crates/agentrix-console/` (templates, `view.rs`, the `Page` enum and its `Page::ALL` test, `static/`) | Brick 1 spec and board, until it hands `main` to the coordinator. New console pages and node wiring go through the coordinator. |
-| `crates/agentrix-move/`, `agentrix-node/src/{launch,decisions}/` | Brick 1 Move builder |
+| `crates/agentrix-node/src/{main,app,state}.rs`, `wiring/`, `routing.rs`, `objects.rs`, `pages/`; all of `crates/agentrix-console/` (templates, `view.rs`, the `Page` enum and its `Page::ALL` test, `static/`) | The first release spec and board, until it hands `main` to the coordinator. New console pages and node wiring go through the coordinator. |
+| `crates/agentrix-move/`, `agentrix-node/src/{launch,decisions}/` | The first release Move builder |
 | `deploy/` (all of it), `agentrix-node/src/{auth,claim}/`, `docs/08-control-plane.md`, `concept/control-plane/` | Agentrix WebAgent Control Plane. The approve contract (design §4.1) is frozen. |
-| `fixtures/`, `crates/agentrix-gauntlet/`, `agentrix-node/src/site/ask.rs`, the vector-store routes in `agentrix-models` | Brick 1 Gauntlet builder |
-| `agentrix-node/src/{assess,broker}/`, `crates/agentrix-sandbox/` images, `scripts/agent-race/` | Brick 1 Assess and broker |
-| `README.md`, `submission/` | Brick 1 Submission package |
+| `fixtures/`, `crates/agentrix-gauntlet/`, `agentrix-node/src/site/ask.rs`, the vector-store routes in `agentrix-models` | The first release Gauntlet builder |
+| `agentrix-node/src/{assess,broker}/`, `crates/agentrix-sandbox/` images, `scripts/agent-race/` | The first release Assess and broker |
+| `README.md`, `submission/` | The first release Submission package |
 
 So put new work in **new crates** (or new modules your workstream owns) and expose it through
 the seam in `crates/agentrix-host` (contract C11): one function
@@ -81,7 +81,7 @@ gaps. Each workstream has its own range: 0100–0199 W1 runtime, 0200–0299 W2 
 0300–0399 W3 control plane, 0400–0499 W4 onboarding, 0500–0599 W5 owner console, 0600–0699 W6
 identity, payments and trust, 0700–0799 W7 design and words, 0800–0899 W8 platform core,
 0900–0999 W0 integration, 1000–1099 W9 messages, 1100–1199 W10 home page, 1200–1299 W11
-images and voice. Brick 1 keeps 0003–0099.
+images and voice. The first release keeps 0003–0099.
 
 - **Prefer your crate's own migrator** (W6 does this): your SQL in `crates/<crate>/migrations/`,
   numbered in your range, run by a sqlx migrator with its own table
@@ -91,7 +91,7 @@ images and voice. Brick 1 keeps 0003–0099.
 - **Every migrator calls `set_ignore_missing(true)`.** Without it a binary refuses to start on a
   database that carries a version it doesn't know, which is exactly what a `deploy.sh
   --rollback` or a slice built before another slice's migration meets (found by W8). Node's own
-  migrator does this on `platform`; the first platform deploy after Brick 1's handover carries
+  migrator does this on `platform`; the first platform deploy after the first release's handover carries
   that fix and no new migrations, so the binary a rollback returns to is already tolerant.
 - No foreign keys between workstreams' tables; refer by id. Every new table gets a line in
   03-data.md's catalogue naming its single owner.
@@ -151,7 +151,7 @@ The Mac has about 32 GB free and each full `target` is about 6 GB.
   --check <your new files>`), `RUSTFLAGS=-D warnings cargo clippy --workspace --all-targets
   --locked`, `cargo test --workspace --locked`, and the copy lint (`scripts/copy-lint`) once it
   exists.
-- **Never run `cargo fmt --all` or `cargo fmt -p` on a Brick 1 crate.** Brick 1's files aren't
+- **Never run `cargo fmt --all` or `cargo fmt -p` on the first release crate.** The first release's files aren't
   formatted to the current rustfmt, so it rewrites dozens of files you don't own and every merge
   then conflicts. Format your own crates and files only; the merge script checks formatting on
   the files a slice adds.

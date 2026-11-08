@@ -1,5 +1,5 @@
 # Zavora's fixture: Kilele Bakery, a deliberately infected WordPress for the Agentrix gauntlet
-# (docs/04-vultr-agent-rush.md §3, specs/brick-1 R13.1, task S1-11). Kilele Bakery is fictional.
+# (docs/04-vultr-agent-rush.md §3, specs/first-release R13.1, task S1-11). Kilele Bakery is fictional.
 #
 # Official images only (wordpress, mariadb). WordPress is published on 127.0.0.1:8081, the
 # fixture VM's Caddy upstream (deploy/README.md). Every planted payload is inert outside a

@@ -6,7 +6,7 @@ Sources: `docs/09-data-architecture.md` (all), ADR-025 to ADR-030, the data and 
 `docs/08-control-plane.md`, `docs/05-webagents.md` §2–4, `docs/06-website-experience.md`,
 `docs/07-owner-console.md`, `crates/agentrix-types/src/*`, `crates/agentrix-node/src/db/`
 and both migrations, `auth/schema.sql`, `claim/schema.sql`, `crates/agentrix-models/src/meter.rs`,
-`crates/agentrix-move/src/store.rs`, `specs/brick-1/design.md` §5, and every concept page.
+`crates/agentrix-move/src/store.rs`, `specs/first-release/design.md` §5, and every concept page.
 
 This page says what data the whole product holds, where each kind lives, what exists today,
 how parallel sessions add tables without colliding, what the three sample sites are seeded with,
@@ -17,8 +17,8 @@ turns it into a build list.
 
 ## 0. The short version
 
-1. **139 entities in 11 domains** (§1). Brick 1 stores 24 of them in 24 tables, all in **one
-   shared `control.db`** (§2.1). Nothing in Brick 1 uses an adk-rust store: no crate calls
+1. **139 entities in 11 domains** (§1). The first release stores 24 of them in 24 tables, all in **one
+   shared `control.db`** (§2.1). Nothing in the first release uses an adk-rust store: no crate calls
    `adk_kernel`, `adk_session`, `adk_harness` or `adk_website` stores, so 09 §3.3's per-site
    directory (`docs/09-data-architecture.md:264-283`) does not exist yet.
 2. **Whole domains are missing:** commerce (catalogue, stock, carts, orders, payments, refunds,
@@ -317,7 +317,7 @@ The auth and claim schemas run as raw SQL on every open, before the migrator
 | `ui_events` | `0001_control.sql:270` | coordinator | UI event | Change: retention job |
 | `passed_questions` | `crates/agentrix-node/src/db/migrations/0002_passed_questions.sql:4` | site (`db/questions.rs`) | Passed question | Change: state, gap link; move to REC |
 
-24 tables, one entity each (the password hash rides in `accounts`). Brick 1 also holds some
+24 tables, one entity each (the password hash rides in `accounts`). The first release also holds some
 data outside tables: Ask answers are not stored
 at all (only refusals leave a receipt, `crates/agentrix-node/src/site/mod.rs:368`); a held
 order from the agent door exists only as a decision card's effect arguments
@@ -392,7 +392,7 @@ order from the agent door exists only as a decision card's effect arguments
 
 ## 3. Stores per profile
 
-### 3.1 Single node (self-host, development, Brick 1's successor)
+### 3.1 Single node (self-host, development, the first release's successor)
 
 `docs/09-data-architecture.md:264-283` is the target layout: `control.db` for control data, and a
 directory per site holding `kernel.db`, `kernel/sessions.db`, `edge.db`, `wallet.db`,
@@ -401,7 +401,7 @@ Object Storage. 02-architecture.md:357 proposes splitting the global file furthe
 crate (`identity.db`, …). That works for SQLite, with one caveat: a decision card is site data,
 so it belongs in the site's directory, not in a global `decisions.db`.
 
-What it needs that Brick 1 lacks: the per-site directories; WAL shipping or snapshots to Object
+What it needs that the first release lacks: the per-site directories; WAL shipping or snapshots to Object
 Storage (RPO 15 minutes *h*); `agentrix-keys` as its own process; LanceDB with `purge_deleted` on
 erasure; the outbox table in `records.db`.
 
@@ -421,7 +421,7 @@ operations time. This is the smallest set that keeps every promise in 03 §5 and
 | Need | Production v1 | Later (second cell, or about 2,000 sites per cell) |
 |---|---|---|
 | Records | One Managed PostgreSQL cluster in `ams-1` (Business, PG 17 or 18). Database `cell` with a schema and role per site; database `control` beside it for the global layer; read replica in `fra-1` | Separate control cluster; more cells |
-| Vectors | pgvector in the site schema, HNSW on `halfvec`, hybrid with `tsvector`, rerank through the gateway (needs D1–D3, D13). Vultr's vector store only for Brick 1's demo (C0) | Qdrant for a site that outgrows pgvector (ADR-026) |
+| Vectors | pgvector in the site schema, HNSW on `halfvec`, hybrid with `tsvector`, rerank through the gateway (needs D1–D3, D13). Vultr's vector store only for the first release's demo (C0) | Qdrant for a site that outgrows pgvector (ADR-026) |
 | Objects | Object Storage in Amsterdam: releases, CAS, archive, exports, lake buckets. The platform's copier to Milan with copy receipts | Archive tier for legacy archives |
 | Fast state | Managed Valkey (smallest plan), because production runs the edge on two hosts and rate limits and presence must be shared | Per-cell sizing |
 | Events | The outbox in each site schema's transaction; the relay writes date-partitioned Parquet straight to the lake bucket. **No Kafka** | Managed Kafka when a second cell or a second consumer group appears (`docs/09-data-architecture.md:700-704`) |
@@ -440,9 +440,9 @@ tables, and planner overhead with many schemas (`docs/09-data-architecture.md:31
 ### 4.1 Two rules exist today, and they disagree
 
 - **how-we-work.md:60-69**: one migrator in `agentrix-node`, ranges per workstream (0100–0199 W1 …
-  0600–0699 W6; Brick 1 keeps 0003–0099), strictly additive. W7 and W8 have no range.
+  0600–0699 W6; the first release keeps 0003–0099), strictly additive. W7 and W8 have no range.
 - **02-architecture.md:357**: one database file and one migrator per owning crate, UTC timestamp
-  versions, Brick 1's `control.db` frozen at 0002, and a one-off importer.
+  versions, the first release's `control.db` frozen at 0002, and a one-off importer.
 
 Both are right for different times. sqlx 0.9 (the pinned version, `Cargo.lock`) applies every
 unapplied version whatever its order (`sqlx-core-0.9.0/src/migrate/migrator.rs:262-284`), refuses
@@ -458,7 +458,7 @@ today, and per-crate sets can share one Postgres schema later.
 
 | Range | Owner |
 |---|---|
-| 0001–0099 | Brick 1 (frozen after the live run, 9 Nov) |
+| 0001–0099 | The first release (frozen after the live run, 9 Nov) |
 | 0100–0199 | W1 WebAgent runtime |
 | 0200–0299 | W2 Sample websites |
 | 0300–0399 | W3 Control plane |
@@ -498,7 +498,7 @@ crates/<crate>/migrations/<store>/<dialect>/<UTC yyyymmddhhmm>_<noun>.sql
 - **The raw schema files go.** `auth/schema.sql` and `claim/schema.sql` become versioned
   migrations in their new crates (`agentrix-identity`, `agentrix-onboarding`), written with
   `IF NOT EXISTS` so existing databases accept them.
-- **Brick 1's `control.db`** is frozen. Moving its rows into the new layout is a one-off importer,
+- **The first release's `control.db`** is frozen. Moving its rows into the new layout is a one-off importer,
   or a fresh start (02-architecture.md §9 item 4, James decides).
 
 **CI checks for both phases:**
@@ -556,7 +556,7 @@ its slice merges. Where this differs from §4.3, this table is what was built.
 | owner_recovery_codes, owner_recovery_holds, owner_code_sign_ins | W6 | `crates/agentrix-identity/migrations/0601_w6_owner_recovery.sql` | control.db | Codes hashed and single use; holds last 24 hours; every code sign-in receipted |
 | shell_quiet_hours, shell_freezes, shell_visits | W5 `agentrix-shell` | `crates/agentrix-shell/migrations/0500_owner_console.sql` (own migrator) | control.db | Night Time hours, Freeze state, what the owner last saw |
 | visit_counts | W8 `agentrix-store` | `crates/agentrix-store/migrations/control/0800_visit_counts.sql` (own migrator) | control.db | Daily totals by route, referrer host, device class, country; fewer than 5 shown as "fewer than 5" |
-| usage (rebuilt), usage_purposes | W8 | `0801_usage_open.sql` | control.db | Brick 1's `usage` rebuilt with the same columns plus units for images and audio; the old binary still writes it |
+| usage (rebuilt), usage_purposes | W8 | `0801_usage_open.sql` | control.db | The first release's `usage` rebuilt with the same columns plus units for images and audio; the old binary still writes it |
 | health_hours | W8 | `0802_health_hours.sql` | control.db | The status page's hourly checks |
 | message_outbox | W9 `agentrix-messages` | `crates/agentrix-node/src/db/migrations/1000_message_outbox.sql` | control.db | Every message before it is sent; codes never stored |
 | rec_* (27 tables: sites, products, stock, bake plan, price lists and rules, zones, slots, customers, carts, orders, order lines and events, payments, refunds, holds, bookings, questions, counters, authors, stories, corrections, timeline, subscribers, digest subscriptions, sessions, codes) | W2 `agentrix-records` | `crates/agentrix-records/migrations/0200_records.sql` (own migrator) | `data_dir/agentrix-samples/records.db` | The three sample sites' records, loaded from bundles marked Sample |
@@ -760,10 +760,10 @@ subscriber-only, so headline-only answers for non-subscribers are tested.
 | Area | Production must | Gap today |
 |---|---|---|
 | **Tenancy** | A store set per site: a directory on a single node, a schema and role in the fleet; RLS on the tenant path in control (`docs/09-data-architecture.md:811-823`); capability tokens scoped to one site; the cross-tenant suite with 08 §2.7's three cases; one CAS prefix and one data key per site | One `control.db` for every site and lane. The site wall is a column (`0001_control.sql:7`). No org, partner, operator or tenant path type. C3 sits in the shared file: the customer's name and email in `decisions.card` (`decisions/mod.rs:797-799`), `passed_questions.contact` (`0002_passed_questions.sql:9`), refusal excerpts in receipts (`site/mod.rs:368`). The CAS is one directory for all sites; blobs are deduplicated across sites and not sealed (`db/cas.rs:1-8`). The Model Gateway trusts an `x-agentrix-site` header (`crates/agentrix-models/src/gateway.rs:235`) |
-| **Residency** | A residency tag per site that placement honours; records, vectors, objects and the site log in the home cell; backups in the copy region; the DPA names the US for inference (A9); African sites' stores in the EU until `jnb-1` has Object Storage (`docs/09-data-architecture.md:936-965`) | No residency column. Brick 1 runs in `atl-0` (US), so any pilot owner's data sits in the US. Inference runs in the US for everyone. Kenya's Data Protection Act needs ODPC registration and a basis for cross-border transfer (`docs/08-control-plane.md` §4.6) |
+| **Residency** | A residency tag per site that placement honours; records, vectors, objects and the site log in the home cell; backups in the copy region; the DPA names the US for inference (A9); African sites' stores in the EU until `jnb-1` has Object Storage (`docs/09-data-architecture.md:936-965`) | No residency column. The first release runs in `atl-0` (US), so any pilot owner's data sits in the US. Inference runs in the US for everyone. Kenya's Data Protection Act needs ODPC registration and a basis for cross-border transfer (`docs/08-control-plane.md` §4.6) |
 | **Erasure** | ADR-028's orchestrator on adk-core `SubjectRights`, one per site; an adapter for every C3 table; per-store receipts (`Hard`, `Eventual`, `External`); deadlines (visitor memory 1 hour, other requests 30 days); payment records pseudonymised; receipts redacted, hashes kept; the erasure ledger replayed after every restore; site closure drops the schema or directory and destroys the data key | None of it exists. No adapter, no ledger, no request table. Deleting an owner account fails, because `decisions.signer` and `charters.signed_by` reference `accounts` with no `ON DELETE` rule (`0001_control.sql:131`, `:190`); they need pseudonymising. Credentials and sessions do cascade (`auth/schema.sql:17`, `:28`, `:37`). Receipts cannot be redacted (`body` is the signed JSON). `ui_events` and `passed_questions` have no retention |
 | **Export** | The signed bundle: `records/` (JSON Lines and Parquet, CSV for leads, orders, bookings), `site/` (the static release), `receipts/` (verifiable with `agentrix audit verify --site`), `analytics/`, `manifest.json`; no vectors; no password hashes or TOTP seeds; a person's own export; re-import elsewhere | No export of any kind. `agentrix audit verify` has no site log to check |
-| **Backups and DR** | Single node: WAL shipping to Object Storage, RPO 15 minutes. Fleet: PITR 14 days, nightly per-site logical exports sealed with the site key to Milan, the copier with copy receipts, release pointer switches only after copies exist, monthly restore drill that verifies the receipt chain and erasure replay, quarterly failover to `fra-1`, KEK backups under two-person control (`docs/08-control-plane.md:607-640`, `docs/09-data-architecture.md:971-984`) | `control.db` has no backup: nothing in `deploy/` copies it, and `deploy/provision.sh:12` destroys the VMs. The only off-host copy is the CAS mirror to Object Storage. Control's receipt-signing key and the site's release-log key (`{domain}/.well-known/awp/log`, `specs/brick-1/design.md` §4.5) are files on the control VM; losing them ends the receipt chain and the site log. No drill has run |
+| **Backups and DR** | Single node: WAL shipping to Object Storage, RPO 15 minutes. Fleet: PITR 14 days, nightly per-site logical exports sealed with the site key to Milan, the copier with copy receipts, release pointer switches only after copies exist, monthly restore drill that verifies the receipt chain and erasure replay, quarterly failover to `fra-1`, KEK backups under two-person control (`docs/08-control-plane.md:607-640`, `docs/09-data-architecture.md:971-984`) | `control.db` has no backup: nothing in `deploy/` copies it, and `deploy/provision.sh:12` destroys the VMs. The only off-host copy is the CAS mirror to Object Storage. Control's receipt-signing key and the site's release-log key (`{domain}/.well-known/awp/log`, `specs/first-release/design.md` §4.5) are files on the control VM; losing them ends the receipt chain and the site log. No drill has run |
 | **Keys** | `agentrix-keys` holds KEKs and sign-in keys and never releases them (ADR-030, A8) | No key holder. Every key is a file on the control VM (02-architecture.md:26-27) |
 
 ---

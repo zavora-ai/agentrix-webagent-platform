@@ -10,21 +10,21 @@ operator** (Zavora, agencies, resellers) see. The visitor and customer side is o
   `concept/styles.css`.
 - Docs: `docs/07-owner-console.md`, `docs/08-control-plane.md`, `docs/01-product.md`,
   `docs/03-trust.md`; `specs/platform/voice.md` and `how-we-work.md` for house rules.
-- Code (Brick 1): `crates/agentrix-console` (Page enum, views, templates, static) and the
+- Code (the first release): `crates/agentrix-console` (Page enum, views, templates, static) and the
   `auth`, `claim`, `launch`, `decisions`, `brief`, `pages`, `assess` modules of
-  `crates/agentrix-node/src`; `specs/brick-1/requirements.md` and `status.md`.
+  `crates/agentrix-node/src`; `specs/first-release/requirements.md` and `status.md`.
 
 **How to read a page entry.** Every page has the same fields:
 
 | Field | Meaning |
 |---|---|
-| Route | Brick 1 route if built; otherwise a proposed route (marked *proposed*) |
+| Route | The first release route if built; otherwise a proposed route (marked *proposed*) |
 | Purpose | The one job of the page |
 | Components | The kit components it uses (§5) |
 | Data and source | What it shows, and the store, type or service that supplies it |
 | Actions | What the owner or operator can do, and what each action triggers |
 | States | Empty, loading, running, waiting, done, error, frozen, offline… |
-| Status | **Built** (Brick 1 code), **Partly built**, **Drawn** (a concept page), **Described** (docs only), **Missing** |
+| Status | **Built** (the first release code), **Partly built**, **Drawn** (a concept page), **Described** (docs only), **Missing** |
 | Tags | Workstreams (below) |
 
 **Workstreams**
@@ -43,17 +43,17 @@ operator** (Zavora, agencies, resellers) see. The visitor and customer side is o
 
 **Route scheme (proposed).** The concepts use four hosts: `agentrix.ai` (assess.html:358),
 `os.agentrix.ai/kilele/...` (shell.html:39), `console.agentrix.ai/kilele` (console.html:196) and
-`console.agentrix.ai/operator/...` (fleet.html:48). Brick 1 serves everything on one origin with
+`console.agentrix.ai/operator/...` (fleet.html:48). The first release serves everything on one origin with
 `/console/*` for the signed-in owner's single site (pages/mod.rs:44-53). Proposal:
 - Public: `/`, `/assess/{id}`, `/keep/{assessment}`, `/auth/*`. Previews on
   `{slug}.preview.agentrix.site` (assess.html:331).
-- Site scope: `/console/{site}/…`. Keep Brick 1's `/console/…` as a redirect to the last site
+- Site scope: `/console/{site}/…`. Keep the first release's `/console/…` as a redirect to the last site
   used. Short decision links `/d/{card}` (phone.html:193) for WhatsApp, email and CLI QR codes.
 - Portfolio scope: `/portfolio/{partner}/…`; white-label hosts such as
   `clients.mwangaza.example` map onto it (portfolio.html:60).
 - Operator scope: `/operator/…` (fleet.html:48, rollout.html:56, incident.html:54,
   billing.html:55).
-- Receipts stay at `/receipts/{digest}`; Brick 1 renders them signed out too (pages/mod.rs:214-236).
+- Receipts stay at `/receipts/{digest}`; the first release renders them signed out too (pages/mod.rs:214-236).
 
 ---
 
@@ -63,12 +63,12 @@ operator** (Zavora, agencies, resellers) see. The visitor and customer side is o
   plus 12 object modules (§2); 7 control-plane concept pages (6 product pages and a scope
   overview) plus 45 operator, portfolio and self-host pages that doc 08 specifies but no concept
   draws (§3). §4 lists 56 gaps and a catalogue of 23 messages the owner receives.
-- **Brick 1 built 13 server-rendered pages** (`Page` enum, crates/agentrix-console/src/lib.rs:27-54):
+- **The first release built 13 server-rendered pages** (`Page` enum, crates/agentrix-console/src/lib.rs:27-54):
   Start, Assess, Sign in, Register, Claim, the Move, Today, Decisions, Decision, Trust, Receipt,
   WebAgents (read-only), Quarantine. Plus the export upload, Move restart, parity accept, undo
   (rollback) and the approval ceremony with passkey or authenticator code bound to the card's
   fingerprint (auth/passkey.rs:4-8, decisions/mod.rs:7-13).
-- **Brick 1 did not build the OS shell.** Its console is a five-tab app (Today, Decisions, The
+- **The first release did not build the OS shell.** Its console is a five-tab app (Today, Decisions, The
   Move, Trust, WebAgents; templates/console/base.html:14-20). No dock, lane, worlds, command bar,
   Night Time, Activity monitor, Freeze, Store, missions, live takeover, phone tabs, WhatsApp,
   billing or settings. Nothing in the control plane is built.
@@ -78,7 +78,7 @@ operator** (Zavora, agencies, resellers) see. The visitor and customer side is o
   agent-raised, plan, held-by-cap), billing and invoices, the whole control plane except six
   concept screens, and every email and WhatsApp message the owner receives.
 - **Design system:** three stylesheets share `styles.css` tokens but diverge on marks, decision
-  cards, approval sheets, WhatsApp threads and night/dark themes. Brick 1's `app.css` diverged
+  cards, approval sheets, WhatsApp threads and night/dark themes. The first release's `app.css` diverged
   again (system fonts, pill buttons, its own dark theme). §5 lists the kit.
 - **Copy:** mostly plain already. The faults are slogan headlines, "not X but Y" lines, cute
   labels that hide meaning ("Walls holding", "Earned it?", "Across the wall"), unexplained
@@ -122,7 +122,7 @@ the first charge is on go-live day anyway (08 §4.2), so asking for a plan first
 - **States:** running; no frame yet ("The sealed browser hasn't sent a frame yet",
   assess.html template:32); live versus sealed screenshot label (FrameKind, view.rs:79-83).
 - **Status:** **Built** (templates/assess.html:21-38). **Drawn** in assess.html:191-204, which
-  adds two things Brick 1 lacks: a page list with a per-page sealed chip, and a "Refused: 1
+  adds two things the first release lacks: a page list with a per-page sealed chip, and a "Refused: 1
   redirect" callout (assess.html:201).
 - **Tags:** W4, W1.
 
@@ -158,7 +158,7 @@ the first charge is on go-live day anyway (08 §4.2), so asking for a plan first
   the render room (assess.html:274-284).
 - **Actions:** open the preview; share it.
 - **States:** building, ready, expired after 7 days (no screen drawn for expired).
-- **Status:** **Drawn** only (assess.html:247-286; owner-discover.html:55-66). Brick 1 builds a
+- **Status:** **Drawn** only (assess.html:247-286; owner-discover.html:55-66). The first release builds a
   release only after a verified claim (R3.2), so there is no pre-account preview.
 - **Note:** the preview needs an answer to R3.2: a preview built from public pages only does not
   break it, but it must be labelled as a public-pages preview.
@@ -191,7 +191,7 @@ the first charge is on go-live day anyway (08 §4.2), so asking for a plan first
 - **Data and source:** preview URL; plan "from" price (assess.html:328).
 - **Actions:** "Continue with passkey" → O2.1 with the assessment attached; "Share preview" →
   copy link (the first referral moment, 01 §3).
-- **Status:** **Drawn** (assess.html:321-336; owner-discover.html:67-71). Brick 1 has only "Move
+- **Status:** **Drawn** (assess.html:321-336; owner-discover.html:67-71). The first release has only "Move
   this site" (templates/assess.html:70-75).
 - **Tags:** W4.
 
@@ -207,7 +207,7 @@ the first charge is on go-live day anyway (08 §4.2), so asking for a plan first
 - **States:** passkeys off on this deployment (register.html:9); error in words
   (`#auth-error`).
 - **Status:** **Built** (templates/auth/register.html:1-46). **Drawn** with tabs and social
-  buttons (owner-account.html:37-73). Social sign-in is **Won't** for Brick 1 (requirements R2.4).
+  buttons (owner-account.html:37-73). Social sign-in is **Won't** for the first release (requirements R2.4).
 - **Gaps:** email confirmation; terms and privacy acceptance; residency disclosure at sign-up
   (01 §11.3, 03 §5); passkey on a second device.
 - **Tags:** W6, W4.
@@ -235,11 +235,11 @@ the first charge is on go-live day anyway (08 §4.2), so asking for a plan first
 - **Route:** first landing after sign-up (`/console/{site}/setup`, *proposed*).
 - **Purpose:** say who speaks for the team and what comes next (plan, claim, Move).
 - **Components:** team mark, one paragraph, next-step button.
-- **Status:** **Drawn** (owner-account.html:75-79). **Not built:** Brick 1 lands a signed-in
+- **Status:** **Drawn** (owner-account.html:75-79). **Not built:** The first release lands a signed-in
   owner without a site on their pending claim or `/` (wiring/mod.rs:199-212).
 - **Tags:** W4, W5.
 
-### O3.1 Choose a plan and set the AI budget (Brick 2)
+### O3.1 Choose a plan and set the AI budget (the fleet release)
 - **Route:** *proposed* `/console/{site}/setup/plan` (owner-plan.html:33).
 - **Purpose:** pick Essential, Business or Commerce; set the monthly AI cap; see the real cost.
 - **Components:** Chief WebAgent suggestion, plan cards (one pressed, "Suggested for Kilele"
@@ -250,7 +250,7 @@ the first charge is on go-live day anyway (08 §4.2), so asking for a plan first
   billed above the included amount (owner.js:37-46); pick a rail → the next button names the
   provider (owner.js:49-56).
 - **States:** inside included budget; above it (overage at cost plus a disclosed margin).
-- **Status:** **Drawn** (owner-plan.html:37-80). **Brick 2**; nothing built.
+- **Status:** **Drawn** (owner-plan.html:37-80). **The fleet release**; nothing built.
 - **Gaps:** currency choice and display (USD here, KSh elsewhere; see §6.3); tax lines; trial or
   no trial; plan comparison detail page; agency-sold plans where the agency bills.
 - **Tags:** W6, W4.
@@ -264,7 +264,7 @@ the first charge is on go-live day anyway (08 §4.2), so asking for a plan first
 - **Actions:** agree on PayPal; save card on Paystack; set up M-Pesa prompts.
 - **States:** approved, nothing charged yet (owner-plan.html:106-110). Not drawn: cancelled on
   the provider page, provider error, webhook late.
-- **Status:** **Drawn** (owner-plan.html:82-112). **Brick 2.**
+- **Status:** **Drawn** (owner-plan.html:82-112). **The fleet release.**
 - **Tags:** W6.
 
 ### O4.1 Claim the domain
@@ -347,7 +347,7 @@ the first charge is on go-live day anyway (08 §4.2), so asking for a plan first
 - **Data and source:** `Parity`, `ParityPage` with a one-line vision verdict (view.rs:377-394).
 - **Actions:** "Accept this page as it is" (move.html template:98).
 - **Status:** **Built** (templates/console/move.html:92-101). **Drawn** with old/new screenshots
-  per page and page chips (move.html:271-291), which Brick 1 does not show.
+  per page and page chips (move.html:271-291), which the first release does not show.
 - **Tags:** W4, W1.
 
 ### O5.5 The Move stopped
@@ -376,7 +376,7 @@ the first charge is on go-live day anyway (08 §4.2), so asking for a plan first
 - **Status:** **Built** (templates/console/decision.html:1-76). **Drawn** in owner-golive.html:32-56,
   move.html:295-310 and gestures.html:126-132 (raised by a thumb-up).
 - **Gaps:** the DNS switch. Drawn as "Your domain's address record points to Agentrix's edge"
-  (owner-golive.html:40) and "We guide the one DNS change" (move.html:299); Brick 1 goes live on
+  (owner-golive.html:40) and "We guide the one DNS change" (move.html:299); the first release goes live on
   the platform address (`site.live_url`, view.rs:137; status.md:42) and DNS cutover is out of
   scope (requirements §5). Production needs a DNS step page: guided records at the owner's
   registrar, or Vultr DNS when the domain is with us, held for the owner (08 §3.3).
@@ -412,7 +412,7 @@ the first charge is on go-live day anyway (08 §4.2), so asking for a plan first
   model writes only a one-sentence headline from counts (brief/mod.rs:1-17).
 - **Actions:** open linked items; share ("my website did this overnight", owner-day1.html:52).
 - **States:** no brief yet ("Your first brief comes at 07:00…", pages/map.rs:485).
-- **Status:** **Partly built** (templates/console/today.html:25-35). Brick 1 refreshes on a timer
+- **Status:** **Partly built** (templates/console/today.html:25-35). The first release refreshes on a timer
   over 24 h (brief/mod.rs:199), not at 07:00 in the owner's time zone; no WhatsApp, email or share.
 - **Note:** the empty state promises 07:00 (pages/map.rs:485) but nothing schedules a 07:00 brief.
   Fix the copy or the schedule.
@@ -432,25 +432,25 @@ the first charge is on go-live day anyway (08 §4.2), so asking for a plan first
   record page after approval (see C-ORD in §2.20).
 - **Tags:** W5, W1, W6.
 
-### O8.2 The payment settles (Brick 2)
+### O8.2 The payment settles (the fleet release)
 - **Status:** **Drawn** (owner-order.html:56-71): waiting row, paid card ("captured exactly the
   amount you approved").
 - **Data and source:** Effects Gateway PayPal order; verified webhook.
 - **Tags:** W6.
 
-### O8.3 The books: payout and fees (Brick 2)
+### O8.3 The books: payout and fees (the fleet release)
 - **Status:** **Drawn** (owner-order.html:75-88): ledger table with gross, fee, net, withdrawal.
 - **Data and source:** ledger postings; provider fees.
 - **Gaps:** where this lives in the console (a Cashier "Money" object view), and export to the
   owner's accountant.
 - **Tags:** W6, W9.
 
-### O8.4 Refunds: under the rule, and above it (Brick 2)
+### O8.4 Refunds: under the rule, and above it (the fleet release)
 - **Status:** **Drawn** (owner-order.html:93-103): a refund that ran alone under a signed rule,
   and a card above the rule with "Offer a partial refund".
 - **Tags:** W6, W5.
 
-### O9.1 Billing: invoices and AI spend (Brick 2)
+### O9.1 Billing: invoices and AI spend (the fleet release)
 - **Route:** *proposed* `/console/{site}/billing` (owner-billing.html:33).
 - **Purpose:** see the plan, invoices, payment state and AI spend against the cap.
 - **Components:** status chip, tabs (Invoices, Change plan, Cancel, Export everything), invoice
@@ -459,7 +459,7 @@ the first charge is on go-live day anyway (08 §4.2), so asking for a plan first
   Gateway usage.
 - **Actions:** download an invoice (not drawn); open a tab.
 - **States:** paid up; overdue, in reminders, read-only suspension (not drawn; see §4).
-- **Status:** **Drawn** (owner-billing.html:35-56). Brick 1 shows model spend on Today against a
+- **Status:** **Drawn** (owner-billing.html:35-56). The first release shows model spend on Today against a
   **daily** limit in USD (`Meter`, view.rs:483-496), not the concepts' monthly cap.
 - **Tags:** W6, W5, W9.
 
@@ -499,7 +499,7 @@ the first charge is on go-live day anyway (08 §4.2), so asking for a plan first
 - **v0.1 tabs** (concept/console.html:226-235): Today, Decisions, WebAgents, Website, Customers,
   Trust. Superseded by `concept/console/` (concept/index.html:219; 07 §0). Still useful for the
   Website and Customers panels, which the OS concepts never redrew.
-- **Brick 1** (templates/console/base.html:14-20): Today, Decisions, The Move, Trust, WebAgents,
+- **The first release** (templates/console/base.html:14-20): Today, Decisions, The Move, Trust, WebAgents,
   as a bottom bar on phones and a side bar from 900 px (app.css:190-204). `NavTab` has five
   values (view.rs:143-150).
 - **Target: the OS shell** (07 §4.2; shell.html). Map from tabs to regions (07 §4.5): Today →
@@ -508,7 +508,7 @@ the first charge is on go-live day anyway (08 §4.2), so asking for a plan first
   Cashier apps; Trust → Trust centre and the trust pill. Below 900 px the shell reflows into the
   phone order (console.css:487-511).
 
-**Build note.** Brick 1's server-rendered pages are the right base (how-we-work.md:63-66). The
+**Build note.** The first release's server-rendered pages are the right base (how-we-work.md:63-66). The
 shell is a layout over the same pages: status bar, dock and lane are server-rendered partials;
 the field hosts the page; SSE feeds presence and lane updates.
 
@@ -531,7 +531,7 @@ the field hosts the page; SSE feeds presence and lane updates.
 - **Tags:** W5, W7.
 
 ### C2 Back office · Day Time (Today)
-- **Route:** `/console/{site}` default view; Brick 1 `GET /console/today`.
+- **Route:** `/console/{site}` default view; the first release `GET /console/today`.
 - **Purpose:** greeting, the brief, work in progress, missions, signals that crossed, teach your
   site, the Guardian's status.
 - **Components:** field head with state line; cards: brief (accent, citations as `cite` chips,
@@ -543,7 +543,7 @@ the field hosts the page; SSE feeds presence and lane updates.
   it" fills the command bar; "Watch", "Pause Editor"; "Give to Editor" (also drag a card onto a
   dock icon, 07 §3.8).
 - **States:** no brief yet; frozen note.
-- **Status:** **Drawn** (shell.html:78-136). **Partly built**: Brick 1 Today has Needs you, the
+- **Status:** **Drawn** (shell.html:78-136). **Partly built**: the first release Today has Needs you, the
   brief, questions visitors passed, model spend and recent receipts (templates/console/today.html:16-62).
 - **Tags:** W5, W1.
 
@@ -555,7 +555,7 @@ the field hosts the page; SSE feeds presence and lane updates.
 - **Data and source:** ledger; `QuietHours` in the owner's IANA zone (U8).
 - **Status:** **Drawn** (shell.html:139-164, 223-232). **Not built.**
 - **Open question:** automatic switch or owner choice (07 §11.2). Also decide how Night Time
-  relates to the system dark theme Brick 1 already has (app.css:26-52); see §5.4.
+  relates to the system dark theme the first release already has (app.css:26-52); see §5.4.
 - **Tags:** W5, W7.
 
 ### C4 The lane: Needs you, Proposals, Done for you
@@ -569,7 +569,7 @@ the field hosts the page; SSE feeds presence and lane updates.
   now" (snooze), "Why am I seeing this?".
 - **States:** empty ("Nothing needs you", built in decisions.html:11); held by the daily cap
   ("Waiting for your brief (3)", 07 §3.5) **not drawn**; snoozed.
-- **Status:** **Drawn** (shell.html:194-222). Brick 1 has the Decisions list instead.
+- **Status:** **Drawn** (shell.html:194-222). The first release has the Decisions list instead.
 - **Tags:** W5.
 
 ### C5 The command bar and plan preview
@@ -622,7 +622,7 @@ the field hosts the page; SSE feeds presence and lane updates.
   **Drawn** as an overlay (shell.html:279-295, and copies in store, mission, live, trust,
   gestures, owner-golive, owner-order) and as a phone bottom sheet that **lacks the code path**
   (phone.html:143-150).
-- **Note:** Brick 1 binds the challenge to the fingerprint inside the platform
+- **Note:** The first release binds the challenge to the fingerprint inside the platform
   (auth/passkey.rs:4-8), so "signed" is true there. 07 §5.2 still tracks F1 for adk-surface.
 - **Tags:** W6, W5, W7.
 
@@ -749,8 +749,8 @@ Each needs a canonical-argument renderer and an effect list. Status per type:
   you"), Concierge card, wall note.
 - **Data and source:** presence feed; open threads (rendered as untrusted text, 07 §3.3).
 - **Actions:** Take over, Sit in, Answer later; Desk settings; Preview as a visitor.
-- **Status:** **Drawn** (shell.html:167-189). Brick 1 has no Front of house; 07 §10 asked for a
-  read-only conversation list in Brick 1, which was not built.
+- **Status:** **Drawn** (shell.html:167-189). The first release has no Front of house; 07 §10 asked for a
+  read-only conversation list in the first release, which was not built.
 - **Tags:** W5, W1.
 
 ### C20 Live thread: sit in, take over, hand back
@@ -789,7 +789,7 @@ Each needs a canonical-argument renderer and an effect list. Status per type:
 - **Components:** version list (pin, title, who approved and how, Live chip or Roll back),
   gaps list, "seen" chips.
 - **Data and source:** releases; content gaps; agent-door capability list.
-- **Status:** **Drawn** in the v0.1 console only (console.html:325-343). Brick 1 offers undo on the
+- **Status:** **Drawn** in the v0.1 console only (console.html:325-343). The first release offers undo on the
   Move page (move.html template:25-33). A page editor is **missing**.
 - **Tags:** W5, W1.
 
@@ -825,7 +825,7 @@ Each needs a canonical-argument renderer and an effect list. Status per type:
   9. Lane: signed decisions and receipts with Verify; devices and people; your data (192-205).
 - **Not drawn:** attention settings (quiet hours, daily card cap; 07 §5.1 item 3); the
   four-limit rule editor; device management actions.
-- **Status:** **Partly built.** Brick 1 Trust shows receipts and the containment gauntlet score
+- **Status:** **Partly built.** The first release Trust shows receipts and the containment gauntlet score
   (templates/console/trust.html:16-33). Everything else is drawn only.
 - **Tags:** W5, W6, W9.
 
@@ -848,7 +848,7 @@ Each needs a canonical-argument renderer and an effect list. Status per type:
 ### C29 Standing rules and the rule editor
 - **Purpose:** list, inspect and revoke standing rules; create one with all four limits (amount,
   recipients, frequency, expiry) from "Always allow" (07 §5.4).
-- **Status:** list **drawn** (trust.html:142-147); editor **described** only. Brick 1 has none.
+- **Status:** list **drawn** (trust.html:142-147); editor **described** only. The first release has none.
 - **Tags:** W6, W5.
 
 ### C30 Freeze and unfreeze
@@ -856,7 +856,7 @@ Each needs a canonical-argument renderer and an effect list. Status per type:
   release. Unfreeze needs the passkey or a code on the PWA (07 §5.5).
 - **Status:** **Drawn** (shell.html:53, 75; trust.html:95-98; phone.html:176). **Not built**
   (no `freeze` anywhere in agentrix-node or agentrix-console), although 07 §10 put Freeze in the
-  Brick 1 console scope.
+  The first release console scope.
 - **Actions:** Freeze → `Kernel::freeze` parks every process; the edge serves the signed release
   read-only; the Concierge answers from pages then offers the form (07 §5.5). Unfreeze → the
   approval sheet (C8), PWA only, resumes exactly what the freeze parked. Also from WhatsApp STOP,
@@ -889,7 +889,7 @@ Each needs a canonical-argument renderer and an effect list. Status per type:
 
 ### C35 Phone: Now
 - **Status:** **Drawn** (phone.html:109-125): greeting, team mark, brief, Needs-you stack with
-  swipe hint, live strip, mission widget, tab bar. **Not built** (Brick 1's phone layout is the
+  swipe hint, live strip, mission widget, tab bar. **Not built** (the first release's phone layout is the
   five-tab bottom bar).
 - **Tags:** W5.
 
@@ -910,7 +910,7 @@ Each needs a canonical-argument renderer and an effect list. Status per type:
 - **Purpose:** the brief at 07:00, everyday cards (Allow once, Decline), consequential cards open
   the PWA, STOP freezes, free text goes to the Chief WebAgent (07 §4.4).
 - **Status:** **Drawn** (phone.html:188-194; console.html:214-219; owner-day1.html:44-48).
-  **Not built** (Won't for Brick 1, requirements §5).
+  **Not built** (Won't for the first release, requirements §5).
 - **Fault:** the v0.1 brief offers "Approve order" as a WhatsApp reply (console.html:217) while
   money needs the PWA (phone.html:193, 200). Use "Open the order".
 - **Tags:** W8, W6.
@@ -931,13 +931,13 @@ Each needs a canonical-argument renderer and an effect list. Status per type:
   countdown (151-153); failures in words (gestures.html script, around lines 447-459); audit log
   panel (208-213); calibration (described, 235-245).
 - **Status:** **Drawn and working on a real camera** (gestures.js, gestures.test.js). Not in
-  Brick 1 (R10.4 Could).
+  The first release (R10.4 Could).
 - **Tags:** W5, W7.
 
 ### C43 All sites
 - **Purpose:** an owner with several sites sees held decisions, missions, budget and wall status
   per site; the phone merges cards with site labels (07 §6).
-- **Status:** **Described**; drawn only as three site cards (shell.html:326-335). Brick 1 binds a
+- **Status:** **Described**; drawn only as three site cards (shell.html:326-335). The first release binds a
   session to one site (pages/mod.rs:97-105).
 - **Tags:** W5, W3.
 
@@ -1001,7 +1001,7 @@ closest are the v0.1 Website and Customers panels (console.html:325-354), the bo
   card on Fleet (cp.js:34-35). Portfolio "Sites", "Rollouts", "Billing" and "Team" point to
   panels on the one Clients page (cp.js:54-55). So 3 of 7 operator apps and 4 of 5 portfolio
   apps have no page.
-- **Not built:** nothing in Brick 1 (08 §10: operator WebAgents "None", tooling: nothing).
+- **Not built:** nothing in the first release (08 §10: operator WebAgents "None", tooling: nothing).
 
 ### 3.1 Drawn operator pages
 
@@ -1146,7 +1146,7 @@ Priority: **M** must have before paying customers, **S** should, **C** could. Ta
 | Email confirmation | Briefs and receipts go to email (register.html:16) | M | W6, W8 |
 | New-device and new-passkey alerts | Security notice when credentials change | M | W6, W8 |
 | Step-up for sensitive settings | Adding a passkey, granting a role, exporting, changing payout details | M | W6 |
-| Social sign-in (Google, LinkedIn, GitHub) | Drawn (owner-account.html:51-55), Won't for Brick 1 | S | W6 |
+| Social sign-in (Google, LinkedIn, GitHub) | Drawn (owner-account.html:51-55), Won't for the first release | S | W6 |
 | Session-expired and signed-out states | Copy and redirect | S | W6, W7 |
 | Account switcher (one person, several memberships) | 08 §2.3: an agency employee who owns a business has two memberships | S | W6, W3 |
 
@@ -1274,34 +1274,34 @@ where noted, a WhatsApp or push version. Tag W8 unless noted.
 | `concept/control-plane/cp.css` | Scope additions | Scope markers `--op`, `--pf`, terminal tokens (5-17); KPI tiles, rows, tables, dots, operator avatars, team rows, decision card with inline sheet and signers, authority boxes, timeline, rings, canary bars, sparkline, cells, pools, WhatsApp, terminal, explainers (61-237) |
 | `concept/journeys/owner.css` | Owner journey screens | Fields, providers, OK and wait lines, TOTP, plans, budget, rails, cards, money table, timeline, WhatsApp (6-112) |
 | Page-local `<style>` blocks | Components never promoted | mission (`.stats`, `.contract`, `.method`), live (`.composer`, `.whisper`, `.site-mini`, `.voice-panel`), trust (`.jobrow`, `.fixed-rules`, `.earned`), phone (`.p-card`, `.p-stack`, `.p-sheet`, `.effect-box`, `.wa`), gestures (`.gbar`, `.stopwin`, `.camtile`), rollout (`.gates`, `.artefacts`, `.waves`), incident (`.lever`, `.sev`, `.draft`), billing (`.hbar`, `.payouts`, `.rail`), cli (`.diff`, `.train`) |
-| `crates/agentrix-console/static/app.css` | Brick 1, shipping | Own copy of the tokens plus a dark theme (app.css:5-52); system fonts (app.css:3, 17-19); 44 px targets; pill buttons; static `.mark` (app.css:137); bottom/side nav (190-204) |
+| `crates/agentrix-console/static/app.css` | The first release, shipping | Own copy of the tokens plus a dark theme (app.css:5-52); system fonts (app.css:3, 17-19); 44 px targets; pill buttons; static `.mark` (app.css:137); bottom/side nav (190-204) |
 
 ### 5.2 Tokens the kit must define
 
 - **Colour, brand:** indigo `#38356d`, indigo-900/700/100/50, coral `#de4060`, coral-strong
   `#b72d50`, coral-50 (styles.css:8-15).
 - **Colour, neutral:** ink, ink-2, muted, line, line-strong, paper, surface, surface-2
-  (styles.css:18-25). Pick one `--muted`: concepts `#656479` (styles.css:20), Brick 1 `#5f5e73`
-  (app.css:9, darker for AA). Keep Brick 1's.
+  (styles.css:18-25). Pick one `--muted`: concepts `#656479` (styles.css:20), the first release `#5f5e73`
+  (app.css:9, darker for AA). Keep the first release's.
 - **Colour, semantic:** ok, wait, risk, info, sealed, each with a background (styles.css:28-37);
   presence wait `#b26b00` and ok `#1f8a57` (console.css:21-22) must merge with ok/wait or be
   named as presence tokens.
 - **Scope markers:** operator `--op` `#1f1d3d`, portfolio `--pf` `#0f6b62` with `--pf-bg`
   (cp.css:6-9). Site scope has no marker; give it one (the site's own logo tile, as drawn,
   console.css:92).
-- **Themes:** light (default), system dark (Brick 1 only, app.css:26-52), Night Time (console
+- **Themes:** light (default), system dark (the first release only, app.css:26-52), Night Time (console
   only, console.css:66-86). Decide whether Night Time is the dark theme applied by schedule or a
   third theme. Recommendation: one dark theme; Night Time = dark theme + timeline view + quiet
   lane.
 - **Type:** Manrope display, DM Sans text, JetBrains Mono (styles.css:40-42); scale 12-56
   (43-52). Concepts load Google Fonts; journeys add Fraunces; the team mark uses Young Serif
-  (console.css:167). Brick 1 forbids third-party font requests (app.css:3). Decision: self-host
+  (console.css:167). The first release forbids third-party font requests (app.css:3). Decision: self-host
   Manrope, DM Sans and one mono, or ship system fonts. Never load fonts from a third party in
   the console.
 - **Space, radius, shadow, focus, motion:** s1-s8, r-sm/r/r-lg/r-xl, shadow 1-3, focus ring,
-  ease (styles.css:55-64); fast/med durations (console.css:19-20). Brick 1 dropped r-sm, r-xl,
+  ease (styles.css:55-64); fast/med durations (console.css:19-20). The first release dropped r-sm, r-xl,
   s8 and shadow-3.
-- **Hit targets:** 44 px minimum (Brick 1, app.css:92; WCAG 2.5.8). Concepts use 34-42 px
+- **Hit targets:** 44 px minimum (the first release, app.css:92; WCAG 2.5.8). Concepts use 34-42 px
   (styles.css:136, 149).
 - **Presence values shared with the visitor site (V1, 07 §3.5):** mark sizes 20/28/40; ring −4 px
   2 px breathing 2.2 s; working line 2 px, 6 px below, 1 s; answering .45; waiting dot 9 px;
@@ -1311,7 +1311,7 @@ where noted, a WhatsApp or push version. Tag W8 unless noted.
 
 | Kit component | Source today | Used by | Notes |
 |---|---|---|---|
-| Button (primary, secondary, ghost, danger, sm, lg, wide) | styles.css:134-152; app.css:92-98 | all | Pick one radius (12 px concept vs 999 px Brick 1) and one primary colour (indigo vs indigo-900) |
+| Button (primary, secondary, ghost, danger, sm, lg, wide) | styles.css:134-152; app.css:92-98 | all | Pick one radius (12 px concept vs 999 px the first release) and one primary colour (indigo vs indigo-900) |
 | Chip (neutral, ok, wait, risk, info, coral, outline, sealed) | styles.css:155-162; app.css chip | all | |
 | Badge | styles.css:163 | dock, tabs, lane | |
 | Card, tight card, raised card, accent card | styles.css:127-130; console.css:196-200 (`fcard`); owner.css:65 (`o-card`) | all | Three card classes for one thing |
@@ -1319,7 +1319,7 @@ where noted, a WhatsApp or push version. Tag W8 unless noted.
 | Tabs | app.css tabs; journeys `j-tabs` | claim, register, billing | |
 | Meter and mini meter | styles.css:179-182; console.css:113-114 | budgets, parity, pools | |
 | Segmented control | styles.css:185-187 | v0.1 dial, starting level | |
-| **Ladder** (five positions, locked with reason, lowered, ceiling marker) | console.css:329-335; app.css `.levels` (180-185) | WebAgents, Store, Trust, go-live | Brick 1 renders a vertical list; concept a segmented ladder. One component, two layouts |
+| **Ladder** (five positions, locked with reason, lowered, ceiling marker) | console.css:329-335; app.css `.levels` (180-185) | WebAgents, Store, Trust, go-live | The first release renders a vertical list; concept a segmented ladder. One component, two layouts |
 | **WebAgent mark** (squircle, presence states, keyline on dark) | `.avatar` letters (styles.css:214-223), `.os-mark` wrapper (console.css:131-151), `.j-mark` generator (journeys.js), `.mark` (app.css:137-142) | everywhere | Four implementations. Converge on ADR-031's living mark with one JS build golden-tested against the Rust build (07 §9.3) |
 | **Team mark** (Chief WebAgent) | `.orb` (console.css:158-184) | command bar, brief, phone | Hard-codes Kilele's ink and "K" (console.css:158, 167); must take the site's tokens |
 | State line | console.css:145-151 | dock, cards, monitor | |
@@ -1327,8 +1327,8 @@ where noted, a WhatsApp or push version. Tag W8 unless noted.
 | World pager | console.css:94-99 | site scope only | |
 | Dock and app icon | console.css:117-128 | shell | Phone app grid reuses it (console.css:423-425) |
 | Lane and lane card (`ldec`), quiet note, why box | console.css:246-264 | shell, missions, live | |
-| **Decision card** with effect box, risk line, actions, done line | console.html `.decision`; console `ldec`; cp.css:111-137; owner.css:65-77; Brick 1 decision.html | all scopes | Five versions. One component with sizes (lane, full) |
-| **Approval sheet** (passkey, code step-up, two signers) | console.css:302-326 (overlay); cp.css:126-137 (inline); phone `.p-sheet`; Brick 1 `.sheet` (app.css:187) | all scopes | One component, overlay on desk, bottom sheet on phone; signers row for two-person cards (cp.css:121-125) |
+| **Decision card** with effect box, risk line, actions, done line | console.html `.decision`; console `ldec`; cp.css:111-137; owner.css:65-77; the first release decision.html | all scopes | Five versions. One component with sizes (lane, full) |
+| **Approval sheet** (passkey, code step-up, two signers) | console.css:302-326 (overlay); cp.css:126-137 (inline); phone `.p-sheet`; the first release `.sheet` (app.css:187) | all scopes | One component, overlay on desk, bottom sheet on phone; signers row for two-person cards (cp.css:121-125) |
 | Command bar and plan preview | console.css:267-284 | shell | |
 | Overlay window | console.css:287-292 | monitor, consent | |
 | Process table | console.css:293-300 | Activity monitor | |
@@ -1376,7 +1376,7 @@ where noted, a WhatsApp or push version. Tag W8 unless noted.
 1. `tokens.css`: one file, light and dark, scope markers, presence tokens, generated for both
    the console and the visitor site's shared values.
 2. Component CSS with stable class names (BEM-like prefix, e.g. `ax-`), documented with states.
-3. minijinja macros for each component (Brick 1 already has `mark`, `finding`, `receipt_row`,
+3. minijinja macros for each component (the first release already has `mark`, `finding`, `receipt_row`,
    `ticks`; templates/macros.html:1-49), so pages in every scope render the same markup.
 4. JS islands: approval sheet (passkey and code), SSE live regions, ladder, command bar, gesture
    HUD, verify. No framework.
@@ -1518,10 +1518,10 @@ These add to `specs/platform/voice.md`; where they overlap, voice.md wins.
    currency (§6.4 rule 5).
 3. **Night Time and dark theme:** one dark theme applied on a schedule, or a separate Night Time
    theme (§5.2).
-4. **Fonts:** self-host Manrope and DM Sans, or ship system fonts as Brick 1 does (§5.2).
-5. **Button shape and primary colour:** concept (12 px radius, indigo) or Brick 1 (pill,
+4. **Fonts:** self-host Manrope and DM Sans, or ship system fonts as the first release does (§5.2).
+5. **Button shape and primary colour:** concept (12 px radius, indigo) or the first release (pill,
    indigo-900) (§5.3).
-6. **Pre-account preview:** build a public-pages preview before the claim (O1.5), or keep Brick 1's
+6. **Pre-account preview:** build a public-pages preview before the claim (O1.5), or keep the first release's
    order (report, then claim, then Move).
 7. **Leaving items behind:** default with no signature; only release is signed (O5.3).
 8. **Recovery:** what proves identity when an owner loses both passkey and authenticator (§4.1).
