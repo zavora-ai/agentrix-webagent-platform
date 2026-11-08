@@ -14,8 +14,8 @@
 
 use agentrix_types::ui::{CardEvent, ParityEvent, StepName, TickEvent, UiEvent};
 use agentrix_types::{
-    Approval, ApprovalMethod, Brief, CardKind, Charter, DecisionCard, DecisionId, Digest, GauntletAttack, JobLevel,
-    KeySet, MoveId, QuarantineId, Receipt, SiteId,
+    Approval, ApprovalMethod, Brief, CardKind, Charter, DecisionCard, DecisionId, Digest,
+    GauntletAttack, JobLevel, KeySet, MoveId, QuarantineId, Receipt, SiteId,
 };
 use anyhow::{Context as _, bail};
 use async_trait::async_trait;
@@ -36,11 +36,19 @@ pub trait Delegates: Send + Sync + 'static {
     }
     /// Starts the approval ceremony for `card` (`decisions/`, design D9). See
     /// [`ConsoleReads::begin_approval`].
-    async fn begin_approval(&self, session: &OwnerSession, card: &DecisionCard) -> ReadResult<Option<String>>;
+    async fn begin_approval(
+        &self,
+        session: &OwnerSession,
+        card: &DecisionCard,
+    ) -> ReadResult<Option<String>>;
     /// A frame from the CAS, under [`ConsoleReads::frame`]'s rule, which `db::cas` keeps:
     /// `Cas::get_for_site(pool, site, digest)` for the owner's site, then
     /// `Cas::get_public_frame(pool, digest)` for a free Assess's frames.
-    async fn frame(&self, owner_site: Option<&SiteId>, digest: &Digest) -> ReadResult<Option<FrameBytes>>;
+    async fn frame(
+        &self,
+        owner_site: Option<&SiteId>,
+        digest: &Digest,
+    ) -> ReadResult<Option<FrameBytes>>;
 }
 
 /// The console's reads over the control database.
@@ -55,7 +63,11 @@ impl<D: Delegates> SqliteReads<D> {
     /// Reads from `pool`, verifies receipts against `keys` (the receipts store's published keys)
     /// and asks `delegates` for the rest.
     pub fn new(pool: SqlitePool, keys: KeySet, delegates: D) -> Self {
-        Self { pool, keys, delegates }
+        Self {
+            pool,
+            keys,
+            delegates,
+        }
     }
 }
 
@@ -71,27 +83,47 @@ const STEPS: [StepName; 7] = [
 ];
 
 fn time(text: &str) -> ReadResult<DateTime<Utc>> {
-    Ok(DateTime::parse_from_rfc3339(text).with_context(|| format!("a stored time does not parse: {text}"))?.with_timezone(&Utc))
+    Ok(DateTime::parse_from_rfc3339(text)
+        .with_context(|| format!("a stored time does not parse: {text}"))?
+        .with_timezone(&Utc))
 }
 
 fn digest(text: &str) -> ReadResult<Digest> {
-    text.parse().with_context(|| format!("a stored digest does not parse: {text}"))
+    text.parse()
+        .with_context(|| format!("a stored digest does not parse: {text}"))
 }
 
-type DecisionSql = (String, String, String, Option<String>, Option<String>, Option<String>, Option<String>);
+type DecisionSql = (
+    String,
+    String,
+    String,
+    Option<String>,
+    Option<String>,
+    Option<String>,
+    Option<String>,
+);
 
 /// A `decisions` query: [`DecisionSql`]'s columns, then the rest. sqlx takes only static SQL.
 macro_rules! select_decisions {
     ($rest:literal) => {
-        concat!("SELECT card, fingerprint, state, method, signer, decided_at, receipt FROM decisions ", $rest)
+        concat!(
+            "SELECT card, fingerprint, state, method, signer, decided_at, receipt FROM decisions ",
+            $rest
+        )
     };
 }
 
-fn decision_row((card, fingerprint, state, method, signer, decided_at, receipt): DecisionSql) -> ReadResult<DecisionRow> {
-    let card: DecisionCard = serde_json::from_str(&card).context("a stored decision card does not parse")?;
+fn decision_row(
+    (card, fingerprint, state, method, signer, decided_at, receipt): DecisionSql,
+) -> ReadResult<DecisionRow> {
+    let card: DecisionCard =
+        serde_json::from_str(&card).context("a stored decision card does not parse")?;
     let fingerprint = digest(&fingerprint)?;
     if fingerprint != card.fingerprint {
-        bail!("decision {}: the stored fingerprint does not match its card", card.decision_id);
+        bail!(
+            "decision {}: the stored fingerprint does not match its card",
+            card.decision_id
+        );
     }
     let state = match state.as_str() {
         "waiting" => DecisionState::Waiting,
@@ -105,20 +137,32 @@ fn decision_row((card, fingerprint, state, method, signer, decided_at, receipt):
         let method = match method.as_deref() {
             Some("passkey") => ApprovalMethod::Passkey,
             Some("totp") => ApprovalMethod::StepUp,
-            other => bail!("decision {}: unknown approval method {other:?}", card.decision_id),
+            other => bail!(
+                "decision {}: unknown approval method {other:?}",
+                card.decision_id
+            ),
         };
         Some(Approval {
             decision_id: card.decision_id.clone(),
             fingerprint,
             method,
-            approver: signer.with_context(|| format!("decision {}: approved without a signer", card.decision_id))?,
-            at: time(decided_at.as_deref().with_context(|| format!("decision {}: approved without a time", card.decision_id))?)?,
+            approver: signer.with_context(|| {
+                format!("decision {}: approved without a signer", card.decision_id)
+            })?,
+            at: time(decided_at.as_deref().with_context(|| {
+                format!("decision {}: approved without a time", card.decision_id)
+            })?)?,
         })
     } else {
         None
     };
     let receipt = receipt.as_deref().map(digest).transpose()?;
-    Ok(DecisionRow { card, state, approval, receipt })
+    Ok(DecisionRow {
+        card,
+        state,
+        approval,
+        receipt,
+    })
 }
 
 /// Folds a Move's UI events into its current state: the same values a `snapshot` carries.
@@ -126,7 +170,11 @@ fn fold(row: &mut MoveRow, event: UiEvent) {
     fn upsert_parity(row: &mut MoveRow, p: ParityEvent) {
         match &p.page {
             None => row.parity_site = Some(p),
-            Some(page) => match row.parity_pages.iter_mut().find(|q| q.page.as_ref() == Some(page)) {
+            Some(page) => match row
+                .parity_pages
+                .iter_mut()
+                .find(|q| q.page.as_ref() == Some(page))
+            {
                 Some(slot) => *slot = p,
                 None => row.parity_pages.push(p),
             },
@@ -146,7 +194,12 @@ fn fold(row: &mut MoveRow, event: UiEvent) {
                 row.quarantined.push(q);
             }
         }
-        UiEvent::Card(c @ CardEvent { kind: CardKind::GoLive, .. }) => row.go_live = Some(c),
+        UiEvent::Card(
+            c @ CardEvent {
+                kind: CardKind::GoLive,
+                ..
+            },
+        ) => row.go_live = Some(c),
         UiEvent::Snapshot(s) => {
             for step in s.steps {
                 fold(row, UiEvent::Step(step));
@@ -200,12 +253,17 @@ impl<D: Delegates> ConsoleReads for SqliteReads<D> {
                 SiteStage::Setup
             },
             live_since: live_since.as_deref().map(time).transpose()?,
-            utc_offset_minutes: i32::try_from(offset).context("utc_offset_minutes is out of range")?,
+            utc_offset_minutes: i32::try_from(offset)
+                .context("utc_offset_minutes is out of range")?,
         }))
     }
 
     async fn move_spend(&self, move_id: &MoveId) -> ReadResult<Option<String>> {
-        Ok(Some(crate::db::usage::for_move(&self.pool, move_id).await?.words("on this Move")))
+        Ok(Some(
+            crate::db::usage::for_move(&self.pool, move_id)
+                .await?
+                .words("on this Move"),
+        ))
     }
 
     async fn latest_move(&self, site: &SiteId) -> ReadResult<Option<MoveRow>> {
@@ -230,32 +288,45 @@ impl<D: Delegates> ConsoleReads for SqliteReads<D> {
             started_at,
             steps: Vec::new(),
             pages: None,
-            tick: TickEvent { job: None, hosts: 0, requests: 0, bytes: 0, refusals: 0, at: started_at },
+            tick: TickEvent {
+                job: None,
+                hosts: 0,
+                requests: 0,
+                bytes: 0,
+                refusals: 0,
+                at: started_at,
+            },
             last_frame: None,
             parity_site: None,
             parity_pages: Vec::new(),
             quarantined: Vec::new(),
             go_live: None,
         };
-        let events: Vec<(i64, String, String)> =
-            sqlx::query_as("SELECT seq, name, data FROM ui_events WHERE stream = ? AND site_id = ? ORDER BY seq")
-                .bind(format!("move:{}", row.id))
-                .bind(site.as_str())
-                .fetch_all(&self.pool)
-                .await?;
+        let events: Vec<(i64, String, String)> = sqlx::query_as(
+            "SELECT seq, name, data FROM ui_events WHERE stream = ? AND site_id = ? ORDER BY seq",
+        )
+        .bind(format!("move:{}", row.id))
+        .bind(site.as_str())
+        .fetch_all(&self.pool)
+        .await?;
         for (seq, name, data) in events {
             match UiEvent::from_parts(&name, &data) {
                 Ok(event) => fold(&mut row, event),
                 // One bad event shouldn't take the whole page down; the stream shows the rest.
-                Err(e) => tracing::warn!(move_id = %row.id, seq, event = %name, error = %e, "skipping a UI event that does not parse"),
+                Err(e) => {
+                    tracing::warn!(move_id = %row.id, seq, event = %name, error = %e, "skipping a UI event that does not parse")
+                }
             }
         }
-        row.steps.sort_by_key(|s| STEPS.iter().position(|n| *n == s.step));
+        row.steps
+            .sort_by_key(|s| STEPS.iter().position(|n| *n == s.step));
         Ok(Some(row))
     }
 
     async fn decisions(&self, site: &SiteId) -> ReadResult<Vec<DecisionRow>> {
-        let rows: Vec<DecisionSql> = sqlx::query_as(select_decisions!("WHERE site_id = ? ORDER BY created_at DESC, rowid DESC"))
+        let rows: Vec<DecisionSql> = sqlx::query_as(select_decisions!(
+            "WHERE site_id = ? ORDER BY created_at DESC, rowid DESC"
+        ))
         .bind(site.as_str())
         .fetch_all(&self.pool)
         .await?;
@@ -263,7 +334,8 @@ impl<D: Delegates> ConsoleReads for SqliteReads<D> {
     }
 
     async fn decision(&self, site: &SiteId, id: &DecisionId) -> ReadResult<Option<DecisionRow>> {
-        let row: Option<DecisionSql> = sqlx::query_as(select_decisions!("WHERE site_id = ? AND decision_id = ?"))
+        let row: Option<DecisionSql> =
+            sqlx::query_as(select_decisions!("WHERE site_id = ? AND decision_id = ?"))
                 .bind(site.as_str())
                 .bind(id.as_str())
                 .fetch_optional(&self.pool)
@@ -271,20 +343,26 @@ impl<D: Delegates> ConsoleReads for SqliteReads<D> {
         row.map(decision_row).transpose()
     }
 
-    async fn begin_approval(&self, session: &OwnerSession, card: &DecisionCard) -> ReadResult<Option<String>> {
+    async fn begin_approval(
+        &self,
+        session: &OwnerSession,
+        card: &DecisionCard,
+    ) -> ReadResult<Option<String>> {
         self.delegates.begin_approval(session, card).await
     }
 
     async fn levels(&self, site: &SiteId) -> ReadResult<Vec<JobLevel>> {
-        let row: Option<(String,)> =
-            sqlx::query_as("SELECT body FROM charters WHERE site_id = ? ORDER BY version DESC LIMIT 1")
-                .bind(site.as_str())
-                .fetch_optional(&self.pool)
-                .await?;
+        let row: Option<(String,)> = sqlx::query_as(
+            "SELECT body FROM charters WHERE site_id = ? ORDER BY version DESC LIMIT 1",
+        )
+        .bind(site.as_str())
+        .fetch_optional(&self.pool)
+        .await?;
         let Some((body,)) = row else {
             return Ok(Vec::new());
         };
-        let charter: Charter = serde_json::from_str(&body).context("a stored charter does not parse")?;
+        let charter: Charter =
+            serde_json::from_str(&body).context("a stored charter does not parse")?;
         Ok(charter.jobs)
     }
 
@@ -295,7 +373,9 @@ impl<D: Delegates> ConsoleReads for SqliteReads<D> {
                 .bind(i64::try_from(limit).unwrap_or(i64::MAX))
                 .fetch_all(&self.pool)
                 .await?;
-        rows.into_iter().map(|(body,)| serde_json::from_str(&body).context("a stored receipt does not parse")).collect()
+        rows.into_iter()
+            .map(|(body,)| serde_json::from_str(&body).context("a stored receipt does not parse"))
+            .collect()
     }
 
     async fn receipt(&self, digest: &Digest) -> ReadResult<Option<Receipt>> {
@@ -303,7 +383,8 @@ impl<D: Delegates> ConsoleReads for SqliteReads<D> {
             .bind(digest.to_string())
             .fetch_optional(&self.pool)
             .await?;
-        row.map(|(body,)| serde_json::from_str(&body).context("a stored receipt does not parse")).transpose()
+        row.map(|(body,)| serde_json::from_str(&body).context("a stored receipt does not parse"))
+            .transpose()
     }
 
     /// The latest run with a receipt: a run still going has none, and Trust shows a finished one.
@@ -319,10 +400,15 @@ impl<D: Delegates> ConsoleReads for SqliteReads<D> {
             return Ok(None);
         };
         let attacks: Vec<GauntletAttack> = match detail {
-            Some(detail) => serde_json::from_str(&detail).context("a stored gauntlet run's detail does not parse")?,
+            Some(detail) => serde_json::from_str(&detail)
+                .context("a stored gauntlet run's detail does not parse")?,
             None => Vec::new(),
         };
-        Ok(Some(GauntletRow { run_at: time(ended_at.as_deref().unwrap_or(&started_at))?, receipt: digest(&receipt)?, attacks }))
+        Ok(Some(GauntletRow {
+            run_at: time(ended_at.as_deref().unwrap_or(&started_at))?,
+            receipt: digest(&receipt)?,
+            attacks,
+        }))
     }
 
     async fn uploads(&self, site: &SiteId) -> ReadResult<Vec<UploadInfo>> {
@@ -340,8 +426,14 @@ impl<D: Delegates> ConsoleReads for SqliteReads<D> {
             if !seen.insert(name.clone()) {
                 continue;
             }
-            let at = DateTime::parse_from_rfc3339(&at).map(|t| t.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now());
-            out.push(UploadInfo { name, size: u64::try_from(size).unwrap_or(0), at });
+            let at = DateTime::parse_from_rfc3339(&at)
+                .map(|t| t.with_timezone(&Utc))
+                .unwrap_or_else(|_| Utc::now());
+            out.push(UploadInfo {
+                name,
+                size: u64::try_from(size).unwrap_or(0),
+                at,
+            });
         }
         Ok(out)
     }
@@ -349,10 +441,19 @@ impl<D: Delegates> ConsoleReads for SqliteReads<D> {
     async fn meter(&self, site: &SiteId) -> ReadResult<Option<MeterRow>> {
         use chrono::{Datelike as _, TimeZone as _};
         let now = Utc::now();
-        let midnight = Utc.with_ymd_and_hms(now.year(), now.month(), now.day(), 0, 0, 0).single().unwrap_or(now);
-        let first = Utc.with_ymd_and_hms(now.year(), now.month(), 1, 0, 0, 0).single().unwrap_or(now);
+        let midnight = Utc
+            .with_ymd_and_hms(now.year(), now.month(), now.day(), 0, 0, 0)
+            .single()
+            .unwrap_or(now);
+        let first = Utc
+            .with_ymd_and_hms(now.year(), now.month(), 1, 0, 0, 0)
+            .single()
+            .unwrap_or(now);
         let month = crate::db::usage::site_since(&self.pool, site, first).await?;
-        let ever: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM usage WHERE site_id = ?").bind(site.as_str()).fetch_one(&self.pool).await?;
+        let ever: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM usage WHERE site_id = ?")
+            .bind(site.as_str())
+            .fetch_one(&self.pool)
+            .await?;
         if ever.0 == 0 {
             return Ok(None);
         }
@@ -371,7 +472,11 @@ impl<D: Delegates> ConsoleReads for SqliteReads<D> {
             .unwrap_or(5.0);
         let hard = (cap * 1e6).round() as i64;
         let daily_limit_micro_usd = own.map_or(hard, |(l,)| l.min(hard));
-        Ok(Some(MeterRow { today, month, daily_limit_micro_usd }))
+        Ok(Some(MeterRow {
+            today,
+            month,
+            daily_limit_micro_usd,
+        }))
     }
 
     async fn passed_questions(&self, site: &SiteId) -> ReadResult<PassedRows> {
@@ -380,9 +485,18 @@ impl<D: Delegates> ConsoleReads for SqliteReads<D> {
             .recent(site, 10)
             .await?
             .into_iter()
-            .map(|q| Ok(PassedRow { question: q.question, contact: q.contact, at: time(&q.passed_at)? }))
+            .map(|q| {
+                Ok(PassedRow {
+                    question: q.question,
+                    contact: q.contact,
+                    at: time(&q.passed_at)?,
+                })
+            })
             .collect::<ReadResult<Vec<_>>>()?;
-        Ok(PassedRows { total: store.count(site, None).await?, recent })
+        Ok(PassedRows {
+            total: store.count(site, None).await?,
+            recent,
+        })
     }
 
     async fn brief(&self, site: &SiteId) -> ReadResult<Option<BriefRow>> {
@@ -395,7 +509,10 @@ impl<D: Delegates> ConsoleReads for SqliteReads<D> {
             return Ok(None);
         };
         let brief: Brief = serde_json::from_str(&body).context("a stored brief does not parse")?;
-        Ok(Some(BriefRow { written_at: time(&written_at)?, brief }))
+        Ok(Some(BriefRow {
+            written_at: time(&written_at)?,
+            brief,
+        }))
     }
 
     async fn quarantine(&self, site: &SiteId) -> ReadResult<Vec<QuarantineRow>> {
@@ -408,29 +525,35 @@ impl<D: Delegates> ConsoleReads for SqliteReads<D> {
         .fetch_all(&self.pool)
         .await?;
         rows.into_iter()
-            .map(|(id, title, reason, location, evidence, state, decision, decision_state)| {
-                let evidence: Vec<Digest> =
-                    serde_json::from_str(&evidence).with_context(|| format!("quarantine {id}: evidence does not parse"))?;
-                let stage = match (state.as_str(), decision_state.as_deref()) {
-                    ("restored", _) => QuarantineStage::Restored,
-                    ("held", Some("waiting")) => QuarantineStage::RestoreAsked,
-                    ("held", _) => QuarantineStage::LeftBehind,
-                    (other, _) => bail!("quarantine {id}: unknown state {other}"),
-                };
-                Ok(QuarantineRow {
-                    id: QuarantineId::new(id),
-                    title,
-                    plain: reason,
-                    location,
-                    evidence,
-                    stage,
-                    decision: decision.map(DecisionId::new),
-                })
-            })
+            .map(
+                |(id, title, reason, location, evidence, state, decision, decision_state)| {
+                    let evidence: Vec<Digest> = serde_json::from_str(&evidence)
+                        .with_context(|| format!("quarantine {id}: evidence does not parse"))?;
+                    let stage = match (state.as_str(), decision_state.as_deref()) {
+                        ("restored", _) => QuarantineStage::Restored,
+                        ("held", Some("waiting")) => QuarantineStage::RestoreAsked,
+                        ("held", _) => QuarantineStage::LeftBehind,
+                        (other, _) => bail!("quarantine {id}: unknown state {other}"),
+                    };
+                    Ok(QuarantineRow {
+                        id: QuarantineId::new(id),
+                        title,
+                        plain: reason,
+                        location,
+                        evidence,
+                        stage,
+                        decision: decision.map(DecisionId::new),
+                    })
+                },
+            )
             .collect()
     }
 
-    async fn frame(&self, owner_site: Option<&SiteId>, digest: &Digest) -> ReadResult<Option<FrameBytes>> {
+    async fn frame(
+        &self,
+        owner_site: Option<&SiteId>,
+        digest: &Digest,
+    ) -> ReadResult<Option<FrameBytes>> {
         self.delegates.frame(owner_site, digest).await
     }
 

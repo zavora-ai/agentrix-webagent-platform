@@ -28,9 +28,9 @@ use std::fmt;
 use std::sync::Arc;
 use std::time::Duration;
 
+use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::Json;
 use serde::Serialize;
 use sqlx::SqlitePool;
 use url::Url;
@@ -135,8 +135,13 @@ impl AuthState {
 
     /// What the console needs about an owner: `has_passkey` decides whether a card offers the
     /// passkey or the authenticator code.
-    pub async fn account_summary(&self, account: Uuid) -> Result<Option<AccountSummary>, AuthError> {
-        let Some(found) = self.store.account(account).await? else { return Ok(None) };
+    pub async fn account_summary(
+        &self,
+        account: Uuid,
+    ) -> Result<Option<AccountSummary>, AuthError> {
+        let Some(found) = self.store.account(account).await? else {
+            return Ok(None);
+        };
         let has_passkey = !self.store.credentials(account).await?.is_empty();
         Ok(Some(AccountSummary {
             id: found.id,
@@ -225,7 +230,9 @@ pub enum AuthError {
 impl AuthError {
     fn status(&self) -> StatusCode {
         match self {
-            Self::SignedOut | Self::WrongCredentials | Self::WrongCode | Self::PasskeyRefused => StatusCode::UNAUTHORIZED,
+            Self::SignedOut | Self::WrongCredentials | Self::WrongCode | Self::PasskeyRefused => {
+                StatusCode::UNAUTHORIZED
+            }
             Self::BadRequest(_) => StatusCode::BAD_REQUEST,
             Self::EmailTaken | Self::NoTotp => StatusCode::CONFLICT,
             Self::NoPasskey => StatusCode::NOT_FOUND,
@@ -243,7 +250,11 @@ impl IntoResponse for AuthError {
         if let Self::Internal(detail) = &self {
             tracing::error!(%detail, "auth: internal error");
         }
-        (self.status(), Json(serde_json::json!({ "message": self.to_string() }))).into_response()
+        (
+            self.status(),
+            Json(serde_json::json!({ "message": self.to_string() })),
+        )
+            .into_response()
     }
 }
 

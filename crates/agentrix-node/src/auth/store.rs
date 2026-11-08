@@ -97,7 +97,9 @@ impl Store {
     /// Applies `schema.sql`. For tests and for running before the data lane's migrator
     /// includes it; every statement is `IF NOT EXISTS`.
     pub async fn ensure_schema(&self) -> Result<(), StoreError> {
-        sqlx::raw_sql(include_str!("schema.sql")).execute(&self.pool).await?;
+        sqlx::raw_sql(include_str!("schema.sql"))
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 
@@ -147,7 +149,12 @@ impl Store {
         .fetch_optional(&self.pool)
         .await?;
         row.map(|(id, email, display_name, password_hash)| {
-            Ok(Account { id: parse_id(&id)?, email, display_name, password_hash })
+            Ok(Account {
+                id: parse_id(&id)?,
+                email,
+                display_name,
+                password_hash,
+            })
         })
         .transpose()
     }
@@ -161,13 +168,24 @@ impl Store {
         .fetch_optional(&self.pool)
         .await?;
         row.map(|(id, email, display_name, password_hash)| {
-            Ok(Account { id: parse_id(&id)?, email, display_name, password_hash })
+            Ok(Account {
+                id: parse_id(&id)?,
+                email,
+                display_name,
+                password_hash,
+            })
         })
         .transpose()
     }
 
     /// Adds a passkey to an existing account.
-    pub async fn add_credential(&self, account: Uuid, cred_id: &str, passkey_json: &str, label: &str) -> Result<(), StoreError> {
+    pub async fn add_credential(
+        &self,
+        account: Uuid,
+        cred_id: &str,
+        passkey_json: &str,
+        label: &str,
+    ) -> Result<(), StoreError> {
         sqlx::query("INSERT INTO credentials (id, account_id, passkey, label, created_at) VALUES (?, ?, ?, ?, ?)")
             .bind(cred_id)
             .bind(account.to_string())
@@ -181,18 +199,29 @@ impl Store {
 
     /// The account's passkeys.
     pub async fn credentials(&self, account: Uuid) -> Result<Vec<StoredCredential>, StoreError> {
-        let rows: Vec<(String, String)> =
-            sqlx::query_as("SELECT id, passkey FROM credentials WHERE account_id = ? ORDER BY created_at")
-                .bind(account.to_string())
-                .fetch_all(&self.pool)
-                .await?;
-        Ok(rows.into_iter().map(|(id, passkey_json)| StoredCredential { id, passkey_json }).collect())
+        let rows: Vec<(String, String)> = sqlx::query_as(
+            "SELECT id, passkey FROM credentials WHERE account_id = ? ORDER BY created_at",
+        )
+        .bind(account.to_string())
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows
+            .into_iter()
+            .map(|(id, passkey_json)| StoredCredential { id, passkey_json })
+            .collect())
     }
 
     /// Saves a passkey after a sign-in moved its counter, and stamps its last use.
-    pub async fn touch_credential(&self, cred_id: &str, passkey_json: Option<&str>) -> Result<(), StoreError> {
+    pub async fn touch_credential(
+        &self,
+        cred_id: &str,
+        passkey_json: Option<&str>,
+    ) -> Result<(), StoreError> {
         match passkey_json {
-            Some(json) => sqlx::query("UPDATE credentials SET passkey = ?, last_used_at = ? WHERE id = ?").bind(json),
+            Some(json) => {
+                sqlx::query("UPDATE credentials SET passkey = ?, last_used_at = ? WHERE id = ?")
+                    .bind(json)
+            }
             None => sqlx::query("UPDATE credentials SET last_used_at = ? WHERE id = ?"),
         }
         .bind(now())
@@ -204,26 +233,36 @@ impl Store {
 
     /// The account's sealed TOTP seed and the last step it accepted.
     pub async fn totp_seed(&self, account: Uuid) -> Result<Option<(Vec<u8>, i64)>, StoreError> {
-        Ok(sqlx::query_as("SELECT sealed_seed, last_step FROM totp_seeds WHERE account_id = ?")
-            .bind(account.to_string())
-            .fetch_optional(&self.pool)
-            .await?)
+        Ok(
+            sqlx::query_as("SELECT sealed_seed, last_step FROM totp_seeds WHERE account_id = ?")
+                .bind(account.to_string())
+                .fetch_optional(&self.pool)
+                .await?,
+        )
     }
 
     /// Records `step` as used, only if it is later than the last one. `false` means another
     /// request used this step first, so the code must be refused.
     pub async fn advance_totp(&self, account: Uuid, step: i64) -> Result<bool, StoreError> {
-        let done = sqlx::query("UPDATE totp_seeds SET last_step = ? WHERE account_id = ? AND last_step < ?")
-            .bind(step)
-            .bind(account.to_string())
-            .bind(step)
-            .execute(&self.pool)
-            .await?;
+        let done = sqlx::query(
+            "UPDATE totp_seeds SET last_step = ? WHERE account_id = ? AND last_step < ?",
+        )
+        .bind(step)
+        .bind(account.to_string())
+        .bind(step)
+        .execute(&self.pool)
+        .await?;
         Ok(done.rows_affected() == 1)
     }
 
     /// Stores a session by the hash of its token.
-    pub async fn create_session(&self, token_hash: &str, account: Uuid, method: &str, expires_at: i64) -> Result<(), StoreError> {
+    pub async fn create_session(
+        &self,
+        token_hash: &str,
+        account: Uuid,
+        method: &str,
+        expires_at: i64,
+    ) -> Result<(), StoreError> {
         sqlx::query("INSERT INTO sessions (token_hash, account_id, method, created_at, expires_at) VALUES (?, ?, ?, ?, ?)")
             .bind(token_hash)
             .bind(account.to_string())
@@ -237,22 +276,32 @@ impl Store {
 
     /// The live session for a token hash; expired sessions are deleted and not returned.
     pub async fn session(&self, token_hash: &str) -> Result<Option<SessionRow>, StoreError> {
-        let row: Option<(String, String, i64)> =
-            sqlx::query_as("SELECT account_id, method, expires_at FROM sessions WHERE token_hash = ?")
-                .bind(token_hash)
-                .fetch_optional(&self.pool)
-                .await?;
-        let Some((account, method, expires_at)) = row else { return Ok(None) };
+        let row: Option<(String, String, i64)> = sqlx::query_as(
+            "SELECT account_id, method, expires_at FROM sessions WHERE token_hash = ?",
+        )
+        .bind(token_hash)
+        .fetch_optional(&self.pool)
+        .await?;
+        let Some((account, method, expires_at)) = row else {
+            return Ok(None);
+        };
         if expires_at <= now() {
             self.delete_session(token_hash).await?;
             return Ok(None);
         }
-        Ok(Some(SessionRow { account: parse_id(&account)?, method, expires_at }))
+        Ok(Some(SessionRow {
+            account: parse_id(&account)?,
+            method,
+            expires_at,
+        }))
     }
 
     /// Ends a session.
     pub async fn delete_session(&self, token_hash: &str) -> Result<(), StoreError> {
-        sqlx::query("DELETE FROM sessions WHERE token_hash = ?").bind(token_hash).execute(&self.pool).await?;
+        sqlx::query("DELETE FROM sessions WHERE token_hash = ?")
+            .bind(token_hash)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 }

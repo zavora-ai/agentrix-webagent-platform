@@ -12,12 +12,14 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use webauthn_rs::prelude::{Passkey, PasskeyAuthentication, PublicKeyCredential, RequestChallengeResponse};
+use webauthn_rs::prelude::{
+    Passkey, PasskeyAuthentication, PublicKeyCredential, RequestChallengeResponse,
+};
 
 use super::passkey::{challenge_of, credential_id_text};
 use super::pending::Pending;
 use super::store::now;
-use super::{totp, AuthError, AuthState};
+use super::{AuthError, AuthState, totp};
 
 /// A started passkey approval, waiting for the browser's assertion.
 #[derive(Debug)]
@@ -101,7 +103,10 @@ impl AuthState {
         Approvals { auth: self.clone() }
     }
 
-    pub(super) async fn passkeys_of(&self, account: Uuid) -> Result<Vec<(String, Passkey)>, AuthError> {
+    pub(super) async fn passkeys_of(
+        &self,
+        account: Uuid,
+    ) -> Result<Vec<(String, Passkey)>, AuthError> {
         self.store
             .credentials(account)
             .await?
@@ -118,45 +123,95 @@ impl AuthState {
 impl Approvals {
     /// Passkey options bound to `fingerprint`, or `None` when the owner has no passkey (the
     /// card then asks for an authenticator code instead).
-    pub async fn passkey_options(&self, account: Uuid, fingerprint: [u8; 32]) -> Result<Option<PasskeyOptions>, AuthError> {
-        let passkeys: Vec<Passkey> = self.auth.passkeys_of(account).await?.into_iter().map(|(_, p)| p).collect();
+    pub async fn passkey_options(
+        &self,
+        account: Uuid,
+        fingerprint: [u8; 32],
+    ) -> Result<Option<PasskeyOptions>, AuthError> {
+        let passkeys: Vec<Passkey> = self
+            .auth
+            .passkeys_of(account)
+            .await?
+            .into_iter()
+            .map(|(_, p)| p)
+            .collect();
         if passkeys.is_empty() {
             return Ok(None);
         }
-        let (options, state, nonce, challenge) = self.auth.passkeys()?.start_approval(&passkeys, &fingerprint)?;
-        self.auth.approvals.0.put_as(challenge, PendingApproval { account, fingerprint, nonce, state });
+        let (options, state, nonce, challenge) = self
+            .auth
+            .passkeys()?
+            .start_approval(&passkeys, &fingerprint)?;
+        self.auth.approvals.0.put_as(
+            challenge,
+            PendingApproval {
+                account,
+                fingerprint,
+                nonce,
+                state,
+            },
+        );
         Ok(Some(PasskeyOptions { options }))
     }
 
     /// Checks an approval of the card with `fingerprint` by `account`.
-    pub async fn verify(&self, account: Uuid, fingerprint: [u8; 32], request: ApproveRequest) -> Result<ApprovalProof, AuthError> {
+    pub async fn verify(
+        &self,
+        account: Uuid,
+        fingerprint: [u8; 32],
+        request: ApproveRequest,
+    ) -> Result<ApprovalProof, AuthError> {
         match request {
-            ApproveRequest::Passkey { credential } => self.verify_passkey(account, fingerprint, &credential).await,
+            ApproveRequest::Passkey { credential } => {
+                self.verify_passkey(account, fingerprint, &credential).await
+            }
             ApproveRequest::Totp { code } => self.verify_totp(account, fingerprint, &code).await,
         }
     }
 
-    async fn verify_passkey(&self, account: Uuid, fingerprint: [u8; 32], credential: &PublicKeyCredential) -> Result<ApprovalProof, AuthError> {
+    async fn verify_passkey(
+        &self,
+        account: Uuid,
+        fingerprint: [u8; 32],
+        credential: &PublicKeyCredential,
+    ) -> Result<ApprovalProof, AuthError> {
         let challenge = challenge_of(credential).ok_or(AuthError::ApprovalRefused)?;
-        let pending = self.auth.approvals.0.take(&challenge).ok_or(AuthError::ApprovalExpired)?;
+        let pending = self
+            .auth
+            .approvals
+            .0
+            .take(&challenge)
+            .ok_or(AuthError::ApprovalExpired)?;
         if pending.account != account || pending.fingerprint != fingerprint {
             return Err(AuthError::ApprovalRefused);
         }
-        let result = self.auth.passkeys()?.finish(credential, &pending.state).map_err(|_| AuthError::ApprovalRefused)?;
+        let result = self
+            .auth
+            .passkeys()?
+            .finish(credential, &pending.state)
+            .map_err(|_| AuthError::ApprovalRefused)?;
         self.auth.record_use(account, &result).await?;
         Ok(ApprovalProof {
             method: "passkey",
             account,
             fingerprint: hex::encode(fingerprint),
             at: now(),
-            nonce: Some(base64::Engine::encode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, pending.nonce)),
+            nonce: Some(base64::Engine::encode(
+                &base64::engine::general_purpose::URL_SAFE_NO_PAD,
+                pending.nonce,
+            )),
             credential_id: Some(credential_id_text(result.cred_id())),
             assertion: serde_json::to_value(credential).ok(),
             totp_step: None,
         })
     }
 
-    async fn verify_totp(&self, account: Uuid, fingerprint: [u8; 32], code: &str) -> Result<ApprovalProof, AuthError> {
+    async fn verify_totp(
+        &self,
+        account: Uuid,
+        fingerprint: [u8; 32],
+        code: &str,
+    ) -> Result<ApprovalProof, AuthError> {
         let step = self.auth.check_totp(account, code).await?;
         Ok(ApprovalProof {
             method: "totp",
@@ -174,14 +229,25 @@ impl Approvals {
 impl AuthState {
     /// Checks a TOTP code for `account` and uses it up. Returns its step.
     pub(super) async fn check_totp(&self, account: Uuid, code: &str) -> Result<i64, AuthError> {
-        let (sealed, last_step) = self.store.totp_seed(account).await?.ok_or(AuthError::NoTotp)?;
+        let (sealed, last_step) = self
+            .store
+            .totp_seed(account)
+            .await?
+            .ok_or(AuthError::NoTotp)?;
         let seed = self
             .sealer
             .open(&sealed, account.to_string().as_bytes())
-            .ok_or_else(|| AuthError::Internal("TOTP seed does not open with this node's sealing key".into()))?;
+            .ok_or_else(|| {
+                AuthError::Internal("TOTP seed does not open with this node's sealing key".into())
+            })?;
         let now_unix = u64::try_from(now()).unwrap_or_default();
-        let step = totp::verify(&seed, code, now_unix, u64::try_from(last_step).unwrap_or_default())
-            .ok_or(AuthError::WrongCode)?;
+        let step = totp::verify(
+            &seed,
+            code,
+            now_unix,
+            u64::try_from(last_step).unwrap_or_default(),
+        )
+        .ok_or(AuthError::WrongCode)?;
         let step = i64::try_from(step).map_err(|_| AuthError::WrongCode)?;
         if !self.store.advance_totp(account, step).await? {
             return Err(AuthError::WrongCode);
@@ -190,12 +256,19 @@ impl AuthState {
     }
 
     /// After a passkey check: saves the moved counter and stamps last use.
-    pub(super) async fn record_use(&self, account: Uuid, result: &webauthn_rs::prelude::AuthenticationResult) -> Result<(), AuthError> {
+    pub(super) async fn record_use(
+        &self,
+        account: Uuid,
+        result: &webauthn_rs::prelude::AuthenticationResult,
+    ) -> Result<(), AuthError> {
         for (id, mut passkey) in self.passkeys_of(account).await? {
             if passkey.cred_id() == result.cred_id() {
                 let changed = passkey.update_credential(result).unwrap_or(false);
                 let json = if changed {
-                    Some(serde_json::to_string(&passkey).map_err(|e| AuthError::Internal(e.to_string()))?)
+                    Some(
+                        serde_json::to_string(&passkey)
+                            .map_err(|e| AuthError::Internal(e.to_string()))?,
+                    )
                 } else {
                     None
                 };

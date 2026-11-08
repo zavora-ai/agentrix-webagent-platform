@@ -109,7 +109,10 @@ impl RunBackend for GauntletBackend {
         let kind = kind.and_then(ReceiptKind::parse);
         let stored = match since {
             Some(since) => {
-                let mut rows = self.receipts.list_since(&site, parse_time(since), limit).await?;
+                let mut rows = self
+                    .receipts
+                    .list_since(&site, parse_time(since), limit)
+                    .await?;
                 if let Some(kind) = kind {
                     rows.retain(|s| s.receipt.body.kind == kind);
                 }

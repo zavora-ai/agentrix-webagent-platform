@@ -27,16 +27,19 @@ use axum::middleware::{self, Next};
 use axum::response::{Html, IntoResponse, Redirect, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
-use webauthn_rs::prelude::{Passkey, PasskeyAuthentication, PasskeyRegistration, PublicKeyCredential, RegisterPublicKeyCredential};
+use webauthn_rs::prelude::{
+    Passkey, PasskeyAuthentication, PasskeyRegistration, PublicKeyCredential,
+    RegisterPublicKeyCredential,
+};
 
 use super::passkey::credential_id_text;
 use super::store::NewAccount;
-use super::{password, session, totp, AuthError, AuthState};
+use super::{AuthError, AuthState, password, session, totp};
 
 /// The sign-in routes, with `state`.
 pub fn router(state: AuthState) -> Router {
@@ -44,7 +47,10 @@ pub fn router(state: AuthState) -> Router {
         .route("/auth/signin", get(signin_page))
         .route("/auth/register", get(register_page))
         .route("/auth/passkey/register/start", post(passkey_register_start))
-        .route("/auth/passkey/register/finish", post(passkey_register_finish))
+        .route(
+            "/auth/passkey/register/finish",
+            post(passkey_register_finish),
+        )
         .route("/auth/passkey/login/start", post(passkey_login_start))
         .route("/auth/passkey/login/finish", post(passkey_login_finish))
         .route("/auth/password", post(password_step))
@@ -80,9 +86,20 @@ pub(super) struct PendingLogin {
 #[derive(Debug)]
 pub(super) enum PasswordStep {
     /// A new account: nothing is stored until the first code proves the app is set up.
-    Signup { email: String, display_name: String, password_hash: String, seed: [u8; totp::SEED_BYTES], next: String, tries: u8 },
+    Signup {
+        email: String,
+        display_name: String,
+        password_hash: String,
+        seed: [u8; totp::SEED_BYTES],
+        next: String,
+        tries: u8,
+    },
     /// A sign-in whose password was right.
-    Login { account: Uuid, next: String, tries: u8 },
+    Login {
+        account: Uuid,
+        next: String,
+        tries: u8,
+    },
 }
 
 /// Failed attempts per email: at most `LIMIT` in `WINDOW`, then 429 until the window passes.
@@ -96,7 +113,9 @@ impl Throttle {
     fn check(&self, key: &str) -> Result<(), AuthError> {
         let map = self.0.lock().unwrap_or_else(|p| p.into_inner());
         match map.get(key) {
-            Some((count, since)) if *count >= Self::LIMIT && since.elapsed() < Self::WINDOW => Err(AuthError::TooManyTries),
+            Some((count, since)) if *count >= Self::LIMIT && since.elapsed() < Self::WINDOW => {
+                Err(AuthError::TooManyTries)
+            }
             _ => Ok(()),
         }
     }
@@ -123,9 +142,20 @@ fn email_of(raw: &str) -> Result<String, AuthError> {
     let email = raw.trim().to_lowercase();
     let ok = email.len() <= 254
         && email.split('@').count() == 2
-        && email.split_once('@').is_some_and(|(local, domain)| !local.is_empty() && domain.contains('.') && !domain.starts_with('.') && !domain.ends_with('.'))
+        && email.split_once('@').is_some_and(|(local, domain)| {
+            !local.is_empty()
+                && domain.contains('.')
+                && !domain.starts_with('.')
+                && !domain.ends_with('.')
+        })
         && !email.chars().any(char::is_whitespace);
-    if ok { Ok(email) } else { Err(AuthError::BadRequest("That doesn't look like an email address.".into())) }
+    if ok {
+        Ok(email)
+    } else {
+        Err(AuthError::BadRequest(
+            "That doesn't look like an email address.".into(),
+        ))
+    }
 }
 
 fn display_name_of(given: Option<&str>, email: &str) -> String {
@@ -139,7 +169,14 @@ fn display_name_of(given: Option<&str>, email: &str) -> String {
 /// Only same-site paths: never an open redirect.
 fn next_of(given: Option<&str>, default: &str) -> String {
     match given {
-        Some(path) if path.starts_with('/') && !path.starts_with("//") && !path.contains('\\') && path.len() <= 512 => path.to_owned(),
+        Some(path)
+            if path.starts_with('/')
+                && !path.starts_with("//")
+                && !path.contains('\\')
+                && path.len() <= 512 =>
+        {
+            path.to_owned()
+        }
         _ => default.to_owned(),
     }
 }
@@ -165,8 +202,12 @@ fn signed_in(cookie: axum::http::HeaderValue, redirect: &str) -> Response {
     response
 }
 
-async fn blocking<T: Send + 'static>(work: impl FnOnce() -> T + Send + 'static) -> Result<T, AuthError> {
-    tokio::task::spawn_blocking(work).await.map_err(|e| AuthError::Internal(format!("worker: {e}")))
+async fn blocking<T: Send + 'static>(
+    work: impl FnOnce() -> T + Send + 'static,
+) -> Result<T, AuthError> {
+    tokio::task::spawn_blocking(work)
+        .await
+        .map_err(|e| AuthError::Internal(format!("worker: {e}")))
 }
 
 /// Refuses cross-site state changes: a POST whose `Origin` is not the platform's. SameSite=Lax
@@ -189,23 +230,38 @@ struct PageQuery {
     next: Option<String>,
 }
 
-async fn signin_page(State(auth): State<AuthState>, axum::extract::Query(q): axum::extract::Query<PageQuery>) -> Result<Response, AuthError> {
+async fn signin_page(
+    State(auth): State<AuthState>,
+    axum::extract::Query(q): axum::extract::Query<PageQuery>,
+) -> Result<Response, AuthError> {
     auth.render_page(agentrix_console::Page::SignIn, q.next.as_deref())
 }
 
-async fn register_page(State(auth): State<AuthState>, axum::extract::Query(q): axum::extract::Query<PageQuery>) -> Result<Response, AuthError> {
+async fn register_page(
+    State(auth): State<AuthState>,
+    axum::extract::Query(q): axum::extract::Query<PageQuery>,
+) -> Result<Response, AuthError> {
     auth.render_page(agentrix_console::Page::Register, q.next.as_deref())
 }
 
 impl AuthState {
     /// Renders a sign-in page. With `passkeys: false` the page hides the passkey button.
-    fn render_page(&self, page: agentrix_console::Page, next: Option<&str>) -> Result<Response, AuthError> {
-        let console = self.console.as_ref().ok_or_else(|| AuthError::Internal("the console is not wired into auth".into()))?;
+    fn render_page(
+        &self,
+        page: agentrix_console::Page,
+        next: Option<&str>,
+    ) -> Result<Response, AuthError> {
+        let console = self
+            .console
+            .as_ref()
+            .ok_or_else(|| AuthError::Internal("the console is not wired into auth".into()))?;
         let view = agentrix_console::view::AuthView {
             next: next_of(next, &self.config.after_sign_in),
             passkeys: self.passkeys().is_ok(),
         };
-        let html = console.render(page, &view).map_err(|e| AuthError::Internal(e.to_string()))?;
+        let html = console
+            .render(page, &view)
+            .map_err(|e| AuthError::Internal(e.to_string()))?;
         Ok(Html(html).into_response())
     }
 }
@@ -219,47 +275,90 @@ struct RegisterStart {
     next: Option<String>,
 }
 
-async fn passkey_register_start(State(auth): State<AuthState>, headers: HeaderMap, Json(body): Json<RegisterStart>) -> Result<Response, AuthError> {
+async fn passkey_register_start(
+    State(auth): State<AuthState>,
+    headers: HeaderMap,
+    Json(body): Json<RegisterStart>,
+) -> Result<Response, AuthError> {
     let passkeys = auth.passkeys()?;
     let next = next_of(body.next.as_deref(), &auth.config.after_sign_in);
-    let (user, email, display_name, existing_account, existing) = match auth.session_from(&headers).await? {
-        // Signed in: add a passkey to this account.
-        Some(session) => {
-            let account = auth.store.account(session.account).await?.ok_or(AuthError::SignedOut)?;
-            let existing: Vec<Passkey> = auth.passkeys_of(account.id).await?.into_iter().map(|(_, p)| p).collect();
-            (account.id, account.email, account.display_name, true, existing)
-        }
-        // A new account, created when the passkey is registered.
-        None => {
-            let email = email_of(body.email.as_deref().unwrap_or_default())?;
-            if auth.store.account_by_email(&email).await?.is_some() {
-                return Err(AuthError::EmailTaken);
+    let (user, email, display_name, existing_account, existing) =
+        match auth.session_from(&headers).await? {
+            // Signed in: add a passkey to this account.
+            Some(session) => {
+                let account = auth
+                    .store
+                    .account(session.account)
+                    .await?
+                    .ok_or(AuthError::SignedOut)?;
+                let existing: Vec<Passkey> = auth
+                    .passkeys_of(account.id)
+                    .await?
+                    .into_iter()
+                    .map(|(_, p)| p)
+                    .collect();
+                (
+                    account.id,
+                    account.email,
+                    account.display_name,
+                    true,
+                    existing,
+                )
             }
-            let display_name = display_name_of(body.display_name.as_deref(), &email);
-            (Uuid::now_v7(), email, display_name, false, Vec::new())
-        }
-    };
+            // A new account, created when the passkey is registered.
+            None => {
+                let email = email_of(body.email.as_deref().unwrap_or_default())?;
+                if auth.store.account_by_email(&email).await?.is_some() {
+                    return Err(AuthError::EmailTaken);
+                }
+                let display_name = display_name_of(body.display_name.as_deref(), &email);
+                (Uuid::now_v7(), email, display_name, false, Vec::new())
+            }
+        };
     let (options, state) = passkeys.start_registration(user, &email, &display_name, &existing)?;
     let key = challenge_key(options.public_key.challenge.as_ref());
-    auth.registrations.put_as(key, PendingRegistration { user, email, display_name, existing_account, state, next });
+    auth.registrations.put_as(
+        key,
+        PendingRegistration {
+            user,
+            email,
+            display_name,
+            existing_account,
+            state,
+            next,
+        },
+    );
     Ok(Json(options).into_response())
 }
 
-async fn passkey_register_finish(State(auth): State<AuthState>, Json(credential): Json<RegisterPublicKeyCredential>) -> Result<Response, AuthError> {
+async fn passkey_register_finish(
+    State(auth): State<AuthState>,
+    Json(credential): Json<RegisterPublicKeyCredential>,
+) -> Result<Response, AuthError> {
     let passkeys = auth.passkeys()?;
     let key = signed_challenge(credential.response.client_data_json.as_ref())?;
     let pending = auth.registrations.take(&key).ok_or(AuthError::Expired)?;
-    let passkey = passkeys.finish_registration(&credential, &pending.state).map_err(|_| AuthError::PasskeyRefused)?;
+    let passkey = passkeys
+        .finish_registration(&credential, &pending.state)
+        .map_err(|_| AuthError::PasskeyRefused)?;
     let cred_id = credential_id_text(passkey.cred_id());
     let json = serde_json::to_string(&passkey).map_err(|e| AuthError::Internal(e.to_string()))?;
     let label = format!("Passkey added {}", chrono::Utc::now().format("%-d %b %Y"));
     if pending.existing_account {
-        auth.store.add_credential(pending.user, &cred_id, &json, &label).await?;
+        auth.store
+            .add_credential(pending.user, &cred_id, &json, &label)
+            .await?;
     } else {
         auth.store
             .create_account(
                 pending.user,
-                NewAccount { email: &pending.email, display_name: &pending.display_name, password_hash: None, passkey: Some((&cred_id, &json, &label)), totp: None },
+                NewAccount {
+                    email: &pending.email,
+                    display_name: &pending.display_name,
+                    password_hash: None,
+                    passkey: Some((&cred_id, &json, &label)),
+                    totp: None,
+                },
             )
             .await?;
     }
@@ -273,27 +372,49 @@ struct LoginStart {
     next: Option<String>,
 }
 
-async fn passkey_login_start(State(auth): State<AuthState>, Json(body): Json<LoginStart>) -> Result<Response, AuthError> {
+async fn passkey_login_start(
+    State(auth): State<AuthState>,
+    Json(body): Json<LoginStart>,
+) -> Result<Response, AuthError> {
     let passkeys = auth.passkeys()?;
     let email = email_of(&body.email)?;
     auth.throttle.check(&email)?;
-    let Some(account) = auth.store.account_by_email(&email).await? else { return Err(AuthError::NoPasskey) };
-    let keys: Vec<Passkey> = auth.passkeys_of(account.id).await?.into_iter().map(|(_, p)| p).collect();
+    let Some(account) = auth.store.account_by_email(&email).await? else {
+        return Err(AuthError::NoPasskey);
+    };
+    let keys: Vec<Passkey> = auth
+        .passkeys_of(account.id)
+        .await?
+        .into_iter()
+        .map(|(_, p)| p)
+        .collect();
     if keys.is_empty() {
         return Err(AuthError::NoPasskey);
     }
     let (options, state) = passkeys.start_login(&keys)?;
     let key = challenge_key(options.public_key.challenge.as_ref());
     let next = next_of(body.next.as_deref(), &auth.config.after_sign_in);
-    auth.logins.put_as(key, PendingLogin { account: account.id, state, next });
+    auth.logins.put_as(
+        key,
+        PendingLogin {
+            account: account.id,
+            state,
+            next,
+        },
+    );
     Ok(Json(options).into_response())
 }
 
-async fn passkey_login_finish(State(auth): State<AuthState>, Json(credential): Json<PublicKeyCredential>) -> Result<Response, AuthError> {
+async fn passkey_login_finish(
+    State(auth): State<AuthState>,
+    Json(credential): Json<PublicKeyCredential>,
+) -> Result<Response, AuthError> {
     let passkeys = auth.passkeys()?;
     let key = signed_challenge(credential.response.client_data_json.as_ref())?;
     let pending = auth.logins.take(&key).ok_or(AuthError::Expired)?;
-    let result = passkeys.finish(&credential, &pending.state).map_err(|_| AuthError::PasskeyRefused)?;
+    let result = passkeys
+        .finish(&credential, &pending.state)
+        .map_err(|_| AuthError::PasskeyRefused)?;
     auth.record_use(pending.account, &result).await?;
     let cookie = auth.start_session(pending.account, "passkey").await?;
     Ok(signed_in(cookie, &pending.next))
@@ -317,7 +438,10 @@ struct PasswordBody {
     next: Option<String>,
 }
 
-async fn password_step(State(auth): State<AuthState>, Json(body): Json<PasswordBody>) -> Result<Response, AuthError> {
+async fn password_step(
+    State(auth): State<AuthState>,
+    Json(body): Json<PasswordBody>,
+) -> Result<Response, AuthError> {
     let email = email_of(&body.email)?;
     let next = next_of(body.next.as_deref(), &auth.config.after_sign_in);
     match body.action {
@@ -327,11 +451,20 @@ async fn password_step(State(auth): State<AuthState>, Json(body): Json<PasswordB
                 return Err(AuthError::EmailTaken);
             }
             let plain = body.password;
-            let password_hash = blocking(move || password::hash(&plain)).await?.map_err(|e| AuthError::Internal(e.to_string()))?;
+            let password_hash = blocking(move || password::hash(&plain))
+                .await?
+                .map_err(|e| AuthError::Internal(e.to_string()))?;
             let seed = totp::new_seed();
             let uri = totp::otpauth_uri(&auth.config.issuer, &email, &seed);
             let display_name = display_name_of(body.display_name.as_deref(), &email);
-            let pending = auth.password_steps.put(PasswordStep::Signup { email, display_name, password_hash, seed, next, tries: 0 });
+            let pending = auth.password_steps.put(PasswordStep::Signup {
+                email,
+                display_name,
+                password_hash,
+                seed,
+                next,
+                tries: 0,
+            });
             Ok(Json(json!({
                 "next": "totp-enrol",
                 "pending": pending,
@@ -358,7 +491,11 @@ async fn password_step(State(auth): State<AuthState>, Json(body): Json<PasswordB
                 auth.throttle.failed(&email);
                 return Err(AuthError::WrongCredentials);
             };
-            let pending = auth.password_steps.put(PasswordStep::Login { account: account.id, next, tries: 0 });
+            let pending = auth.password_steps.put(PasswordStep::Login {
+                account: account.id,
+                next,
+                tries: 0,
+            });
             Ok(Json(json!({ "next": "totp", "pending": pending })).into_response())
         }
     }
@@ -373,14 +510,37 @@ struct TotpBody {
 /// Wrong codes per pending step before it must start again.
 const MAX_CODE_TRIES: u8 = 5;
 
-async fn totp_step(State(auth): State<AuthState>, Json(body): Json<TotpBody>) -> Result<Response, AuthError> {
-    let step = auth.password_steps.take(&body.pending).ok_or(AuthError::Expired)?;
+async fn totp_step(
+    State(auth): State<AuthState>,
+    Json(body): Json<TotpBody>,
+) -> Result<Response, AuthError> {
+    let step = auth
+        .password_steps
+        .take(&body.pending)
+        .ok_or(AuthError::Expired)?;
     match step {
-        PasswordStep::Signup { email, display_name, password_hash, seed, next, tries } => {
+        PasswordStep::Signup {
+            email,
+            display_name,
+            password_hash,
+            seed,
+            next,
+            tries,
+        } => {
             let now_unix = u64::try_from(super::store::now()).unwrap_or_default();
             let Some(used) = totp::verify(&seed, &body.code, now_unix, 0) else {
                 if tries + 1 < MAX_CODE_TRIES {
-                    auth.password_steps.put_as(body.pending, PasswordStep::Signup { email, display_name, password_hash, seed, next, tries: tries + 1 });
+                    auth.password_steps.put_as(
+                        body.pending,
+                        PasswordStep::Signup {
+                            email,
+                            display_name,
+                            password_hash,
+                            seed,
+                            next,
+                            tries: tries + 1,
+                        },
+                    );
                 }
                 return Err(AuthError::WrongCode);
             };
@@ -390,13 +550,23 @@ async fn totp_step(State(auth): State<AuthState>, Json(body): Json<TotpBody>) ->
             auth.store
                 .create_account(
                     id,
-                    NewAccount { email: &email, display_name: &display_name, password_hash: Some(&password_hash), passkey: None, totp: Some((&sealed, used)) },
+                    NewAccount {
+                        email: &email,
+                        display_name: &display_name,
+                        password_hash: Some(&password_hash),
+                        passkey: None,
+                        totp: Some((&sealed, used)),
+                    },
                 )
                 .await?;
             let cookie = auth.start_session(id, "password+totp").await?;
             Ok(signed_in(cookie, &next))
         }
-        PasswordStep::Login { account, next, tries } => match auth.check_totp(account, &body.code).await {
+        PasswordStep::Login {
+            account,
+            next,
+            tries,
+        } => match auth.check_totp(account, &body.code).await {
             Ok(_) => {
                 if let Some(a) = auth.store.account(account).await? {
                     auth.throttle.succeeded(&a.email);
@@ -409,7 +579,14 @@ async fn totp_step(State(auth): State<AuthState>, Json(body): Json<TotpBody>) ->
                     auth.throttle.failed(&a.email);
                 }
                 if tries + 1 < MAX_CODE_TRIES {
-                    auth.password_steps.put_as(body.pending, PasswordStep::Login { account, next, tries: tries + 1 });
+                    auth.password_steps.put_as(
+                        body.pending,
+                        PasswordStep::Login {
+                            account,
+                            next,
+                            tries: tries + 1,
+                        },
+                    );
                 }
                 Err(AuthError::WrongCode)
             }
@@ -425,12 +602,21 @@ async fn signout(State(auth): State<AuthState>, headers: HeaderMap) -> Result<Re
         auth.store.delete_session(current.token_hash()).await?;
     }
     let mut response = Redirect::to("/").into_response();
-    response.headers_mut().append(SET_COOKIE, session::clear_cookie(auth.config.secure_cookies));
+    response.headers_mut().append(
+        SET_COOKIE,
+        session::clear_cookie(auth.config.secure_cookies),
+    );
     Ok(response)
 }
 
-async fn current_session(State(auth): State<AuthState>, current: session::Session) -> Result<Response, AuthError> {
-    let summary = auth.account_summary(current.account).await?.ok_or(AuthError::SignedOut)?;
+async fn current_session(
+    State(auth): State<AuthState>,
+    current: session::Session,
+) -> Result<Response, AuthError> {
+    let summary = auth
+        .account_summary(current.account)
+        .await?
+        .ok_or(AuthError::SignedOut)?;
     Ok((
         StatusCode::OK,
         Json(json!({
@@ -451,13 +637,28 @@ mod tests {
 
     #[test]
     fn emails_and_redirects() {
-        assert_eq!(email_of("  Wanjiru@Kilele.Example ").unwrap(), "wanjiru@kilele.example");
+        assert_eq!(
+            email_of("  Wanjiru@Kilele.Example ").unwrap(),
+            "wanjiru@kilele.example"
+        );
         for bad in ["", "no-at", "a@b", "a@@b.c", "@b.c", "a@.b.c", "a b@c.d"] {
             assert!(email_of(bad).is_err(), "{bad}");
         }
-        assert_eq!(next_of(Some("/console/move"), "/console/today"), "/console/move");
-        for bad in ["https://evil.example", "//evil.example", "/\\evil", "console"] {
-            assert_eq!(next_of(Some(bad), "/console/today"), "/console/today", "{bad}");
+        assert_eq!(
+            next_of(Some("/console/move"), "/console/today"),
+            "/console/move"
+        );
+        for bad in [
+            "https://evil.example",
+            "//evil.example",
+            "/\\evil",
+            "console",
+        ] {
+            assert_eq!(
+                next_of(Some(bad), "/console/today"),
+                "/console/today",
+                "{bad}"
+            );
         }
         assert_eq!(display_name_of(None, "wanjiru@kilele.example"), "wanjiru");
     }

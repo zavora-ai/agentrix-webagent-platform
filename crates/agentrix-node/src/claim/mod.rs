@@ -25,8 +25,8 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use async_trait::async_trait;
 use agentrix_console::{Console, Page, view};
+use async_trait::async_trait;
 use axum::extract::{Path, Query, State};
 use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{Html, IntoResponse, Redirect, Response};
@@ -143,7 +143,9 @@ pub struct Claims {
 
 impl std::fmt::Debug for Claims {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Claims").field("config", &self.config).finish_non_exhaustive()
+        f.debug_struct("Claims")
+            .field("config", &self.config)
+            .finish_non_exhaustive()
     }
 }
 
@@ -230,7 +232,9 @@ pub enum ClaimError {
     #[error("Checked a moment ago. Give it a few seconds, then press Check again.")]
     TooSoon,
     /// Another account proved this site first.
-    #[error("Someone else has already proved they control this site. Contact support if that's wrong.")]
+    #[error(
+        "Someone else has already proved they control this site. Contact support if that's wrong."
+    )]
     OwnedElsewhere,
     /// A fault on our side.
     #[error("Something went wrong on our side. Nothing was changed.")]
@@ -271,22 +275,35 @@ fn new_code() -> String {
     let mut bytes = [0u8; 8];
     rand::rngs::OsRng.fill_bytes(&mut bytes);
     let hex = hex::encode(bytes);
-    format!("{}-{}-{}-{}", &hex[0..4], &hex[4..8], &hex[8..12], &hex[12..16])
+    format!(
+        "{}-{}-{}-{}",
+        &hex[0..4],
+        &hex[4..8],
+        &hex[8..12],
+        &hex[12..16]
+    )
 }
 
 /// A domain someone can claim: a public DNS name, lower-case ASCII, no trailing dot.
 pub fn normalise_domain(raw: &str) -> Result<String, ClaimError> {
     let trimmed = raw.trim().trim_end_matches('.');
-    let host = url::Host::parse(trimmed).map_err(|_| ClaimError::BadDomain(format!("“{trimmed}” is not a domain name.")))?;
+    let host = url::Host::parse(trimmed)
+        .map_err(|_| ClaimError::BadDomain(format!("“{trimmed}” is not a domain name.")))?;
     let url::Host::Domain(domain) = host else {
-        return Err(ClaimError::BadDomain("An IP address can't be claimed; use the site's domain name.".into()));
+        return Err(ClaimError::BadDomain(
+            "An IP address can't be claimed; use the site's domain name.".into(),
+        ));
     };
     let domain = domain.to_ascii_lowercase();
     let single_label = !domain.contains('.');
     let local = domain == "localhost"
-        || [".localhost", ".local", ".internal", ".lan", ".home.arpa"].iter().any(|s| domain.ends_with(s));
+        || [".localhost", ".local", ".internal", ".lan", ".home.arpa"]
+            .iter()
+            .any(|s| domain.ends_with(s));
     if single_label || local || domain.len() > 253 {
-        return Err(ClaimError::BadDomain(format!("{domain} is not a public domain name.")));
+        return Err(ClaimError::BadDomain(format!(
+            "{domain} is not a public domain name."
+        )));
     }
     Ok(domain)
 }
@@ -299,13 +316,17 @@ pub fn proof_line(code: &str) -> String {
 /// Does a TXT answer prove `code`? Registrars sometimes keep quotes or add spaces.
 pub fn txt_proves(records: &[String], code: &str) -> bool {
     let want = proof_line(code);
-    records.iter().any(|r| r.trim().trim_matches('"').trim() == want)
+    records
+        .iter()
+        .any(|r| r.trim().trim_matches('"').trim() == want)
 }
 
 /// Does a file body prove `code`? Any line equal to the proof line, or to the bare code.
 pub fn file_proves(body: &str, code: &str) -> bool {
     let want = proof_line(code);
-    body.lines().map(str::trim).any(|line| line == want || line == code)
+    body.lines()
+        .map(str::trim)
+        .any(|line| line == want || line == code)
 }
 
 impl Claims {
@@ -317,7 +338,14 @@ impl Claims {
         events: Arc<dyn ClaimEvents>,
         config: ClaimConfig,
     ) -> Self {
-        Self { pool, probe, sites, events, config: Arc::new(config), last_check: Arc::default() }
+        Self {
+            pool,
+            probe,
+            sites,
+            events,
+            config: Arc::new(config),
+            last_check: Arc::default(),
+        }
     }
 
     /// Applies `schema.sql` (tests, and before the data lane's migrator includes it).
@@ -338,12 +366,14 @@ impl Claims {
                 .bind(site)
                 .fetch_optional(&self.pool)
                 .await?;
-        row.map(|(a,)| Uuid::parse_str(&a).map_err(|e| ClaimError::Internal(e.to_string()))).transpose()
+        row.map(|(a,)| Uuid::parse_str(&a).map_err(|e| ClaimError::Internal(e.to_string())))
+            .transpose()
     }
 
     /// Starts (or shows again) this owner's claim on the site.
     pub async fn start(&self, site: &str, account: Uuid) -> Result<Instructions, ClaimError> {
-        let domain = normalise_domain(&self.sites.domain_of(site).await.ok_or(ClaimError::NoSite)?)?;
+        let domain =
+            normalise_domain(&self.sites.domain_of(site).await.ok_or(ClaimError::NoSite)?)?;
         if let Some(owner) = self.owner(site).await? {
             if owner != account {
                 return Err(ClaimError::OwnedElsewhere);
@@ -357,7 +387,11 @@ impl Claims {
         .fetch_optional(&self.pool)
         .await?;
         let (id, code, verified) = match existing {
-            Some((id, code, state)) => (Uuid::parse_str(&id).map_err(|e| ClaimError::Internal(e.to_string()))?, code, state == "verified"),
+            Some((id, code, state)) => (
+                Uuid::parse_str(&id).map_err(|e| ClaimError::Internal(e.to_string()))?,
+                code,
+                state == "verified",
+            ),
             None => {
                 let id = Uuid::now_v7();
                 let code = new_code();
@@ -381,15 +415,28 @@ impl Claims {
             claim,
             domain: domain.to_owned(),
             code: code.to_owned(),
-            dns: TxtProof { name: format!("{TXT_LABEL}.{domain}"), host: TXT_LABEL.to_owned(), value: proof_line(code) },
-            file: FileProof { url: format!("https://{domain}{FILE_PATH}"), filename: "agentrix-verify.txt".into(), body: format!("{}\n", proof_line(code)) },
+            dns: TxtProof {
+                name: format!("{TXT_LABEL}.{domain}"),
+                host: TXT_LABEL.to_owned(),
+                value: proof_line(code),
+            },
+            file: FileProof {
+                url: format!("https://{domain}{FILE_PATH}"),
+                filename: "agentrix-verify.txt".into(),
+                body: format!("{}\n", proof_line(code)),
+            },
             fixture: self.config.fixture_domain.as_deref() == Some(domain),
             verified,
         }
     }
 
     /// Checks the proof from the sandbox. `method` limits the check to one proof.
-    pub async fn verify(&self, site: &str, account: Uuid, method: Option<Method>) -> Result<Outcome, ClaimError> {
+    pub async fn verify(
+        &self,
+        site: &str,
+        account: Uuid,
+        method: Option<Method>,
+    ) -> Result<Outcome, ClaimError> {
         let row: Option<(String, String, String, String)> = sqlx::query_as(
             "SELECT id, domain, code, state FROM claims WHERE site_id = ? AND account_id = ? ORDER BY created_at DESC LIMIT 1",
         )
@@ -400,7 +447,11 @@ impl Claims {
         let (id, domain, code, state) = row.ok_or(ClaimError::NotStarted)?;
         let id = Uuid::parse_str(&id).map_err(|e| ClaimError::Internal(e.to_string()))?;
         if state == "verified" {
-            return Ok(Outcome::Verified { method: "earlier", at: now(), message: format!("{domain} is yours. It was proved earlier.") });
+            return Ok(Outcome::Verified {
+                method: "earlier",
+                at: now(),
+                message: format!("{domain} is yours. It was proved earlier."),
+            });
         }
         if let Some(owner) = self.owner(site).await? {
             if owner != account {
@@ -409,7 +460,10 @@ impl Claims {
         }
         {
             let mut last = self.last_check.lock().unwrap_or_else(|p| p.into_inner());
-            if last.get(&id).is_some_and(|t| t.elapsed() < MIN_CHECK_INTERVAL) {
+            if last
+                .get(&id)
+                .is_some_and(|t| t.elapsed() < MIN_CHECK_INTERVAL)
+            {
                 return Err(ClaimError::TooSoon);
             }
             last.insert(id, Instant::now());
@@ -427,23 +481,31 @@ impl Claims {
                     if txt_proves(&records, &code) {
                         proved = Some("dns");
                     } else if records.is_empty() {
-                        seen.push(format!("No TXT record at {name} yet. Your registrar may take up to an hour."));
+                        seen.push(format!(
+                            "No TXT record at {name} yet. Your registrar may take up to an hour."
+                        ));
                     } else {
                         seen.push(format!("There is a TXT record at {name}, but it holds a different value. Copy the one above exactly."));
                     }
                 }
                 Err(e) => {
                     evidence.insert("dns".into(), json!({ "name": name, "error": e.0 }));
-                    seen.push(format!("We couldn't look up {name} from the sandbox: {e}. Nothing was guessed."));
+                    seen.push(format!(
+                        "We couldn't look up {name} from the sandbox: {e}. Nothing was guessed."
+                    ));
                 }
             }
         }
         if proved.is_none() && method != Some(Method::Dns) {
-            let url = Url::parse(&format!("https://{domain}{FILE_PATH}")).map_err(|e| ClaimError::Internal(e.to_string()))?;
+            let url = Url::parse(&format!("https://{domain}{FILE_PATH}"))
+                .map_err(|e| ClaimError::Internal(e.to_string()))?;
             match self.probe.file(&url).await {
                 Ok(file) => {
                     let body: String = file.body.chars().take(512).collect();
-                    evidence.insert("file".into(), json!({ "url": url.as_str(), "status": file.status, "body": body }));
+                    evidence.insert(
+                        "file".into(),
+                        json!({ "url": url.as_str(), "status": file.status, "body": body }),
+                    );
                     if file.status == 200 && file_proves(&file.body, &code) {
                         proved = Some("file");
                     } else if file.status == 200 {
@@ -456,7 +518,9 @@ impl Claims {
                 }
                 Err(e) => {
                     evidence.insert("file".into(), json!({ "url": url.as_str(), "error": e.0 }));
-                    seen.push(format!("We couldn't fetch {url} from the sandbox: {e}. Nothing was guessed."));
+                    seen.push(format!(
+                        "We couldn't fetch {url} from the sandbox: {e}. Nothing was guessed."
+                    ));
                 }
             }
         }
@@ -480,12 +544,31 @@ impl Claims {
             .bind(id.to_string())
             .execute(&self.pool)
             .await?;
-        self.sites.set_owner(site, account).await.map_err(ClaimError::Internal)?;
+        self.sites
+            .set_owner(site, account)
+            .await
+            .map_err(ClaimError::Internal)?;
         self.events
-            .verified(&Verified { claim: id, site: site.to_owned(), account, domain: domain.clone(), method, evidence, at })
+            .verified(&Verified {
+                claim: id,
+                site: site.to_owned(),
+                account,
+                domain: domain.clone(),
+                method,
+                evidence,
+                at,
+            })
             .await;
-        let how = if method == "dns" { "DNS record" } else { "file" };
-        Ok(Outcome::Verified { method, at, message: format!("{domain} is yours · proved by {how}") })
+        let how = if method == "dns" {
+            "DNS record"
+        } else {
+            "file"
+        };
+        Ok(Outcome::Verified {
+            method,
+            at,
+            message: format!("{domain} is yours · proved by {how}"),
+        })
     }
 }
 
@@ -549,7 +632,8 @@ fn method_of(raw: Option<&str>) -> Option<Method> {
 
 /// Sign-in, then back to this site's claim page.
 fn sign_in_first(site: &str) -> Response {
-    let back: String = url::form_urlencoded::byte_serialize(format!("/sites/{site}/claim").as_bytes()).collect();
+    let back: String =
+        url::form_urlencoded::byte_serialize(format!("/sites/{site}/claim").as_bytes()).collect();
     Redirect::to(&format!("/auth/signin?next={back}")).into_response()
 }
 
@@ -573,7 +657,13 @@ struct Checked {
 }
 
 /// Renders the claim page for this owner (starting the claim if needed).
-async fn render_page(state: &ClaimState, site: &str, account: Uuid, method: Option<Method>, checked: Option<Checked>) -> Response {
+async fn render_page(
+    state: &ClaimState,
+    site: &str,
+    account: Uuid,
+    method: Option<Method>,
+    checked: Option<Checked>,
+) -> Response {
     let ins = match state.claims.start(site, account).await {
         Ok(ins) => ins,
         Err(e) => return plain_error(e),
@@ -589,7 +679,14 @@ async fn render_page(state: &ClaimState, site: &str, account: Uuid, method: Opti
         (true, _) => (view::ClaimState::Verified, None, None),
         (false, Some(c)) => {
             let at = chrono::DateTime::from_timestamp(c.at, 0).unwrap_or_default();
-            (c.state, c.said, Some(format!("Checked {} UTC from the sandbox", at.format("%H:%M"))))
+            (
+                c.state,
+                c.said,
+                Some(format!(
+                    "Checked {} UTC from the sandbox",
+                    at.format("%H:%M")
+                )),
+            )
         }
         (false, None) => (view::ClaimState::Pending, None, None),
     };
@@ -603,11 +700,18 @@ async fn render_page(state: &ClaimState, site: &str, account: Uuid, method: Opti
                 fixture: ins.fixture,
                 live_url: None,
             },
-            nav: view::Nav { active: view::NavTab::Move, decisions_waiting: 0 },
+            nav: view::Nav {
+                active: view::NavTab::Move,
+                decisions_waiting: 0,
+            },
             owner: view::OwnerRef { name: owner },
         },
         claim: view::Claim {
-            method: if method == Some(Method::File) { view::ClaimMethod::File } else { view::ClaimMethod::Dns },
+            method: if method == Some(Method::File) {
+                view::ClaimMethod::File
+            } else {
+                view::ClaimMethod::Dns
+            },
             dns_name: ins.dns.name,
             dns_value: ins.dns.value,
             file_name: ins.file.filename,
@@ -622,25 +726,46 @@ async fn render_page(state: &ClaimState, site: &str, account: Uuid, method: Opti
         Some(p) => p
             .render_claim(&agentrix_onboarding::view::ClaimPage::from(view))
             .map_err(|e| e.to_string()),
-        None => state.console.render(Page::Claim, &view).map_err(|e| e.to_string()),
+        None => state
+            .console
+            .render(Page::Claim, &view)
+            .map_err(|e| e.to_string()),
     };
     match html {
         Ok(html) => Html(html).into_response(),
-        Err(e) => plain_error(ClaimError::Internal(format!("rendering the claim page: {e}"))),
+        Err(e) => plain_error(ClaimError::Internal(format!(
+            "rendering the claim page: {e}"
+        ))),
     }
 }
 
 /// `GET /sites/{id}/claim`: the page the assessment's "Move this site" lands on after sign-in.
-async fn page(State(state): State<ClaimState>, headers: HeaderMap, Path(site): Path<String>, Query(q): Query<PageQuery>) -> Response {
+async fn page(
+    State(state): State<ClaimState>,
+    headers: HeaderMap,
+    Path(site): Path<String>,
+    Query(q): Query<PageQuery>,
+) -> Response {
     let session = match state.auth.session_from(&headers).await {
         Ok(Some(session)) => session,
         Ok(None) => return sign_in_first(&site),
         Err(e) => return plain_error(ClaimError::Internal(e.to_string())),
     };
-    render_page(&state, &site, session.account, method_of(q.method.as_deref()), None).await
+    render_page(
+        &state,
+        &site,
+        session.account,
+        method_of(q.method.as_deref()),
+        None,
+    )
+    .await
 }
 
-async fn start(State(state): State<ClaimState>, session: Session, Path(site): Path<String>) -> Result<Json<Instructions>, ClaimError> {
+async fn start(
+    State(state): State<ClaimState>,
+    session: Session,
+    Path(site): Path<String>,
+) -> Result<Json<Instructions>, ClaimError> {
     Ok(Json(state.claims.start(&site, session.account).await?))
 }
 
@@ -653,14 +778,24 @@ fn is_form(headers: &HeaderMap) -> bool {
 
 /// The page's "Check now": the page again with what was seen, or the verified page.
 async fn verify_form(state: &ClaimState, site: &str, account: Uuid, body: &[u8]) -> Response {
-    let method = url::form_urlencoded::parse(body).find(|(k, _)| k == "method").and_then(|(_, v)| method_of(Some(&v)));
+    let method = url::form_urlencoded::parse(body)
+        .find(|(k, _)| k == "method")
+        .and_then(|(_, v)| method_of(Some(&v)));
     let checked = match state.claims.verify(site, account, method).await {
         Ok(Outcome::Verified { .. }) => {
             let back = format!("/sites/{site}/claim");
             return Redirect::to(&back).into_response();
         }
-        Ok(Outcome::NotYet { seen }) => Checked { state: view::ClaimState::Failed, said: Some(seen.join(" ")), at: now() },
-        Err(e @ (ClaimError::TooSoon | ClaimError::NotStarted)) => Checked { state: view::ClaimState::Failed, said: Some(e.to_string()), at: now() },
+        Ok(Outcome::NotYet { seen }) => Checked {
+            state: view::ClaimState::Failed,
+            said: Some(seen.join(" ")),
+            at: now(),
+        },
+        Err(e @ (ClaimError::TooSoon | ClaimError::NotStarted)) => Checked {
+            state: view::ClaimState::Failed,
+            said: Some(e.to_string()),
+            at: now(),
+        },
         Err(e) => return plain_error(e),
     };
     render_page(state, site, account, method, Some(checked)).await
@@ -679,13 +814,22 @@ async fn verify(
             Err(e) => plain_error(ClaimError::Internal(e.to_string())),
         });
     }
-    let session = state.auth.session_from(&headers).await.map_err(|e| ClaimError::Internal(e.to_string()))?.ok_or(ClaimError::SignedOut)?;
+    let session = state
+        .auth
+        .session_from(&headers)
+        .await
+        .map_err(|e| ClaimError::Internal(e.to_string()))?
+        .ok_or(ClaimError::SignedOut)?;
     // The body is optional: `{}` or nothing checks both proofs.
     let method = if body.iter().all(u8::is_ascii_whitespace) {
         None
     } else {
         serde_json::from_slice::<VerifyBody>(&body)
-            .map_err(|_| ClaimError::BadRequest("Send {\"method\": \"dns\"} or {\"method\": \"file\"}, or nothing.".into()))?
+            .map_err(|_| {
+                ClaimError::BadRequest(
+                    "Send {\"method\": \"dns\"} or {\"method\": \"file\"}, or nothing.".into(),
+                )
+            })?
             .method
     };
     Ok(Json(state.claims.verify(&site, session.account, method).await?).into_response())
@@ -702,7 +846,10 @@ mod tests {
             Ok(vec![])
         }
         async fn file(&self, _url: &Url) -> Result<FileSeen, ProbeError> {
-            Ok(FileSeen { status: 404, body: String::new() })
+            Ok(FileSeen {
+                status: 404,
+                body: String::new(),
+            })
         }
     }
     struct OneSite;
@@ -730,7 +877,8 @@ mod tests {
 
         let pool = crate::db::open_in_memory().await.unwrap();
         let auth = AuthState::new(
-            crate::auth::AuthConfig::for_origin(Url::parse("http://localhost:18080").unwrap()).unwrap(),
+            crate::auth::AuthConfig::for_origin(Url::parse("http://localhost:18080").unwrap())
+                .unwrap(),
             pool.clone(),
             crate::auth::Sealer::from_key([7; 32]),
         )
@@ -742,30 +890,91 @@ mod tests {
             .execute(&pool)
             .await
             .unwrap();
-        let claims = Claims::new(pool, Arc::new(NoProof), Arc::new(OneSite), Arc::new(Quiet), ClaimConfig { fixture_domain: None });
+        let claims = Claims::new(
+            pool,
+            Arc::new(NoProof),
+            Arc::new(OneSite),
+            Arc::new(Quiet),
+            ClaimConfig {
+                fixture_domain: None,
+            },
+        );
         claims.ensure_schema().await.unwrap();
         let cookie = auth.start_session(account, "passkey").await.unwrap();
-        let cookie = cookie.to_str().unwrap().split(';').next().unwrap().to_owned();
-        let app = router(ClaimState { claims, auth, console: Arc::new(Console::new().unwrap()), pages: None });
+        let cookie = cookie
+            .to_str()
+            .unwrap()
+            .split(';')
+            .next()
+            .unwrap()
+            .to_owned();
+        let app = router(ClaimState {
+            claims,
+            auth,
+            console: Arc::new(Console::new().unwrap()),
+            pages: None,
+        });
         let send = |req: Request<Body>| app.clone().oneshot(req);
-        let text = |r: Response| async move { String::from_utf8(axum::body::to_bytes(r.into_body(), 1 << 20).await.unwrap().to_vec()).unwrap() };
+        let text = |r: Response| async move {
+            String::from_utf8(
+                axum::body::to_bytes(r.into_body(), 1 << 20)
+                    .await
+                    .unwrap()
+                    .to_vec(),
+            )
+            .unwrap()
+        };
 
         // Signed out: sign in, then back here.
-        let r = send(Request::get("/sites/site_k/claim").body(Body::empty()).unwrap()).await.unwrap();
+        let r = send(
+            Request::get("/sites/site_k/claim")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
         assert_eq!(r.status(), StatusCode::SEE_OTHER);
-        assert_eq!(r.headers()[header::LOCATION], "/auth/signin?next=%2Fsites%2Fsite_k%2Fclaim");
+        assert_eq!(
+            r.headers()[header::LOCATION],
+            "/auth/signin?next=%2Fsites%2Fsite_k%2Fclaim"
+        );
 
         // Signed in: an HTML page with the TXT record, not a JSON body the browser saves.
-        let r = send(Request::get("/sites/site_k/claim").header(header::COOKIE, &cookie).body(Body::empty()).unwrap()).await.unwrap();
+        let r = send(
+            Request::get("/sites/site_k/claim")
+                .header(header::COOKIE, &cookie)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
         assert_eq!(r.status(), StatusCode::OK);
-        assert!(r.headers()[header::CONTENT_TYPE].to_str().unwrap().starts_with("text/html"));
+        assert!(
+            r.headers()[header::CONTENT_TYPE]
+                .to_str()
+                .unwrap()
+                .starts_with("text/html")
+        );
         let html = text(r).await;
         assert!(html.contains("_agentrix.kilele-bakery.example"), "{html}");
         assert!(html.contains("agentrix-site-verification="));
 
         // The file tab.
-        let html = text(send(Request::get("/sites/site_k/claim?method=file").header(header::COOKIE, &cookie).body(Body::empty()).unwrap()).await.unwrap()).await;
-        assert!(html.contains("https://kilele-bakery.example/.well-known/agentrix-verify.txt"), "{html}");
+        let html = text(
+            send(
+                Request::get("/sites/site_k/claim?method=file")
+                    .header(header::COOKIE, &cookie)
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap(),
+        )
+        .await;
+        assert!(
+            html.contains("https://kilele-bakery.example/.well-known/agentrix-verify.txt"),
+            "{html}"
+        );
 
         // "Check now" from the page: the page again, saying what was seen.
         let form = Request::post("/sites/site_k/claim/verify")
@@ -776,24 +985,60 @@ mod tests {
         let r = send(form).await.unwrap();
         assert_eq!(r.status(), StatusCode::OK);
         let html = text(r).await;
-        assert!(html.contains("No TXT record at _agentrix.kilele-bakery.example yet"), "{html}");
+        assert!(
+            html.contains("No TXT record at _agentrix.kilele-bakery.example yet"),
+            "{html}"
+        );
 
         // The JSON API is unchanged.
-        let r = send(Request::post("/sites/site_k/claim").header(header::COOKIE, &cookie).body(Body::empty()).unwrap()).await.unwrap();
+        let r = send(
+            Request::post("/sites/site_k/claim")
+                .header(header::COOKIE, &cookie)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
         assert_eq!(r.status(), StatusCode::OK);
         assert!(text(r).await.contains("\"dns\""));
 
         // Unknown site: a plain page, not a download.
-        let r = send(Request::get("/sites/site_x/claim").header(header::COOKIE, &cookie).body(Body::empty()).unwrap()).await.unwrap();
+        let r = send(
+            Request::get("/sites/site_x/claim")
+                .header(header::COOKIE, &cookie)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
         assert_eq!(r.status(), StatusCode::NOT_FOUND);
-        assert!(r.headers()[header::CONTENT_TYPE].to_str().unwrap().starts_with("text/html"));
+        assert!(
+            r.headers()[header::CONTENT_TYPE]
+                .to_str()
+                .unwrap()
+                .starts_with("text/html")
+        );
     }
 
     #[test]
     fn domains() {
-        assert_eq!(normalise_domain(" Kilele-Bakery.Example. ").unwrap(), "kilele-bakery.example");
-        assert_eq!(normalise_domain("bücher.example").unwrap(), "xn--bcher-kva.example");
-        for bad in ["", "localhost", "intranet", "printer.local", "10.0.0.1", "[::1]", "a b.example"] {
+        assert_eq!(
+            normalise_domain(" Kilele-Bakery.Example. ").unwrap(),
+            "kilele-bakery.example"
+        );
+        assert_eq!(
+            normalise_domain("bücher.example").unwrap(),
+            "xn--bcher-kva.example"
+        );
+        for bad in [
+            "",
+            "localhost",
+            "intranet",
+            "printer.local",
+            "10.0.0.1",
+            "[::1]",
+            "a b.example",
+        ] {
             assert!(normalise_domain(bad).is_err(), "{bad}");
         }
     }
@@ -801,11 +1046,26 @@ mod tests {
     #[test]
     fn proofs() {
         let code = "k1l3-7f2c-91aa-0b3d";
-        assert!(txt_proves(&[format!("\"agentrix-site-verification={code}\"")], code));
-        assert!(txt_proves(&["v=spf1 -all".into(), format!(" agentrix-site-verification={code} ")], code));
-        assert!(!txt_proves(&["agentrix-site-verification=0000-0000-0000-0000".into()], code));
+        assert!(txt_proves(
+            &[format!("\"agentrix-site-verification={code}\"")],
+            code
+        ));
+        assert!(txt_proves(
+            &[
+                "v=spf1 -all".into(),
+                format!(" agentrix-site-verification={code} ")
+            ],
+            code
+        ));
+        assert!(!txt_proves(
+            &["agentrix-site-verification=0000-0000-0000-0000".into()],
+            code
+        ));
         assert!(!txt_proves(&[], code));
-        assert!(file_proves(&format!("agentrix-site-verification={code}\n"), code));
+        assert!(file_proves(
+            &format!("agentrix-site-verification={code}\n"),
+            code
+        ));
         assert!(file_proves(code, code));
         assert!(!file_proves("<html>Not found</html>", code));
         let fresh = new_code();

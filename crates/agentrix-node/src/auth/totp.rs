@@ -107,7 +107,11 @@ pub fn otpauth_uri(issuer: &str, account_label: &str, seed: &[u8]) -> String {
 pub fn qr_svg(uri: &str) -> Option<String> {
     use qrcode::render::svg;
     let code = qrcode::QrCode::new(uri.as_bytes()).ok()?;
-    let svg = code.render::<svg::Color<'_>>().min_dimensions(200, 200).quiet_zone(true).build();
+    let svg = code
+        .render::<svg::Color<'_>>()
+        .min_dimensions(200, 200)
+        .quiet_zone(true)
+        .build();
     svg.find("<svg").map(|start| svg[start..].to_owned())
 }
 
@@ -127,7 +131,11 @@ mod tests {
             (1_234_567_890, 89_005_924),
             (2_000_000_000, 69_279_037),
         ] {
-            assert_eq!(code_at(RFC_SEED, time / STEP_SECONDS), eight % 1_000_000, "t={time}");
+            assert_eq!(
+                code_at(RFC_SEED, time / STEP_SECONDS),
+                eight % 1_000_000,
+                "t={time}"
+            );
         }
     }
 
@@ -136,9 +144,16 @@ mod tests {
         let now = 1_234_567_890;
         let code = format!("{:06}", code_at(RFC_SEED, now / STEP_SECONDS));
         let step = verify(RFC_SEED, &code, now, 0).expect("current code");
-        assert_eq!(verify(RFC_SEED, &code, now, step), None, "a code works once");
+        assert_eq!(
+            verify(RFC_SEED, &code, now, step),
+            None,
+            "a code works once"
+        );
         let earlier = format!("{:06}", code_at(RFC_SEED, now / STEP_SECONDS - 1));
-        assert!(verify(RFC_SEED, &earlier, now, 0).is_some(), "one step of drift");
+        assert!(
+            verify(RFC_SEED, &earlier, now, 0).is_some(),
+            "one step of drift"
+        );
         let old = format!("{:06}", code_at(RFC_SEED, now / STEP_SECONDS - 2));
         assert_eq!(verify(RFC_SEED, &old, now, 0), None, "two steps is too old");
         assert!(verify(RFC_SEED, &format!("{} {}", &code[..3], &code[3..]), now, 0).is_some());
@@ -160,6 +175,9 @@ mod tests {
         assert!(uri.starts_with("otpauth://totp/Agentrix:wanjiru@kilele.example?secret=GEZD"));
         assert!(uri.contains("issuer=Agentrix") && uri.contains("period=30"));
         let svg = qr_svg(&uri).expect("QR renders");
-        assert!(svg.starts_with("<svg") && !svg.contains("wanjiru"), "inline, and no text from the label");
+        assert!(
+            svg.starts_with("<svg") && !svg.contains("wanjiru"),
+            "inline, and no text from the label"
+        );
     }
 }

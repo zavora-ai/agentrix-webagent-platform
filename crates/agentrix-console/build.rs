@@ -36,5 +36,8 @@ fn main() {
             .unwrap_or_else(|e| panic!("reading {}: {e}", path.display()))
             .hash(&mut hasher);
     }
-    println!("cargo:rustc-env=AGENTRIX_ASSETS_VERSION={:012x}", hasher.finish() & 0xffff_ffff_ffff);
+    println!(
+        "cargo:rustc-env=AGENTRIX_ASSETS_VERSION={:012x}",
+        hasher.finish() & 0xffff_ffff_ffff
+    );
 }

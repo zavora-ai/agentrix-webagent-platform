@@ -170,7 +170,9 @@ pub async fn build(config: &Config) -> anyhow::Result<App> {
         }),
     )
     // "Pass your question to the owner" (R8.3): stored as data, shown on Today.
-    .with_questions(Arc::new(crate::db::questions::QuestionStore::new(pool.clone())));
+    .with_questions(Arc::new(crate::db::questions::QuestionStore::new(
+        pool.clone(),
+    )));
     let door = DoorState {
         site: site_state.clone(),
         held: Arc::new(crate::decisions::HeldOrders {
@@ -321,8 +323,7 @@ pub async fn build(config: &Config) -> anyhow::Result<App> {
         modules: modules.hosts.clone(),
     };
     let public = Router::new().fallback(by_host).with_state(dispatch);
-    let internal =
-        wiring::host::internal_router(site_state, modules.hosts).merge(modules.internal);
+    let internal = wiring::host::internal_router(site_state, modules.hosts).merge(modules.internal);
 
     // The Chief WebAgent's brief for Today (S2-04): refreshed every 15 minutes; it writes nothing
     // and calls no model when nothing has changed.
@@ -348,9 +349,16 @@ pub async fn build(config: &Config) -> anyhow::Result<App> {
     .spawn(std::time::Duration::from_secs(900));
 
     if let Some(store) = objects {
-        tracing::info!(bucket = store.bucket(), "mirroring releases and evidence to Object Storage");
-        Arc::new(crate::objects::ObjectMirror::new(pool.clone(), cas.clone(), store))
-            .spawn(std::time::Duration::from_secs(60));
+        tracing::info!(
+            bucket = store.bucket(),
+            "mirroring releases and evidence to Object Storage"
+        );
+        Arc::new(crate::objects::ObjectMirror::new(
+            pool.clone(),
+            cas.clone(),
+            store,
+        ))
+        .spawn(std::time::Duration::from_secs(60));
     }
 
     for (port, owner) in wiring::pending() {

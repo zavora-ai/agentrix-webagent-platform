@@ -256,7 +256,10 @@ async fn the_fixture_report_lists_its_spam_links_and_footer_script_with_evidence
         refused.found.plain
     );
     assert!(
-        refused.found.plain.starts_with("Following a link led off your site"),
+        refused
+            .found
+            .plain
+            .starts_with("Following a link led off your site"),
         "{}",
         refused.found.plain
     );

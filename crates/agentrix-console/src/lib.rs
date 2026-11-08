@@ -17,7 +17,7 @@
 mod assets;
 pub mod view;
 
-pub use assets::{assets, ASSETS_VERSION};
+pub use assets::{ASSETS_VERSION, assets};
 
 use minijinja::{AutoEscape, Environment, Output, State, UndefinedBehavior, Value};
 use serde::Serialize;
@@ -154,14 +154,20 @@ impl Console {
         env.set_undefined_behavior(UndefinedBehavior::Strict);
         env.set_formatter(format);
         #[cfg(feature = "dev-reload")]
-        env.set_loader(minijinja::path_loader(concat!(env!("CARGO_MANIFEST_DIR"), "/templates")));
+        env.set_loader(minijinja::path_loader(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/templates"
+        )));
         #[cfg(not(feature = "dev-reload"))]
         minijinja_embed::load_templates!(&mut env);
         env.add_global("asset_v", ASSETS_VERSION);
         env.add_global("theme", "auto");
         for page in Page::ALL {
             env.get_template(page.template())
-                .map_err(|source| Error::Load { template: page.template(), source })?;
+                .map_err(|source| Error::Load {
+                    template: page.template(),
+                    source,
+                })?;
         }
         Ok(Self { env })
     }
@@ -172,6 +178,8 @@ impl Console {
             .env
             .get_template(page.template())
             .map_err(|source| Error::Render { page, source })?;
-        template.render(view).map_err(|source| Error::Render { page, source })
+        template
+            .render(view)
+            .map_err(|source| Error::Render { page, source })
     }
 }

@@ -88,12 +88,14 @@ impl ObjectsConfig {
     }
 
     fn read(path: &Path) -> anyhow::Result<Option<Self>> {
-        let text = std::fs::read_to_string(path)
-            .with_context(|| format!("reading {}", path.display()))?;
+        let text =
+            std::fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
         if text.trim().is_empty() {
             return Ok(None);
         }
-        serde_json::from_str(&text).map(Some).with_context(|| format!("parsing {}", path.display()))
+        serde_json::from_str(&text)
+            .map(Some)
+            .with_context(|| format!("parsing {}", path.display()))
     }
 }
 
@@ -166,10 +168,19 @@ impl ObjectStore {
             (Some(h), None) => h.to_owned(),
             _ => bail!("the Object Storage endpoint has no host"),
         };
-        if config.bucket.is_empty() || !config.bucket.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-') {
+        if config.bucket.is_empty()
+            || !config
+                .bucket
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+        {
             bail!("the bucket name must be lower-case letters, digits and hyphens");
         }
-        Ok(Self { http, config: Arc::new(config), host })
+        Ok(Self {
+            http,
+            config: Arc::new(config),
+            host,
+        })
     }
 
     /// The bucket's name.
@@ -177,7 +188,13 @@ impl ObjectStore {
         &self.config.bucket
     }
 
-    async fn send(&self, method: reqwest::Method, path: &str, body: Vec<u8>, content_type: Option<&str>) -> anyhow::Result<reqwest::Response> {
+    async fn send(
+        &self,
+        method: reqwest::Method,
+        path: &str,
+        body: Vec<u8>,
+        content_type: Option<&str>,
+    ) -> anyhow::Result<reqwest::Response> {
         let amz_date = Utc::now().format("%Y%m%dT%H%M%SZ").to_string();
         let payload_hash = sha256_hex(&body);
         let mut headers: Vec<(&str, &str)> = vec![
@@ -217,7 +234,12 @@ impl ObjectStore {
     }
 
     fn object_path(&self, key: &str) -> anyhow::Result<String> {
-        if key.is_empty() || !key.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '/' | '.' | '-' | '_')) || key.contains("..") {
+        if key.is_empty()
+            || !key
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '/' | '.' | '-' | '_'))
+            || key.contains("..")
+        {
             bail!("unusable object key {key:?}");
         }
         Ok(format!("/{}/{key}", self.config.bucket))
@@ -226,25 +248,48 @@ impl ObjectStore {
     /// Creates the bucket if it does not exist.
     pub async fn ensure_bucket(&self) -> anyhow::Result<()> {
         let path = format!("/{}", self.config.bucket);
-        let head = self.send(reqwest::Method::HEAD, &path, Vec::new(), None).await?;
+        let head = self
+            .send(reqwest::Method::HEAD, &path, Vec::new(), None)
+            .await?;
         if head.status().is_success() {
             return Ok(());
         }
-        let made = self.send(reqwest::Method::PUT, &path, Vec::new(), None).await?;
+        let made = self
+            .send(reqwest::Method::PUT, &path, Vec::new(), None)
+            .await?;
         let status = made.status();
         if status.is_success() || status == reqwest::StatusCode::CONFLICT {
             return Ok(());
         }
-        bail!("creating bucket {}: {status} {}", self.config.bucket, made.text().await.unwrap_or_default().chars().take(200).collect::<String>())
+        bail!(
+            "creating bucket {}: {status} {}",
+            self.config.bucket,
+            made.text()
+                .await
+                .unwrap_or_default()
+                .chars()
+                .take(200)
+                .collect::<String>()
+        )
     }
 
     /// Writes one object.
     pub async fn put(&self, key: &str, bytes: Vec<u8>, content_type: &str) -> anyhow::Result<()> {
         let path = self.object_path(key)?;
-        let res = self.send(reqwest::Method::PUT, &path, bytes, Some(content_type)).await?;
+        let res = self
+            .send(reqwest::Method::PUT, &path, bytes, Some(content_type))
+            .await?;
         let status = res.status();
         if !status.is_success() {
-            bail!("PUT {key}: {status} {}", res.text().await.unwrap_or_default().chars().take(200).collect::<String>());
+            bail!(
+                "PUT {key}: {status} {}",
+                res.text()
+                    .await
+                    .unwrap_or_default()
+                    .chars()
+                    .take(200)
+                    .collect::<String>()
+            );
         }
         Ok(())
     }
@@ -252,7 +297,9 @@ impl ObjectStore {
     /// Reads one object, or `None` if the bucket has no such key.
     pub async fn get(&self, key: &str) -> anyhow::Result<Option<Vec<u8>>> {
         let path = self.object_path(key)?;
-        let res = self.send(reqwest::Method::GET, &path, Vec::new(), None).await?;
+        let res = self
+            .send(reqwest::Method::GET, &path, Vec::new(), None)
+            .await?;
         let status = res.status();
         if status == reqwest::StatusCode::NOT_FOUND {
             return Ok(None);
@@ -302,14 +349,23 @@ impl ObjectMirror {
                 if !bucket_ready {
                     match self.store.ensure_bucket().await {
                         Ok(()) => bucket_ready = true,
-                        Err(e) => tracing::warn!(error = %format!("{e:#}"), "Object Storage bucket not ready"),
+                        Err(e) => {
+                            tracing::warn!(error = %format!("{e:#}"), "Object Storage bucket not ready")
+                        }
                     }
                 }
                 if bucket_ready {
                     match self.run_once().await {
                         Ok((0, 0)) => {}
-                        Ok((blobs, receipts)) => tracing::info!(blobs, receipts, bucket = self.store.bucket(), "mirrored to Object Storage"),
-                        Err(e) => tracing::warn!(error = %format!("{e:#}"), "Object Storage mirror pass failed"),
+                        Ok((blobs, receipts)) => tracing::info!(
+                            blobs,
+                            receipts,
+                            bucket = self.store.bucket(),
+                            "mirrored to Object Storage"
+                        ),
+                        Err(e) => {
+                            tracing::warn!(error = %format!("{e:#}"), "Object Storage mirror pass failed")
+                        }
                     }
                 }
                 tokio::time::sleep(every).await;
@@ -333,9 +389,15 @@ impl ObjectMirror {
             if done.contains(&key) {
                 continue;
             }
-            let Some(bytes) = self.cas.get_local(&digest).await? else { continue };
+            let Some(bytes) = self.cas.get_local(&digest).await? else {
+                continue;
+            };
             // One object that won't copy must not stop the rest, the receipts included.
-            if let Err(e) = self.store.put(&key, bytes, "application/octet-stream").await {
+            if let Err(e) = self
+                .store
+                .put(&key, bytes, "application/octet-stream")
+                .await
+            {
                 tracing::warn!(error = %format!("{e:#}"), %key, "an object did not mirror; retrying next pass");
                 continue;
             }
@@ -348,16 +410,21 @@ impl ObjectMirror {
         }
 
         let mut receipts = 0;
-        let rows: Vec<(String, String)> = sqlx::query_as("SELECT digest, body FROM receipts ORDER BY issued_at")
-            .fetch_all(&self.pool)
-            .await?;
+        let rows: Vec<(String, String)> =
+            sqlx::query_as("SELECT digest, body FROM receipts ORDER BY issued_at")
+                .fetch_all(&self.pool)
+                .await?;
         for (digest, body) in rows {
             let digest: Digest = digest.parse().context("a stored receipt digest")?;
             let key = receipt_key(&digest);
             if done.contains(&key) {
                 continue;
             }
-            if let Err(e) = self.store.put(&key, body.into_bytes(), "application/json").await {
+            if let Err(e) = self
+                .store
+                .put(&key, body.into_bytes(), "application/json")
+                .await
+            {
                 tracing::warn!(error = %format!("{e:#}"), %key, "a receipt did not mirror; retrying next pass");
                 continue;
             }
@@ -368,12 +435,14 @@ impl ObjectMirror {
     }
 
     async fn mark(&self, key: &str, digest: &Digest) -> anyhow::Result<()> {
-        sqlx::query("INSERT OR REPLACE INTO object_mirror (key, digest, mirrored_at) VALUES (?, ?, ?)")
-            .bind(key)
-            .bind(digest.to_string())
-            .bind(crate::db::now())
-            .execute(&self.pool)
-            .await?;
+        sqlx::query(
+            "INSERT OR REPLACE INTO object_mirror (key, digest, mirrored_at) VALUES (?, ?, ?)",
+        )
+        .bind(key)
+        .bind(digest.to_string())
+        .bind(crate::db::now())
+        .execute(&self.pool)
+        .await?;
         Ok(())
     }
 }
@@ -399,7 +468,10 @@ mod tests {
             &[
                 ("host", "examplebucket.s3.amazonaws.com"),
                 ("range", "bytes=0-9"),
-                ("x-amz-content-sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
+                (
+                    "x-amz-content-sha256",
+                    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                ),
                 ("x-amz-date", "20130524T000000Z"),
             ],
             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -408,7 +480,12 @@ mod tests {
             "AKIAIOSFODNN7EXAMPLE",
             "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
         );
-        assert!(auth.ends_with("Signature=f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41"), "{auth}");
+        assert!(
+            auth.ends_with(
+                "Signature=f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41"
+            ),
+            "{auth}"
+        );
         assert!(auth.contains("SignedHeaders=host;range;x-amz-content-sha256;x-amz-date"));
     }
 
@@ -417,12 +494,17 @@ mod tests {
     #[tokio::test]
     #[ignore = "needs AGENTRIX_OBJECTS_FILE and the network"]
     async fn live() {
-        let cfg = ObjectsConfig::from_env().unwrap().expect("AGENTRIX_OBJECTS_FILE");
+        let cfg = ObjectsConfig::from_env()
+            .unwrap()
+            .expect("AGENTRIX_OBJECTS_FILE");
         let store = ObjectStore::new(reqwest::Client::new(), cfg).unwrap();
         store.ensure_bucket().await.unwrap();
         let bytes = format!("agentrix live check {}", Utc::now()).into_bytes();
         let digest = Digest::of(&bytes);
-        store.put(&blob_key(&digest), bytes.clone(), "text/plain").await.unwrap();
+        store
+            .put(&blob_key(&digest), bytes.clone(), "text/plain")
+            .await
+            .unwrap();
         assert_eq!(store.get(&blob_key(&digest)).await.unwrap(), Some(bytes));
         assert_eq!(store.get("cas/sha256/missing").await.unwrap(), None);
     }
@@ -432,21 +514,38 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let empty = dir.path().join("objects.json");
         std::fs::write(&empty, "").unwrap();
-        assert!(ObjectsConfig::read(&empty).unwrap().is_none(), "a fresh deploy without a bucket starts");
+        assert!(
+            ObjectsConfig::read(&empty).unwrap().is_none(),
+            "a fresh deploy without a bucket starts"
+        );
         std::fs::write(&empty, "{not json").unwrap();
-        assert!(ObjectsConfig::read(&empty).is_err(), "a broken file is an error, not silently off");
+        assert!(
+            ObjectsConfig::read(&empty).is_err(),
+            "a broken file is an error, not silently off"
+        );
     }
 
     type Bucket = Arc<Mutex<HashMap<String, Vec<u8>>>>;
 
-    async fn fake_s3(State(bucket): State<Bucket>, method: axum::http::Method, AxPath(path): AxPath<String>, headers: HeaderMap, body: Bytes) -> (StatusCode, Vec<u8>) {
-        let signed = headers.get("authorization").and_then(|v| v.to_str().ok()).is_some_and(|a| a.starts_with("AWS4-HMAC-SHA256 Credential="));
+    async fn fake_s3(
+        State(bucket): State<Bucket>,
+        method: axum::http::Method,
+        AxPath(path): AxPath<String>,
+        headers: HeaderMap,
+        body: Bytes,
+    ) -> (StatusCode, Vec<u8>) {
+        let signed = headers
+            .get("authorization")
+            .and_then(|v| v.to_str().ok())
+            .is_some_and(|a| a.starts_with("AWS4-HMAC-SHA256 Credential="));
         if !signed {
             return (StatusCode::FORBIDDEN, Vec::new());
         }
         let mut b = bucket.lock().unwrap();
         match method.as_str() {
-            "PUT" if !headers.contains_key("content-length") => (StatusCode::LENGTH_REQUIRED, Vec::new()),
+            "PUT" if !headers.contains_key("content-length") => {
+                (StatusCode::LENGTH_REQUIRED, Vec::new())
+            }
             "PUT" => {
                 b.insert(path, body.to_vec());
                 (StatusCode::OK, Vec::new())
@@ -463,14 +562,22 @@ mod tests {
     #[tokio::test]
     async fn mirrors_blobs_and_receipts_and_reads_fall_back_to_the_bucket() {
         let bucket: Bucket = Arc::default();
-        let app = Router::new().route("/{*path}", any(fake_s3)).with_state(bucket.clone());
+        let app = Router::new()
+            .route("/{*path}", any(fake_s3))
+            .with_state(bucket.clone());
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let endpoint = format!("http://{}", listener.local_addr().unwrap());
         tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
 
         let store = ObjectStore::new(
             reqwest::Client::new(),
-            ObjectsConfig { endpoint, bucket: "agx-test".into(), region: default_region(), access_key: "AK".into(), secret_key: "SK".into() },
+            ObjectsConfig {
+                endpoint,
+                bucket: "agx-test".into(),
+                region: default_region(),
+                access_key: "AK".into(),
+                secret_key: "SK".into(),
+            },
         )
         .unwrap();
         store.ensure_bucket().await.unwrap();
@@ -485,19 +592,41 @@ mod tests {
         let mirror = ObjectMirror::new(pool.clone(), cas.clone(), store.clone());
         assert_eq!(mirror.run_once().await.unwrap(), (2, 0));
         assert_eq!(mirror.run_once().await.unwrap(), (0, 0), "nothing twice");
-        assert_eq!(bucket.lock().unwrap().get(&format!("agx-test/{}", blob_key(&digest))), Some(&page));
+        assert_eq!(
+            bucket
+                .lock()
+                .unwrap()
+                .get(&format!("agx-test/{}", blob_key(&digest))),
+            Some(&page)
+        );
 
         // The control VM loses the file: a CAS backed by the bucket still serves it, checked.
         std::fs::remove_file(cas.path_for(&digest)).unwrap();
-        assert_eq!(cas.get(&digest).await.unwrap(), None, "plain CAS has nothing");
-        let backed = Cas::open(dir.path().join("cas")).await.unwrap().with_remote(Arc::new(store.clone()));
+        assert_eq!(
+            cas.get(&digest).await.unwrap(),
+            None,
+            "plain CAS has nothing"
+        );
+        let backed = Cas::open(dir.path().join("cas"))
+            .await
+            .unwrap()
+            .with_remote(Arc::new(store.clone()));
         assert_eq!(backed.get(&digest).await.unwrap(), Some(page.clone()));
-        assert!(backed.path_for(&digest).exists(), "the blob is restored on disk");
+        assert!(
+            backed.path_for(&digest).exists(),
+            "the blob is restored on disk"
+        );
 
         // A tampered object in the bucket is refused, never served.
         let other = b"<h1>About</h1>".to_vec();
         let other_digest = Digest::of(&other);
-        bucket.lock().unwrap().insert(format!("agx-test/{}", blob_key(&other_digest)), b"<h1>hacked</h1>".to_vec());
-        assert!(backed.get(&other_digest).await.is_err(), "bytes that don't match their name are refused");
+        bucket.lock().unwrap().insert(
+            format!("agx-test/{}", blob_key(&other_digest)),
+            b"<h1>hacked</h1>".to_vec(),
+        );
+        assert!(
+            backed.get(&other_digest).await.is_err(),
+            "bytes that don't match their name are refused"
+        );
     }
 }

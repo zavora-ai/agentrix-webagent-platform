@@ -8,8 +8,8 @@
 //! webauthn-rs's own checks (origin, RP id, user verification, signature, counter) still run.
 //! adk-surface's tests rebuild ceremonies the same way (`mobile/tests.rs:1327` at the pin).
 
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use rand::RngCore;
 use sha2::{Digest, Sha256};
 use webauthn_rs::prelude::{
@@ -62,7 +62,9 @@ pub struct Passkeys {
 impl Passkeys {
     /// For `rp_id` (the platform's host) and its exact `origin`.
     pub fn new(rp_id: &str, origin: &Url, rp_name: &str) -> Result<Self, PasskeyError> {
-        let webauthn = WebauthnBuilder::new(rp_id, origin)?.rp_name(rp_name).build()?;
+        let webauthn = WebauthnBuilder::new(rp_id, origin)?
+            .rp_name(rp_name)
+            .build()?;
         Ok(Self { webauthn })
     }
 
@@ -77,7 +79,9 @@ impl Passkeys {
     ) -> Result<(CreationChallengeResponse, PasskeyRegistration), PasskeyError> {
         let exclude: Vec<CredentialID> = existing.iter().map(|p| p.cred_id().clone()).collect();
         let exclude = (!exclude.is_empty()).then_some(exclude);
-        Ok(self.webauthn.start_passkey_registration(user, email, display_name, exclude)?)
+        Ok(self
+            .webauthn
+            .start_passkey_registration(user, email, display_name, exclude)?)
     }
 
     /// Finishes a registration.
@@ -86,11 +90,16 @@ impl Passkeys {
         credential: &RegisterPublicKeyCredential,
         state: &PasskeyRegistration,
     ) -> Result<Passkey, PasskeyError> {
-        Ok(self.webauthn.finish_passkey_registration(credential, state)?)
+        Ok(self
+            .webauthn
+            .finish_passkey_registration(credential, state)?)
     }
 
     /// Starts a sign-in with the account's passkeys.
-    pub fn start_login(&self, passkeys: &[Passkey]) -> Result<(RequestChallengeResponse, PasskeyAuthentication), PasskeyError> {
+    pub fn start_login(
+        &self,
+        passkeys: &[Passkey],
+    ) -> Result<(RequestChallengeResponse, PasskeyAuthentication), PasskeyError> {
         Ok(self.webauthn.start_passkey_authentication(passkeys)?)
     }
 
@@ -101,7 +110,9 @@ impl Passkeys {
         credential: &PublicKeyCredential,
         state: &PasskeyAuthentication,
     ) -> Result<AuthenticationResult, PasskeyError> {
-        Ok(self.webauthn.finish_passkey_authentication(credential, state)?)
+        Ok(self
+            .webauthn
+            .finish_passkey_authentication(credential, state)?)
     }
 
     /// Starts an approval whose challenge commits to `fingerprint`. Returns the options for the
@@ -111,7 +122,15 @@ impl Passkeys {
         &self,
         passkeys: &[Passkey],
         fingerprint: &[u8; 32],
-    ) -> Result<(RequestChallengeResponse, PasskeyAuthentication, [u8; NONCE_BYTES], String), PasskeyError> {
+    ) -> Result<
+        (
+            RequestChallengeResponse,
+            PasskeyAuthentication,
+            [u8; NONCE_BYTES],
+            String,
+        ),
+        PasskeyError,
+    > {
         let (mut options, state) = self.webauthn.start_passkey_authentication(passkeys)?;
         let mut nonce = [0u8; NONCE_BYTES];
         rand::rngs::OsRng.fill_bytes(&mut nonce);
@@ -125,7 +144,10 @@ impl Passkeys {
 
 /// Rebuilds an authentication state around `challenge` (base64url). Fails rather than add a
 /// field if webauthn-rs's state ever stops having `ast.challenge`.
-fn with_challenge(state: &PasskeyAuthentication, challenge: &str) -> Result<PasskeyAuthentication, PasskeyError> {
+fn with_challenge(
+    state: &PasskeyAuthentication,
+    challenge: &str,
+) -> Result<PasskeyAuthentication, PasskeyError> {
     let mut value = serde_json::to_value(state).map_err(|e| PasskeyError::State(e.to_string()))?;
     let slot = value
         .pointer_mut("/ast/challenge")
@@ -158,6 +180,9 @@ mod tests {
         let origin = Url::parse("https://agentrix.example").unwrap();
         assert!(Passkeys::new("agentrix.example", &origin, "Agentrix").is_ok());
         let wrong = Url::parse("https://elsewhere.example").unwrap();
-        assert!(Passkeys::new("agentrix.example", &wrong, "Agentrix").is_err(), "origin must be within the RP id");
+        assert!(
+            Passkeys::new("agentrix.example", &wrong, "Agentrix").is_err(),
+            "origin must be within the RP id"
+        );
     }
 }

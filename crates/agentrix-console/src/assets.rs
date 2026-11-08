@@ -1,9 +1,9 @@
 //! Static assets, compiled into the binary and served under `/static/`.
 
+use axum::Router;
 use axum::http::header;
 use axum::response::IntoResponse;
 use axum::routing::get;
-use axum::Router;
 
 /// A version stamp that changes whenever a static file changes. Templates append it as
 /// `?v=…`, so browsers may cache assets as immutable.
@@ -30,10 +30,28 @@ fn serve(content_type: &'static str, body: &'static str) -> impl IntoResponse {
 /// The `/static/*` routes, for `agentrix-node` to merge into its router.
 pub fn assets<S: Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
-        .route("/static/app.css", get(|| async { serve("text/css; charset=utf-8", APP_CSS) }))
-        .route("/static/live.js", get(|| async { serve("text/javascript; charset=utf-8", LIVE_JS) }))
-        .route("/static/passkey.js", get(|| async { serve("text/javascript; charset=utf-8", PASSKEY_JS) }))
-        .route("/static/verify.js", get(|| async { serve("text/javascript; charset=utf-8", VERIFY_JS) }))
-        .route("/static/auth.js", get(|| async { serve("text/javascript; charset=utf-8", AUTH_JS) }))
-        .route("/static/upload.js", get(|| async { serve("text/javascript; charset=utf-8", UPLOAD_JS) }))
+        .route(
+            "/static/app.css",
+            get(|| async { serve("text/css; charset=utf-8", APP_CSS) }),
+        )
+        .route(
+            "/static/live.js",
+            get(|| async { serve("text/javascript; charset=utf-8", LIVE_JS) }),
+        )
+        .route(
+            "/static/passkey.js",
+            get(|| async { serve("text/javascript; charset=utf-8", PASSKEY_JS) }),
+        )
+        .route(
+            "/static/verify.js",
+            get(|| async { serve("text/javascript; charset=utf-8", VERIFY_JS) }),
+        )
+        .route(
+            "/static/auth.js",
+            get(|| async { serve("text/javascript; charset=utf-8", AUTH_JS) }),
+        )
+        .route(
+            "/static/upload.js",
+            get(|| async { serve("text/javascript; charset=utf-8", UPLOAD_JS) }),
+        )
 }

@@ -94,30 +94,57 @@ impl IntoResponse for PageError {
 type PageResult = Result<Response, PageError>;
 
 fn render(state: &PagesState, page: Page, view: &impl Serialize) -> PageResult {
-    let html = state.console.render(page, view).map_err(|e| PageError::Internal(e.into()))?;
+    let html = state
+        .console
+        .render(page, view)
+        .map_err(|e| PageError::Internal(e.into()))?;
     Ok(Html(html).into_response())
 }
 
 /// The signed-in owner and their site, or a redirect to sign-in that returns to `uri`.
-async fn owner(state: &PagesState, headers: &HeaderMap, uri: &Uri) -> Result<(OwnerSession, SiteRow), PageError> {
+async fn owner(
+    state: &PagesState,
+    headers: &HeaderMap,
+    uri: &Uri,
+) -> Result<(OwnerSession, SiteRow), PageError> {
     let Some(session) = state.reads.session(headers).await? else {
         if let Some(path) = state.reads.landing(headers).await? {
             return Err(PageError::Go(path));
         }
         return Err(PageError::SignIn(uri.path().to_owned()));
     };
-    let site = state.reads.site(&session.site).await?.ok_or(PageError::NotFound)?;
+    let site = state
+        .reads
+        .site(&session.site)
+        .await?
+        .ok_or(PageError::NotFound)?;
     Ok((session, site))
 }
 
 async fn waiting(state: &PagesState, site: &SiteRow) -> Result<Vec<DecisionRow>, PageError> {
-    Ok(state.reads.decisions(&site.id).await?.into_iter().filter(|d| d.state == DecisionState::Waiting).collect())
+    Ok(state
+        .reads
+        .decisions(&site.id)
+        .await?
+        .into_iter()
+        .filter(|d| d.state == DecisionState::Waiting)
+        .collect())
 }
 
-async fn receipt_rows(state: &PagesState, site: &SiteRow, limit: usize) -> Result<Vec<view::ReceiptRow>, PageError> {
+async fn receipt_rows(
+    state: &PagesState,
+    site: &SiteRow,
+    limit: usize,
+) -> Result<Vec<view::ReceiptRow>, PageError> {
     let keys = state.reads.keys().await?;
     let now = Utc::now();
-    Ok(state.reads.receipts(&site.id, limit).await?.iter().filter_map(|r| map::receipt_row(r, &keys, site.utc_offset_minutes, now)).collect())
+    Ok(state
+        .reads
+        .receipts(&site.id, limit)
+        .await?
+        .iter()
+        .filter_map(|r| map::receipt_row(r, &keys, site.utc_offset_minutes, now))
+        .collect())
 }
 
 async fn today(State(state): State<PagesState>, headers: HeaderMap, uri: Uri) -> PageResult {
@@ -129,7 +156,16 @@ async fn today(State(state): State<PagesState>, headers: HeaderMap, uri: Uri) ->
     let passed = state.reads.passed_questions(&site.id).await?;
     let meter = state.reads.meter(&site.id).await?;
     let chrome = map::chrome(&site, &session, view::NavTab::Today, waiting.len(), now);
-    let mut view = map::today(chrome, &site, &session, brief.as_ref(), &waiting, recent, &passed, now);
+    let mut view = map::today(
+        chrome,
+        &site,
+        &session,
+        brief.as_ref(),
+        &waiting,
+        recent,
+        &passed,
+        now,
+    );
     view.meter = meter.as_ref().map(map::meter);
     render(&state, Page::Today, &view)
 }
@@ -138,29 +174,56 @@ async fn decisions(State(state): State<PagesState>, headers: HeaderMap, uri: Uri
     let (session, site) = owner(&state, &headers, &uri).await?;
     let now = Utc::now();
     let all = state.reads.decisions(&site.id).await?;
-    let (open, closed): (Vec<_>, Vec<_>) = all.iter().partition(|d| d.state == DecisionState::Waiting);
+    let (open, closed): (Vec<_>, Vec<_>) =
+        all.iter().partition(|d| d.state == DecisionState::Waiting);
     let view = view::DecisionsView {
         chrome: map::chrome(&site, &session, view::NavTab::Decisions, open.len(), now),
-        waiting: open.iter().map(|d| map::card_summary(d, site.utc_offset_minutes, now)).collect(),
-        decided: closed.iter().map(|d| map::card_summary(d, site.utc_offset_minutes, now)).collect(),
+        waiting: open
+            .iter()
+            .map(|d| map::card_summary(d, site.utc_offset_minutes, now))
+            .collect(),
+        decided: closed
+            .iter()
+            .map(|d| map::card_summary(d, site.utc_offset_minutes, now))
+            .collect(),
     };
     render(&state, Page::Decisions, &view)
 }
 
-async fn decision(State(state): State<PagesState>, Path(id): Path<String>, headers: HeaderMap, uri: Uri) -> PageResult {
+async fn decision(
+    State(state): State<PagesState>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+    uri: Uri,
+) -> PageResult {
     let (session, site) = owner(&state, &headers, &uri).await?;
     let now = Utc::now();
-    let row = state.reads.decision(&site.id, &DecisionId::new(id)).await?.ok_or(PageError::NotFound)?;
+    let row = state
+        .reads
+        .decision(&site.id, &DecisionId::new(id))
+        .await?
+        .ok_or(PageError::NotFound)?;
     let options = if row.state == DecisionState::Waiting && session.has_passkey {
         state.reads.begin_approval(&session, &row.card).await?
     } else {
         None
     };
-    let levels = if row.card.kind == agentrix_types::CardKind::GoLive { state.reads.levels(&site.id).await? } else { Vec::new() };
+    let levels = if row.card.kind == agentrix_types::CardKind::GoLive {
+        state.reads.levels(&site.id).await?
+    } else {
+        Vec::new()
+    };
     let waiting = waiting(&state, &site).await?;
     let view = view::DecisionView {
         chrome: map::chrome(&site, &session, view::NavTab::Decisions, waiting.len(), now),
-        card: map::card(&row, &levels, options, session.has_passkey, site.utc_offset_minutes, now),
+        card: map::card(
+            &row,
+            &levels,
+            options,
+            session.has_passkey,
+            site.utc_offset_minutes,
+            now,
+        ),
     };
     render(&state, Page::Decision, &view)
 }
@@ -180,7 +243,11 @@ async fn move_page(State(state): State<PagesState>, headers: HeaderMap, uri: Uri
         .uploads(&site.id)
         .await?
         .iter()
-        .map(|u| view::UploadRow { name: u.name.clone(), size_words: map::bytes_words(u.size), when_words: map::when(u.at, site.utc_offset_minutes, now) })
+        .map(|u| view::UploadRow {
+            name: u.name.clone(),
+            size_words: map::bytes_words(u.size),
+            when_words: map::when(u.at, site.utc_offset_minutes, now),
+        })
         .collect();
     if let Some(p) = &state.onboarding {
         let html = p
@@ -199,7 +266,18 @@ async fn trust(State(state): State<PagesState>, headers: HeaderMap, uri: Uri) ->
     let gauntlet = state.reads.gauntlet(&site.id).await?;
     let rows = receipt_rows(&state, &site, 100).await?;
     let chrome = map::chrome(&site, &session, view::NavTab::Trust, waiting.len(), now);
-    render(&state, Page::Trust, &map::trust(chrome, gauntlet.as_ref(), rows, &keys, site.utc_offset_minutes, now))
+    render(
+        &state,
+        Page::Trust,
+        &map::trust(
+            chrome,
+            gauntlet.as_ref(),
+            rows,
+            &keys,
+            site.utc_offset_minutes,
+            now,
+        ),
+    )
 }
 
 async fn webagents(State(state): State<PagesState>, headers: HeaderMap, uri: Uri) -> PageResult {
@@ -222,37 +300,99 @@ async fn quarantine(State(state): State<PagesState>, headers: HeaderMap, uri: Ur
 
 /// `GET /receipts/{digest}`: anyone may open and verify a receipt (§4.1). JSON on
 /// `Accept: application/json` (the signed receipt, canonical), otherwise the page.
-async fn receipt(State(state): State<PagesState>, Path(digest): Path<String>, headers: HeaderMap) -> PageResult {
+async fn receipt(
+    State(state): State<PagesState>,
+    Path(digest): Path<String>,
+    headers: HeaderMap,
+) -> PageResult {
     let digest = Digest::from_str(&digest).map_err(|_| PageError::NotFound)?;
-    let r = state.reads.receipt(&digest).await?.ok_or(PageError::NotFound)?;
-    let wants_json = headers.get(header::ACCEPT).and_then(|v| v.to_str().ok()).is_some_and(|a| a.contains("application/json"));
+    let r = state
+        .reads
+        .receipt(&digest)
+        .await?
+        .ok_or(PageError::NotFound)?;
+    let wants_json = headers
+        .get(header::ACCEPT)
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|a| a.contains("application/json"));
     if wants_json {
-        let body = r.canonical_json().map_err(|e| PageError::Internal(e.into()))?;
-        return Ok(([(header::CONTENT_TYPE, "application/json"), (header::CACHE_CONTROL, "public, max-age=31536000, immutable")], body).into_response());
+        let body = r
+            .canonical_json()
+            .map_err(|e| PageError::Internal(e.into()))?;
+        return Ok((
+            [
+                (header::CONTENT_TYPE, "application/json"),
+                (header::CACHE_CONTROL, "public, max-age=31536000, immutable"),
+            ],
+            body,
+        )
+            .into_response());
     }
     let now = Utc::now();
-    let site = state.reads.site(&r.body.site).await?.ok_or(PageError::NotFound)?;
+    let site = state
+        .reads
+        .site(&r.body.site)
+        .await?
+        .ok_or(PageError::NotFound)?;
     let keys = state.reads.keys().await?;
-    let session = state.reads.session(&headers).await?.filter(|s| s.site == site.id);
+    let session = state
+        .reads
+        .session(&headers)
+        .await?
+        .filter(|s| s.site == site.id);
     let chrome = match &session {
-        Some(s) => map::chrome(&site, s, view::NavTab::Trust, waiting(&state, &site).await?.len(), now),
-        None => view::Chrome { site: map::site_ref(&site, now), nav: view::Nav { active: view::NavTab::Trust, decisions_waiting: 0 }, owner: view::OwnerRef { name: String::new() } },
+        Some(s) => map::chrome(
+            &site,
+            s,
+            view::NavTab::Trust,
+            waiting(&state, &site).await?.len(),
+            now,
+        ),
+        None => view::Chrome {
+            site: map::site_ref(&site, now),
+            nav: view::Nav {
+                active: view::NavTab::Trust,
+                decisions_waiting: 0,
+            },
+            owner: view::OwnerRef {
+                name: String::new(),
+            },
+        },
     };
-    let detail = map::receipt_detail(&r, &keys, site.utc_offset_minutes, now).ok_or(PageError::NotFound)?;
-    render(&state, Page::Receipt, &view::ReceiptView { chrome, receipt: detail })
+    let detail =
+        map::receipt_detail(&r, &keys, site.utc_offset_minutes, now).ok_or(PageError::NotFound)?;
+    render(
+        &state,
+        Page::Receipt,
+        &view::ReceiptView {
+            chrome,
+            receipt: detail,
+        },
+    )
 }
 
 /// `GET /frames/{digest}`: a sealed-browser frame from the CAS. The owner sees their site's
 /// frames, and anyone sees a free Assess's (design §4.1). Content-addressed, so it never
 /// changes, but `private`: a shared cache must not hand an owner's frame to someone else.
-async fn frame(State(state): State<PagesState>, headers: HeaderMap, Path(digest): Path<String>) -> PageResult {
+async fn frame(
+    State(state): State<PagesState>,
+    headers: HeaderMap,
+    Path(digest): Path<String>,
+) -> PageResult {
     let digest = Digest::from_str(&digest).map_err(|_| PageError::NotFound)?;
     let owner_site = state.reads.session(&headers).await?.map(|s| s.site);
-    let f = state.reads.frame(owner_site.as_ref(), &digest).await?.ok_or(PageError::NotFound)?;
+    let f = state
+        .reads
+        .frame(owner_site.as_ref(), &digest)
+        .await?
+        .ok_or(PageError::NotFound)?;
     Ok((
         [
             (header::CONTENT_TYPE, f.content_type),
-            (header::CACHE_CONTROL, "private, max-age=31536000, immutable".to_owned()),
+            (
+                header::CACHE_CONTROL,
+                "private, max-age=31536000, immutable".to_owned(),
+            ),
             (header::X_CONTENT_TYPE_OPTIONS, "nosniff".to_owned()),
         ],
         f.bytes,

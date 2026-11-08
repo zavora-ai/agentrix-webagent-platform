@@ -7,7 +7,9 @@
 //! stored charter, brief and gauntlet shapes), so a page and the live stream it continues are
 //! built from the same values.
 
-use agentrix_types::ui::{CardEvent, FrameEvent, PageEvent, ParityEvent, QuarantinedEvent, StepEvent, TickEvent};
+use agentrix_types::ui::{
+    CardEvent, FrameEvent, PageEvent, ParityEvent, QuarantinedEvent, StepEvent, TickEvent,
+};
 use agentrix_types::{
     Approval, DecisionCard, DecisionId, Digest, KeySet, MoveId, QuarantineId, Receipt, SiteId,
 };
@@ -255,7 +257,11 @@ pub trait ConsoleReads: Send + Sync + 'static {
     /// Starts the approval ceremony for `card` (design D9: challenge = SHA-256(fingerprint ‖
     /// nonce)) and returns its options as JSON, or `None` when the owner has no passkey.
     /// Implemented by `decisions/`, which keeps the ceremony state.
-    async fn begin_approval(&self, session: &OwnerSession, card: &DecisionCard) -> ReadResult<Option<String>>;
+    async fn begin_approval(
+        &self,
+        session: &OwnerSession,
+        card: &DecisionCard,
+    ) -> ReadResult<Option<String>>;
     /// The signed charter's levels and ceilings, per job, in charter order.
     async fn levels(&self, site: &SiteId) -> ReadResult<Vec<JobLevel>>;
     /// The site's receipts, newest first.
@@ -286,7 +292,11 @@ pub trait ConsoleReads: Send + Sync + 'static {
     /// An owner sees their own site's frames; anyone sees frames of a site with no owner yet,
     /// which is a free Assess. Never another owner's frames, even by digest (the site wall,
     /// design §7). `None` for anything else.
-    async fn frame(&self, owner_site: Option<&SiteId>, digest: &Digest) -> ReadResult<Option<FrameBytes>>;
+    async fn frame(
+        &self,
+        owner_site: Option<&SiteId>,
+        digest: &Digest,
+    ) -> ReadResult<Option<FrameBytes>>;
     /// Control's published keys, to verify receipts.
     async fn keys(&self) -> ReadResult<KeySet>;
 }

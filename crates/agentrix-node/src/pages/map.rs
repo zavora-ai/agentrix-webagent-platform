@@ -9,15 +9,16 @@ use agentrix_types::{ApprovalMethod, DecisionCard, Digest, KeySet, Receipt, Rece
 use chrono::{DateTime, FixedOffset, Utc};
 
 use super::reads::{
-    BriefRow, DecisionRow, DecisionState, GauntletRow, JobLevel, Level, MoveRow, MoveStage,
-    MeterRow, OwnerSession, PassedRows, QuarantineRow, QuarantineStage, SiteRow, SiteStage,
+    BriefRow, DecisionRow, DecisionState, GauntletRow, JobLevel, Level, MeterRow, MoveRow,
+    MoveStage, OwnerSession, PassedRows, QuarantineRow, QuarantineStage, SiteRow, SiteStage,
 };
 
 // ---------- Words ----------
 
 /// A time in the owner's zone: "10:04" today, otherwise "Sat 7 Nov, 10:04".
 pub fn when(at: DateTime<Utc>, offset_minutes: i32, now: DateTime<Utc>) -> String {
-    let zone = FixedOffset::east_opt(offset_minutes * 60).unwrap_or(FixedOffset::east_opt(0).expect("UTC"));
+    let zone = FixedOffset::east_opt(offset_minutes * 60)
+        .unwrap_or(FixedOffset::east_opt(0).expect("UTC"));
     let (at, now) = (at.with_timezone(&zone), now.with_timezone(&zone));
     if at.date_naive() == now.date_naive() {
         at.format("%H:%M").to_string()
@@ -29,7 +30,11 @@ pub fn when(at: DateTime<Utc>, offset_minutes: i32, now: DateTime<Utc>) -> Strin
 /// A duration: "40 s", "1 m 48 s".
 pub fn took(ms: u64) -> String {
     let secs = ms.div_ceil(1000);
-    if secs < 60 { format!("{secs} s") } else { format!("{} m {} s", secs / 60, secs % 60) }
+    if secs < 60 {
+        format!("{secs} s")
+    } else {
+        format!("{} m {} s", secs / 60, secs % 60)
+    }
 }
 
 /// Bytes: "512 B", "48 KB", "2.1 MB".
@@ -67,13 +72,30 @@ pub fn mark(webagent: &str, state: view::MarkState, state_words: &str) -> view::
         _ => "#38356d",
     };
     let glyph: String = webagent.chars().take(2).collect();
-    view::AgentMark { name: webagent.to_owned(), glyph, color: color.to_owned(), state, state_words: state_words.to_owned() }
+    view::AgentMark {
+        name: webagent.to_owned(),
+        glyph,
+        color: color.to_owned(),
+        state,
+        state_words: state_words.to_owned(),
+    }
 }
 
 /// The Chief WebAgent's team mark: the site's monogram on its ink.
 pub fn chief(site: &SiteRow) -> view::AgentMark {
-    let glyph = site.name.chars().next().map(|c| c.to_uppercase().to_string()).unwrap_or_else(|| "A".into());
-    view::AgentMark { name: "Chief WebAgent".into(), glyph, color: "#2b1d14".into(), state: view::MarkState::Idle, state_words: String::new() }
+    let glyph = site
+        .name
+        .chars()
+        .next()
+        .map(|c| c.to_uppercase().to_string())
+        .unwrap_or_else(|| "A".into());
+    view::AgentMark {
+        name: "Chief WebAgent".into(),
+        glyph,
+        color: "#2b1d14".into(),
+        state: view::MarkState::Idle,
+        state_words: String::new(),
+    }
 }
 
 // ---------- Chrome ----------
@@ -83,20 +105,44 @@ pub fn site_ref(site: &SiteRow, now: DateTime<Utc>) -> view::SiteRef {
     let state_words = match (site.stage, site.live_since) {
         (SiteStage::Setup, _) => "In setup".to_owned(),
         (SiteStage::Moving, _) => "Moving".to_owned(),
-        (SiteStage::Live, Some(since)) => format!("Live since {}", when(since, site.utc_offset_minutes, now)),
+        (SiteStage::Live, Some(since)) => {
+            format!("Live since {}", when(since, site.utc_offset_minutes, now))
+        }
         (SiteStage::Live, None) => "Live".to_owned(),
     };
-    let live_url = (site.stage == SiteStage::Live)
-        .then(|| crate::launch::public_address(&site.host, crate::launch::platform_host_from_env().as_deref()));
-    view::SiteRef { id: site.id.to_string(), host: site.host.clone(), name: site.name.clone(), state_words, fixture: site.fixture, live_url }
+    let live_url = (site.stage == SiteStage::Live).then(|| {
+        crate::launch::public_address(
+            &site.host,
+            crate::launch::platform_host_from_env().as_deref(),
+        )
+    });
+    view::SiteRef {
+        id: site.id.to_string(),
+        host: site.host.clone(),
+        name: site.name.clone(),
+        state_words,
+        fixture: site.fixture,
+        live_url,
+    }
 }
 
 /// What every console page carries.
-pub fn chrome(site: &SiteRow, owner: &OwnerSession, active: view::NavTab, waiting: usize, now: DateTime<Utc>) -> view::Chrome {
+pub fn chrome(
+    site: &SiteRow,
+    owner: &OwnerSession,
+    active: view::NavTab,
+    waiting: usize,
+    now: DateTime<Utc>,
+) -> view::Chrome {
     view::Chrome {
         site: site_ref(site, now),
-        nav: view::Nav { active, decisions_waiting: u32::try_from(waiting).unwrap_or(u32::MAX) },
-        owner: view::OwnerRef { name: owner.name.clone() },
+        nav: view::Nav {
+            active,
+            decisions_waiting: u32::try_from(waiting).unwrap_or(u32::MAX),
+        },
+        owner: view::OwnerRef {
+            name: owner.name.clone(),
+        },
     }
 }
 
@@ -157,7 +203,12 @@ pub fn verified(r: &Receipt, keys: &KeySet) -> bool {
 }
 
 /// A receipt in a list. Rows whose digest can't be computed are dropped by the caller.
-pub fn receipt_row(r: &Receipt, keys: &KeySet, offset: i32, now: DateTime<Utc>) -> Option<view::ReceiptRow> {
+pub fn receipt_row(
+    r: &Receipt,
+    keys: &KeySet,
+    offset: i32,
+    now: DateTime<Utc>,
+) -> Option<view::ReceiptRow> {
     let digest = r.digest().ok()?;
     Some(view::ReceiptRow {
         digest: digest.to_string(),
@@ -170,41 +221,90 @@ pub fn receipt_row(r: &Receipt, keys: &KeySet, offset: i32, now: DateTime<Utc>) 
 }
 
 /// One receipt, opened.
-pub fn receipt_detail(r: &Receipt, keys: &KeySet, offset: i32, now: DateTime<Utc>) -> Option<view::ReceiptDetail> {
+pub fn receipt_detail(
+    r: &Receipt,
+    keys: &KeySet,
+    offset: i32,
+    now: DateTime<Utc>,
+) -> Option<view::ReceiptDetail> {
     let digest = r.digest().ok()?;
     let ok = verified(r, keys);
     let mut facts = Vec::new();
     if let Some(p) = &r.body.policy {
-        facts.push(view::Fact { label: "Allowed".into(), value: if p.allowlist.is_empty() { "No network".into() } else { p.allowlist.join(", ") } });
-        facts.push(view::Fact { label: "Runtime".into(), value: p.runtime.clone() });
+        facts.push(view::Fact {
+            label: "Allowed".into(),
+            value: if p.allowlist.is_empty() {
+                "No network".into()
+            } else {
+                p.allowlist.join(", ")
+            },
+        });
+        facts.push(view::Fact {
+            label: "Runtime".into(),
+            value: p.runtime.clone(),
+        });
     }
     if let Some(o) = &r.body.observed {
-        facts.push(view::Fact { label: "Hosts contacted".into(), value: if o.hosts.is_empty() { "None".into() } else { o.hosts.join(", ") } });
-        facts.push(view::Fact { label: "Requests".into(), value: o.requests.to_string() });
-        facts.push(view::Fact { label: "Downloaded".into(), value: bytes_words(o.bytes) });
-        facts.push(view::Fact { label: "Refused".into(), value: o.refusals.len().to_string() });
+        facts.push(view::Fact {
+            label: "Hosts contacted".into(),
+            value: if o.hosts.is_empty() {
+                "None".into()
+            } else {
+                o.hosts.join(", ")
+            },
+        });
+        facts.push(view::Fact {
+            label: "Requests".into(),
+            value: o.requests.to_string(),
+        });
+        facts.push(view::Fact {
+            label: "Downloaded".into(),
+            value: bytes_words(o.bytes),
+        });
+        facts.push(view::Fact {
+            label: "Refused".into(),
+            value: o.refusals.len().to_string(),
+        });
     }
     if let Some(d) = r.body.destroyed {
-        facts.push(view::Fact { label: "Room destroyed".into(), value: if d { "Yes".into() } else { "No".into() } });
+        facts.push(view::Fact {
+            label: "Room destroyed".into(),
+            value: if d { "Yes".into() } else { "No".into() },
+        });
     }
     Some(view::ReceiptDetail {
         digest: digest.to_string(),
         title: receipt_title(r),
         kind: r.body.kind.as_str().to_owned(),
         kind_words: kind_words(r.body.kind).to_owned(),
-        at_words: format!("{} – {}", when(r.body.started_at, offset, now), when(r.body.ended_at, offset, now)),
+        at_words: format!(
+            "{} – {}",
+            when(r.body.started_at, offset, now),
+            when(r.body.ended_at, offset, now)
+        ),
         issuer: r.body.issuer.to_string(),
         subject: receipt_title(r),
         facts,
         outputs: r.body.outputs.iter().map(ToString::to_string).collect(),
         verified: ok,
         verified_words: if ok {
-            format!("Signature checked against our published key {}", r.body.issuer)
+            format!(
+                "Signature checked against our published key {}",
+                r.body.issuer
+            )
         } else {
-            format!("The signature does not check against our published keys (issuer {}). Don't rely on this receipt.", r.body.issuer)
+            format!(
+                "The signature does not check against our published keys (issuer {}). Don't rely on this receipt.",
+                r.body.issuer
+            )
         },
         key_id: r.body.issuer.to_string(),
-        json: r.canonical_json().ok().and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok()).and_then(|v| serde_json::to_string_pretty(&v).ok()).unwrap_or_default(),
+        json: r
+            .canonical_json()
+            .ok()
+            .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
+            .and_then(|v| serde_json::to_string_pretty(&v).ok())
+            .unwrap_or_default(),
     })
 }
 
@@ -230,8 +330,12 @@ fn card_state(s: DecisionState) -> view::CardState {
 
 fn outcome_words(row: &DecisionRow) -> String {
     match (row.state, row.approval.as_ref().map(|a| a.method)) {
-        (DecisionState::Approved, Some(ApprovalMethod::Passkey)) => "Approved with your passkey".into(),
-        (DecisionState::Approved, Some(ApprovalMethod::StepUp)) => "Approved with a code from your authenticator app".into(),
+        (DecisionState::Approved, Some(ApprovalMethod::Passkey)) => {
+            "Approved with your passkey".into()
+        }
+        (DecisionState::Approved, Some(ApprovalMethod::StepUp)) => {
+            "Approved with a code from your authenticator app".into()
+        }
         (DecisionState::Approved, None) => "Approved".into(),
         (DecisionState::Declined, _) => "Declined".into(),
         (DecisionState::Expired, _) => "Expired unanswered".into(),
@@ -246,7 +350,15 @@ pub fn card_summary(row: &DecisionRow, offset: i32, now: DateTime<Utc>) -> view:
     view::CardSummary {
         id: row.card.decision_id.to_string(),
         title: row.card.title.clone(),
-        asked_by: mark(&row.card.effect.webagent, if waiting { view::MarkState::Waiting } else { view::MarkState::Idle }, if waiting { "Waiting for you" } else { "" }),
+        asked_by: mark(
+            &row.card.effect.webagent,
+            if waiting {
+                view::MarkState::Waiting
+            } else {
+                view::MarkState::Idle
+            },
+            if waiting { "Waiting for you" } else { "" },
+        ),
         risk,
         risk_words,
         created_words: format!("Raised {}", when(row.card.created_at, offset, now)),
@@ -272,13 +384,28 @@ pub fn job_levels(row: &JobLevel) -> view::JobLevels {
     let ladder: &[Level] = if row.level == Level::UndoOnly || row.ceiling == Level::UndoOnly {
         &[Level::Watch, Level::Suggest, Level::UndoOnly]
     } else {
-        &[Level::Watch, Level::Suggest, Level::AskFirst, Level::DoAndTell, Level::WithinBudget]
+        &[
+            Level::Watch,
+            Level::Suggest,
+            Level::AskFirst,
+            Level::DoAndTell,
+            Level::WithinBudget,
+        ]
     };
     let positions = ladder
         .iter()
         .map(|&l| {
             let locked = l > row.ceiling;
-            view::Position { name: level_name(l).into(), current: l == row.level, locked, reason: if locked { row.ceiling_reason.clone() } else { String::new() } }
+            view::Position {
+                name: level_name(l).into(),
+                current: l == row.level,
+                locked,
+                reason: if locked {
+                    row.ceiling_reason.clone()
+                } else {
+                    String::new()
+                },
+            }
         })
         .collect();
     let level_words = match row.level {
@@ -287,49 +414,92 @@ pub fn job_levels(row: &JobLevel) -> view::JobLevels {
         Level::AskFirst => "Ask me first".to_owned(),
         Level::DoAndTell => "Does reversible work alone and tells you".to_owned(),
         Level::WithinBudget => "Handles reversible work alone, within its budget".to_owned(),
-        Level::UndoOnly => "Undo only: may roll back to the last signed release and tell you".to_owned(),
+        Level::UndoOnly => {
+            "Undo only: may roll back to the last signed release and tell you".to_owned()
+        }
     };
     view::JobLevels {
         webagent: row.webagent.clone(),
         job: row.job.clone(),
         level_words,
-        above_ask_first: matches!(row.level, Level::DoAndTell | Level::WithinBudget | Level::UndoOnly),
+        above_ask_first: matches!(
+            row.level,
+            Level::DoAndTell | Level::WithinBudget | Level::UndoOnly
+        ),
         positions,
     }
 }
 
 fn arg_fields(card: &DecisionCard, offset: i32, now: DateTime<Utc>) -> Vec<view::Fact> {
     let mut fields = vec![
-        view::Fact { label: "WebAgent".into(), value: card.effect.webagent.clone() },
-        view::Fact { label: "Tool".into(), value: card.effect.tool.clone() },
+        view::Fact {
+            label: "WebAgent".into(),
+            value: card.effect.webagent.clone(),
+        },
+        view::Fact {
+            label: "Tool".into(),
+            value: card.effect.tool.clone(),
+        },
     ];
     if let Some(obj) = card.effect.args.as_object() {
         for (k, v) in obj {
-            fields.push(view::Fact { label: k.clone(), value: v.as_str().map(str::to_owned).unwrap_or_else(|| v.to_string()) });
+            fields.push(view::Fact {
+                label: k.clone(),
+                value: v
+                    .as_str()
+                    .map(str::to_owned)
+                    .unwrap_or_else(|| v.to_string()),
+            });
         }
     }
     if let Some(m) = &card.effect.amount {
-        fields.push(view::Fact { label: "Amount".into(), value: format!("{} {}", m.currency, m.minor) });
+        fields.push(view::Fact {
+            label: "Amount".into(),
+            value: format!("{} {}", m.currency, m.minor),
+        });
     }
-    fields.push(view::Fact { label: "Expires".into(), value: when(card.effect.expiry, offset, now) });
+    fields.push(view::Fact {
+        label: "Expires".into(),
+        value: when(card.effect.expiry, offset, now),
+    });
     fields
 }
 
 /// One card, opened. `levels` are shown only on the go-live card (R7.5).
 #[allow(clippy::too_many_arguments)]
-pub fn card(row: &DecisionRow, levels: &[JobLevel], options: Option<String>, has_passkey: bool, offset: i32, now: DateTime<Utc>) -> view::Card {
+pub fn card(
+    row: &DecisionRow,
+    levels: &[JobLevel],
+    options: Option<String>,
+    has_passkey: bool,
+    offset: i32,
+    now: DateTime<Utc>,
+) -> view::Card {
     let (risk, risk_words) = risk(&row.card);
     let waiting = row.state == DecisionState::Waiting;
     let id = row.card.decision_id.to_string();
-    let mut effects: Vec<String> = row.card.body.lines().map(str::trim).filter(|l| !l.is_empty()).map(str::to_owned).collect();
+    let mut effects: Vec<String> = row
+        .card
+        .body
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .map(str::to_owned)
+        .collect();
     if effects.is_empty() {
         effects.push(row.card.title.clone());
     }
     let mut facts = Vec::new();
     if let Some(r) = &row.card.risk {
-        facts.push(view::Fact { label: "Risk check".into(), value: format!("{} ({})", r.summary, r.model) });
+        facts.push(view::Fact {
+            label: "Risk check".into(),
+            value: format!("{} ({})", r.summary, r.model),
+        });
     }
-    facts.push(view::Fact { label: "Expires".into(), value: when(row.card.effect.expiry, offset, now) });
+    facts.push(view::Fact {
+        label: "Expires".into(),
+        value: when(row.card.effect.expiry, offset, now),
+    });
     view::Card {
         id: id.clone(),
         kind: match row.card.kind {
@@ -338,13 +508,32 @@ pub fn card(row: &DecisionRow, levels: &[JobLevel], options: Option<String>, has
             agentrix_types::CardKind::OrderHeld => view::CardKind::OrderHeld,
         },
         title: row.card.title.clone(),
-        asked_by: mark(&row.card.effect.webagent, if waiting { view::MarkState::Waiting } else { view::MarkState::Idle }, if waiting { "Waiting for you" } else { "" }),
+        asked_by: mark(
+            &row.card.effect.webagent,
+            if waiting {
+                view::MarkState::Waiting
+            } else {
+                view::MarkState::Idle
+            },
+            if waiting { "Waiting for you" } else { "" },
+        ),
         risk,
         risk_words,
-        why_words: row.card.risk.as_ref().map(|r| r.summary.clone()).unwrap_or_else(|| "This card hasn't been risk-scored, so it's treated as medium.".into()),
+        why_words: row
+            .card
+            .risk
+            .as_ref()
+            .map(|r| r.summary.clone())
+            .unwrap_or_else(|| {
+                "This card hasn't been risk-scored, so it's treated as medium.".into()
+            }),
         effects,
         facts,
-        levels: if row.card.kind == agentrix_types::CardKind::GoLive { levels.iter().map(job_levels).collect() } else { Vec::new() },
+        levels: if row.card.kind == agentrix_types::CardKind::GoLive {
+            levels.iter().map(job_levels).collect()
+        } else {
+            Vec::new()
+        },
         fingerprint: row.card.fingerprint.to_string(),
         fingerprint_short: short(&row.card.fingerprint),
         fields: arg_fields(&row.card, offset, now),
@@ -358,7 +547,11 @@ pub fn card(row: &DecisionRow, levels: &[JobLevel], options: Option<String>, has
                     Some(ApprovalMethod::StepUp) => "A code from your authenticator app".into(),
                     None => "—".into(),
                 },
-                at_words: row.approval.as_ref().map(|a| when(a.at, offset, now)).unwrap_or_else(|| "—".into()),
+                at_words: row
+                    .approval
+                    .as_ref()
+                    .map(|a| when(a.at, offset, now))
+                    .unwrap_or_else(|| "—".into()),
                 receipt: receipt.to_string(),
             }),
         },
@@ -408,14 +601,23 @@ pub fn step(e: &StepEvent) -> view::Step {
             ui::StepState::Failed => view::StepState::Failed,
         },
         summary: e.summary.clone(),
-        took_words: if e.state == ui::StepState::Pending { String::new() } else { took(e.elapsed_ms) },
+        took_words: if e.state == ui::StepState::Pending {
+            String::new()
+        } else {
+            took(e.elapsed_ms)
+        },
         receipt: e.receipt.as_ref().map(ToString::to_string),
     }
 }
 
 /// The room's receipt, ticking.
 pub fn tick(t: &TickEvent) -> view::Tick {
-    view::Tick { hosts: clamp32(t.hosts), requests: clamp32(t.requests), bytes_words: bytes_words(t.bytes), refusals: clamp32(t.refusals) }
+    view::Tick {
+        hosts: clamp32(t.hosts),
+        requests: clamp32(t.requests),
+        bytes_words: bytes_words(t.bytes),
+        refusals: clamp32(t.refusals),
+    }
 }
 
 fn pct(score: f64) -> u8 {
@@ -440,9 +642,21 @@ fn parity_page(p: &ParityEvent) -> view::ParityPage {
 }
 
 /// The Move page. `None` when no Move has started.
-pub fn move_view(chrome: view::Chrome, row: Option<&MoveRow>, offset: i32, now: DateTime<Utc>) -> view::MoveView {
+pub fn move_view(
+    chrome: view::Chrome,
+    row: Option<&MoveRow>,
+    offset: i32,
+    now: DateTime<Utc>,
+) -> view::MoveView {
     let Some(m) = row else {
-        return view::MoveView { chrome, run: view::MoveRun { state: view::MoveState::None, ..Default::default() }, ..Default::default() };
+        return view::MoveView {
+            chrome,
+            run: view::MoveRun {
+                state: view::MoveState::None,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
     };
     view::MoveView {
         chrome,
@@ -455,7 +669,10 @@ pub fn move_view(chrome: view::Chrome, row: Option<&MoveRow>, offset: i32, now: 
                 MoveStage::Stopped => view::MoveState::Stopped,
             },
             started_words: when(m.started_at, offset, now),
-            progress_words: m.pages.as_ref().map(|p| format!("{} of {} pages", p.n, p.of)),
+            progress_words: m
+                .pages
+                .as_ref()
+                .map(|p| format!("{} of {} pages", p.n, p.of)),
         },
         steps: m.steps.iter().map(step).collect(),
         tick: tick(&m.tick),
@@ -467,10 +684,22 @@ pub fn move_view(chrome: view::Chrome, row: Option<&MoveRow>, offset: i32, now: 
             src: f.src.clone(),
             page_url: f.page_url.clone(),
         }),
-        parity: m.parity_site.as_ref().map(|s| view::Parity { score_words: format!("{}%", pct(s.score)), score_pct: pct(s.score), pages: m.parity_pages.iter().map(parity_page).collect() }),
+        parity: m.parity_site.as_ref().map(|s| view::Parity {
+            score_words: format!("{}%", pct(s.score)),
+            score_pct: pct(s.score),
+            pages: m.parity_pages.iter().map(parity_page).collect(),
+        }),
         quarantine: view::QuarantineSummary {
             count: u32::try_from(m.quarantined.len()).unwrap_or(u32::MAX),
-            items: m.quarantined.iter().map(|q| view::QuarantineLine { title: q.title.clone(), reason: q.reason.clone(), location: q.location.clone() }).collect(),
+            items: m
+                .quarantined
+                .iter()
+                .map(|q| view::QuarantineLine {
+                    title: q.title.clone(),
+                    reason: q.reason.clone(),
+                    location: q.location.clone(),
+                })
+                .collect(),
         },
         card: m.go_live.as_ref().map(|c| view::CardLink {
             title: c.title.clone(),
@@ -486,25 +715,60 @@ pub fn move_view(chrome: view::Chrome, row: Option<&MoveRow>, offset: i32, now: 
 
 /// The Today page.
 #[allow(clippy::too_many_arguments)]
-pub fn today(chrome: view::Chrome, site: &SiteRow, owner: &OwnerSession, brief: Option<&BriefRow>, waiting: &[DecisionRow], recent: Vec<view::ReceiptRow>, passed: &PassedRows, now: DateTime<Utc>) -> view::TodayView {
+pub fn today(
+    chrome: view::Chrome,
+    site: &SiteRow,
+    owner: &OwnerSession,
+    brief: Option<&BriefRow>,
+    waiting: &[DecisionRow],
+    recent: Vec<view::ReceiptRow>,
+    passed: &PassedRows,
+    now: DateTime<Utc>,
+) -> view::TodayView {
     let offset = site.utc_offset_minutes;
-    let hour = now.with_timezone(&FixedOffset::east_opt(offset * 60).unwrap_or(FixedOffset::east_opt(0).expect("UTC"))).format("%H").to_string().parse::<u32>().unwrap_or(12);
-    let part = if hour < 12 { "Good morning" } else if hour < 17 { "Good afternoon" } else { "Good evening" };
+    let hour = now
+        .with_timezone(
+            &FixedOffset::east_opt(offset * 60).unwrap_or(FixedOffset::east_opt(0).expect("UTC")),
+        )
+        .format("%H")
+        .to_string()
+        .parse::<u32>()
+        .unwrap_or(12);
+    let part = if hour < 12 {
+        "Good morning"
+    } else if hour < 17 {
+        "Good afternoon"
+    } else {
+        "Good evening"
+    };
     view::TodayView {
         chrome,
         greeting: format!("{part}, {}", owner.name),
         chief: chief(site),
         brief: brief.map(|b| brief_view(b, offset, now)),
-        first_brief_words: "Your first brief comes at 07:00, written from what your WebAgents actually did.".into(),
+        first_brief_words:
+            "Your first brief comes at 07:00, written from what your WebAgents actually did.".into(),
         needs_you: waiting
             .iter()
-            .map(|r| view::CardLink { title: r.card.title.clone(), href: format!("/console/decisions/{}", r.card.decision_id), asked_by: mark(&r.card.effect.webagent, view::MarkState::Waiting, "Waiting for you") })
+            .map(|r| view::CardLink {
+                title: r.card.title.clone(),
+                href: format!("/console/decisions/{}", r.card.decision_id),
+                asked_by: mark(
+                    &r.card.effect.webagent,
+                    view::MarkState::Waiting,
+                    "Waiting for you",
+                ),
+            })
             .collect(),
         recent,
         passed: passed
             .recent
             .iter()
-            .map(|p| view::PassedQuestion { question: p.question.clone(), when_words: when(p.at, offset, now), contact: p.contact.clone() })
+            .map(|p| view::PassedQuestion {
+                question: p.question.clone(),
+                when_words: when(p.at, offset, now),
+                contact: p.contact.clone(),
+            })
             .collect(),
         passed_total: passed.total,
         meter: None,
@@ -539,13 +803,23 @@ fn provider_words(provider: &str) -> String {
 
 fn dollars(micro_usd: i64) -> String {
     let usd = micro_usd as f64 / 1e6;
-    if micro_usd > 0 && usd < 0.01 { "under $0.01".to_owned() } else { format!("${usd:.2}") }
+    if micro_usd > 0 && usd < 0.01 {
+        "under $0.01".to_owned()
+    } else {
+        format!("${usd:.2}")
+    }
 }
 
 /// The model-spend meter (R11.3).
 pub fn meter(row: &MeterRow) -> view::Meter {
     let limit = row.daily_limit_micro_usd.max(0);
-    let pct = if limit == 0 { 100 } else { ((row.today.micro_usd.max(0) as f64 / limit as f64) * 100.0).ceil().min(100.0) as u32 };
+    let pct = if limit == 0 {
+        100
+    } else {
+        ((row.today.micro_usd.max(0) as f64 / limit as f64) * 100.0)
+            .ceil()
+            .min(100.0) as u32
+    };
     let mut month_words = format!(
         "{} this month across {} call{}",
         dollars(row.month.micro_usd),
@@ -553,26 +827,68 @@ pub fn meter(row: &MeterRow) -> view::Meter {
         if row.month.calls == 1 { "" } else { "s" }
     );
     if row.month.replayed > 0 {
-        month_words.push_str(&format!(", {} of them replayed at no cost", row.month.replayed));
+        month_words.push_str(&format!(
+            ", {} of them replayed at no cost",
+            row.month.replayed
+        ));
     }
     view::Meter {
-        today_words: format!("{} of your {} daily limit", dollars(row.today.micro_usd), dollars(limit)),
+        today_words: format!(
+            "{} of your {} daily limit",
+            dollars(row.today.micro_usd),
+            dollars(limit)
+        ),
         today_pct: pct,
         month_words,
-        by_purpose: row.today.by_purpose.iter().filter(|(_, c)| *c > 0).map(|(p, c)| view::MeterLine { label: purpose_words(p), amount: dollars(*c) }).collect(),
-        by_provider: row.today.by_provider.iter().filter(|(_, c)| *c > 0).map(|(p, c)| view::MeterLine { label: provider_words(p), amount: dollars(*c) }).collect(),
-        refused_words: (row.today.refused > 0).then(|| format!("{} call{} stopped by the budget today", row.today.refused, if row.today.refused == 1 { "" } else { "s" })),
+        by_purpose: row
+            .today
+            .by_purpose
+            .iter()
+            .filter(|(_, c)| *c > 0)
+            .map(|(p, c)| view::MeterLine {
+                label: purpose_words(p),
+                amount: dollars(*c),
+            })
+            .collect(),
+        by_provider: row
+            .today
+            .by_provider
+            .iter()
+            .filter(|(_, c)| *c > 0)
+            .map(|(p, c)| view::MeterLine {
+                label: provider_words(p),
+                amount: dollars(*c),
+            })
+            .collect(),
+        refused_words: (row.today.refused > 0).then(|| {
+            format!(
+                "{} call{} stopped by the budget today",
+                row.today.refused,
+                if row.today.refused == 1 { "" } else { "s" }
+            )
+        }),
     }
 }
 
 /// The brief: its headline first, then each line linked to the receipt it rests on. "Written
 /// from N recorded events" counts the distinct receipts its lines cite.
 pub fn brief_view(b: &BriefRow, offset: i32, now: DateTime<Utc>) -> view::Brief {
-    let mut cited: Vec<&Digest> = b.brief.lines.iter().filter_map(|l| l.receipt.as_ref()).collect();
+    let mut cited: Vec<&Digest> = b
+        .brief
+        .lines
+        .iter()
+        .filter_map(|l| l.receipt.as_ref())
+        .collect();
     cited.sort_by_key(|d| d.to_string());
     cited.dedup();
-    let headline = b.brief.headline.iter().map(|h| view::BriefLine { text: h.clone(), href: None });
-    let lines = b.brief.lines.iter().map(|l| view::BriefLine { text: l.text.clone(), href: l.receipt.as_ref().map(|d| format!("/receipts/{d}")) });
+    let headline = b.brief.headline.iter().map(|h| view::BriefLine {
+        text: h.clone(),
+        href: None,
+    });
+    let lines = b.brief.lines.iter().map(|l| view::BriefLine {
+        text: l.text.clone(),
+        href: l.receipt.as_ref().map(|d| format!("/receipts/{d}")),
+    });
     view::Brief {
         written_words: when(b.written_at, offset, now),
         events_count: u32::try_from(cited.len()).unwrap_or(u32::MAX),
@@ -582,7 +898,14 @@ pub fn brief_view(b: &BriefRow, offset: i32, now: DateTime<Utc>) -> view::Brief 
 }
 
 /// The Trust page.
-pub fn trust(chrome: view::Chrome, gauntlet: Option<&GauntletRow>, receipts: Vec<view::ReceiptRow>, keys: &KeySet, offset: i32, now: DateTime<Utc>) -> view::TrustView {
+pub fn trust(
+    chrome: view::Chrome,
+    gauntlet: Option<&GauntletRow>,
+    receipts: Vec<view::ReceiptRow>,
+    keys: &KeySet,
+    offset: i32,
+    now: DateTime<Utc>,
+) -> view::TrustView {
     view::TrustView {
         chrome,
         gauntlet: gauntlet.map(|g| {
@@ -594,11 +917,24 @@ pub fn trust(chrome: view::Chrome, gauntlet: Option<&GauntletRow>, receipts: Vec
                 score_words: format!("{held} / {of}"),
                 run_words: format!("at {}", when(g.run_at, offset, now)),
                 receipt: g.receipt.to_string(),
-                attacks: g.attacks.iter().map(|a| view::Attack { name: a.name.clone(), plain: a.plain.clone(), held: a.held, receipt: a.receipt.as_ref().map(Digest::to_string) }).collect(),
+                attacks: g
+                    .attacks
+                    .iter()
+                    .map(|a| view::Attack {
+                        name: a.name.clone(),
+                        plain: a.plain.clone(),
+                        held: a.held,
+                        receipt: a.receipt.as_ref().map(Digest::to_string),
+                    })
+                    .collect(),
             }
         }),
         receipts,
-        key_id: keys.keys.first().map(|k| k.key_id.to_string()).unwrap_or_else(|| "none published".into()),
+        key_id: keys
+            .keys
+            .first()
+            .map(|k| k.key_id.to_string())
+            .unwrap_or_else(|| "none published".into()),
     }
 }
 
@@ -608,7 +944,12 @@ pub fn webagents(chrome: view::Chrome, levels: &[JobLevel]) -> view::WebAgentsVi
     for row in levels {
         match agents.iter_mut().find(|a| a.name == row.webagent) {
             Some(a) => a.jobs.push(job_levels(row)),
-            None => agents.push(view::AgentCard { mark: mark(&row.webagent, view::MarkState::Idle, ""), name: row.webagent.clone(), role_words: row.role.clone(), jobs: vec![job_levels(row)] }),
+            None => agents.push(view::AgentCard {
+                mark: mark(&row.webagent, view::MarkState::Idle, ""),
+                name: row.webagent.clone(),
+                role_words: row.role.clone(),
+                jobs: vec![job_levels(row)],
+            }),
         }
     }
     view::WebAgentsView { chrome, agents }
@@ -626,13 +967,24 @@ pub fn quarantine(chrome: view::Chrome, rows: &[QuarantineRow]) -> view::Quarant
                 title: q.title.clone(),
                 plain: q.plain.clone(),
                 location: q.location.clone(),
-                evidence: q.evidence.iter().map(|d| view::Evidence { label: format!("Evidence file {}", short(d)), excerpt: None, receipt: None }).collect(),
+                evidence: q
+                    .evidence
+                    .iter()
+                    .map(|d| view::Evidence {
+                        label: format!("Evidence file {}", short(d)),
+                        excerpt: None,
+                        receipt: None,
+                    })
+                    .collect(),
                 state: match q.stage {
                     QuarantineStage::LeftBehind => view::QuarantineState::LeftBehind,
                     QuarantineStage::RestoreAsked => view::QuarantineState::RestoreAsked,
                     QuarantineStage::Restored => view::QuarantineState::Restored,
                 },
-                decision_href: q.decision.as_ref().map(|d| format!("/console/decisions/{d}")),
+                decision_href: q
+                    .decision
+                    .as_ref()
+                    .map(|d| format!("/console/decisions/{d}")),
                 restore_url: format!("/sites/{site}/quarantine/{}/restore", q.id),
             })
             .collect(),

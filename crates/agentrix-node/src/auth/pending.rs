@@ -6,8 +6,8 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use rand::RngCore;
 
 /// A random 128-bit id, base64url.
@@ -28,7 +28,11 @@ pub struct Pending<T> {
 impl<T> Pending<T> {
     /// At most `cap` live entries, each kept for `ttl`.
     pub fn new(ttl: Duration, cap: usize) -> Self {
-        Self { items: Mutex::new(HashMap::new()), ttl, cap }
+        Self {
+            items: Mutex::new(HashMap::new()),
+            ttl,
+            cap,
+        }
     }
 
     /// Stores a value under a fresh id.
@@ -45,7 +49,11 @@ impl<T> Pending<T> {
         items.retain(|_, (at, _)| now.duration_since(*at) < self.ttl);
         if items.len() >= self.cap {
             // Full of live entries: drop the oldest rather than refuse a new sign-in.
-            if let Some(oldest) = items.iter().min_by_key(|(_, (at, _))| *at).map(|(k, _)| k.clone()) {
+            if let Some(oldest) = items
+                .iter()
+                .min_by_key(|(_, (at, _))| *at)
+                .map(|(k, _)| k.clone())
+            {
                 items.remove(&oldest);
             }
         }

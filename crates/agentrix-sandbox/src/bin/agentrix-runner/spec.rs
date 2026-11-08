@@ -241,10 +241,17 @@ mod tests {
         render.kind = JobKind::Render;
         render.allowlist.clear();
         // The demo fixture's candidate: 50 pages and 57 shared assets.
-        render.inputs = (0..107).map(|i| agentrix_types::Digest::of(format!("file {i}").as_bytes())).collect();
+        render.inputs = (0..107)
+            .map(|i| agentrix_types::Digest::of(format!("file {i}").as_bytes()))
+            .collect();
         assert!(validate(&render, Utc::now()).is_ok());
-        render.inputs = (0..=MAX_INPUTS).map(|i| agentrix_types::Digest::of(format!("file {i}").as_bytes())).collect();
-        assert!(validate(&render, Utc::now()).is_err(), "more than MAX_INPUTS is still refused");
+        render.inputs = (0..=MAX_INPUTS)
+            .map(|i| agentrix_types::Digest::of(format!("file {i}").as_bytes()))
+            .collect();
+        assert!(
+            validate(&render, Utc::now()).is_err(),
+            "more than MAX_INPUTS is still refused"
+        );
     }
 
     #[test]

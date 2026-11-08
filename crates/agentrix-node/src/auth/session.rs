@@ -6,8 +6,8 @@ use axum::extract::{FromRef, FromRequestParts};
 use axum::http::header::COOKIE;
 use axum::http::request::Parts;
 use axum::http::{HeaderMap, HeaderValue};
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use rand::RngCore;
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
@@ -33,7 +33,11 @@ pub fn token_hash(token: &str) -> String {
 
 /// The cookie's name: with the `__Host-` prefix behind TLS.
 pub fn cookie_name(secure: bool) -> &'static str {
-    if secure { "__Host-agx_session" } else { "agx_session" }
+    if secure {
+        "__Host-agx_session"
+    } else {
+        "agx_session"
+    }
 }
 
 /// `Set-Cookie` for a new session.
@@ -90,19 +94,32 @@ impl Session {
 impl AuthState {
     /// The session behind these headers, if any and still live.
     pub async fn session_from(&self, headers: &HeaderMap) -> Result<Option<Session>, AuthError> {
-        let Some(token) = token_from(headers, self.config.secure_cookies) else { return Ok(None) };
+        let Some(token) = token_from(headers, self.config.secure_cookies) else {
+            return Ok(None);
+        };
         let hash = token_hash(&token);
-        Ok(self
-            .store
-            .session(&hash)
-            .await?
-            .map(|row| Session { account: row.account, method: row.method, token_hash: hash }))
+        Ok(self.store.session(&hash).await?.map(|row| Session {
+            account: row.account,
+            method: row.method,
+            token_hash: hash,
+        }))
     }
 
     /// Starts a session and returns the cookie to set.
-    pub async fn start_session(&self, account: Uuid, method: &str) -> Result<HeaderValue, AuthError> {
+    pub async fn start_session(
+        &self,
+        account: Uuid,
+        method: &str,
+    ) -> Result<HeaderValue, AuthError> {
         let (token, hash) = new_token();
-        self.store.create_session(&hash, account, method, super::store::now() + SESSION_SECONDS).await?;
+        self.store
+            .create_session(
+                &hash,
+                account,
+                method,
+                super::store::now() + SESSION_SECONDS,
+            )
+            .await?;
         Ok(set_cookie(self.config.secure_cookies, &token))
     }
 }
@@ -116,7 +133,9 @@ where
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let auth = AuthState::from_ref(state);
-        auth.session_from(&parts.headers).await?.ok_or(AuthError::SignedOut)
+        auth.session_from(&parts.headers)
+            .await?
+            .ok_or(AuthError::SignedOut)
     }
 }
 
@@ -134,9 +153,16 @@ mod tests {
         assert!(set.starts_with("__Host-agx_session="));
         assert!(set.contains("HttpOnly") && set.contains("SameSite=Lax") && set.contains("Secure"));
         let mut headers = HeaderMap::new();
-        headers.insert(COOKIE, HeaderValue::from_str(&format!("other=1; __Host-agx_session={token}")).unwrap());
+        headers.insert(
+            COOKIE,
+            HeaderValue::from_str(&format!("other=1; __Host-agx_session={token}")).unwrap(),
+        );
         assert_eq!(token_from(&headers, true).as_deref(), Some(token.as_str()));
-        assert_eq!(token_from(&headers, false), None, "the dev cookie name differs");
+        assert_eq!(
+            token_from(&headers, false),
+            None,
+            "the dev cookie name differs"
+        );
         assert!(!clear_cookie(false).to_str().unwrap().contains("Secure"));
     }
 }

@@ -1,6 +1,6 @@
 # Agentrix WebAgent Platform
 
-**Move your website. Meet your WebAgents.**
+**Goodbye WordPress. Meet your WebAgents.**
 
 Agentrix WebAgent Platform transforms any WordPress/Shopify/React website into an Autonomous AI
 Business using WebAgents running on secure sandboxes on Vultr. Developed using ADK-Rust AI Agent

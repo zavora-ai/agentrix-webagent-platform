@@ -32,7 +32,10 @@ pub struct Cas {
 
 impl std::fmt::Debug for Cas {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Cas").field("root", &self.root).field("remote", &self.remote.is_some()).finish()
+        f.debug_struct("Cas")
+            .field("root", &self.root)
+            .field("remote", &self.remote.is_some())
+            .finish()
     }
 }
 

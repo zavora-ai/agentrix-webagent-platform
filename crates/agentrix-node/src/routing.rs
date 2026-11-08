@@ -155,8 +155,15 @@ fn title(before: Option<&Value>, now: &Value) -> String {
             Some(format!("{p} {model}"))
         })
         .collect();
-    let picks = if picks.is_empty() { String::new() } else { format!(": {}", picks.join(", ")) };
-    match before.and_then(|b| b.get("provider")).and_then(Value::as_str) {
+    let picks = if picks.is_empty() {
+        String::new()
+    } else {
+        format!(": {}", picks.join(", "))
+    };
+    match before
+        .and_then(|b| b.get("provider"))
+        .and_then(Value::as_str)
+    {
         None => format!("Models in use, on {provider}{picks}"),
         Some(old) if old != provider => format!("Models moved from {old} to {provider}{picks}"),
         Some(_) => format!("Model routes changed on {provider}{picks}"),
@@ -206,31 +213,71 @@ mod tests {
             .execute(&pool)
             .await
             .unwrap();
-        let owned = crate::db::sites::create_or_get(&pool, "kilele-bakery.example", "https://kilele-bakery.example", false).await.unwrap();
-        crate::db::sites::set_owner(&pool, &owned, "acct-1").await.unwrap();
-        let unowned = crate::db::sites::create_or_get(&pool, "other.example", "https://other.example", false).await.unwrap();
+        let owned = crate::db::sites::create_or_get(
+            &pool,
+            "kilele-bakery.example",
+            "https://kilele-bakery.example",
+            false,
+        )
+        .await
+        .unwrap();
+        crate::db::sites::set_owner(&pool, &owned, "acct-1")
+            .await
+            .unwrap();
+        let unowned =
+            crate::db::sites::create_or_get(&pool, "other.example", "https://other.example", false)
+                .await
+                .unwrap();
 
-        let receipts = Arc::new(ReceiptStore::new(pool.clone(), Arc::new(Signer::from_secret_bytes(&[9; 32]))));
-        let watch = RoutingWatch::new(pool, receipts.clone(), reqwest::Client::new(), &url, Some("bake-off 375a5ca".into()));
+        let receipts = Arc::new(ReceiptStore::new(
+            pool.clone(),
+            Arc::new(Signer::from_secret_bytes(&[9; 32])),
+        ));
+        let watch = RoutingWatch::new(
+            pool,
+            receipts.clone(),
+            reqwest::Client::new(),
+            &url,
+            Some("bake-off 375a5ca".into()),
+        );
 
         // First sight: one receipt for the owned site, none for the unowned one.
         assert_eq!(watch.check().await.unwrap(), 1);
-        assert_eq!(receipts.list(&unowned, Some(ReceiptKind::RoutingChanged), 5).await.unwrap().len(), 0);
+        assert_eq!(
+            receipts
+                .list(&unowned, Some(ReceiptKind::RoutingChanged), 5)
+                .await
+                .unwrap()
+                .len(),
+            0
+        );
         // Nothing changed: nothing written.
         assert_eq!(watch.check().await.unwrap(), 0);
 
         // The switch: Anthropic to Vultr.
         *current.lock().unwrap() = status("vultr", "qwen3.8-27b");
         assert_eq!(watch.check().await.unwrap(), 1);
-        let list = receipts.list(&owned, Some(ReceiptKind::RoutingChanged), 5).await.unwrap();
+        let list = receipts
+            .list(&owned, Some(ReceiptKind::RoutingChanged), 5)
+            .await
+            .unwrap();
         assert_eq!(list.len(), 2);
         let body = &list[0].receipt.body;
         let detail = body.detail.as_ref().unwrap();
         assert_eq!(detail.pointer("/from/provider").unwrap(), "anthropic");
-        assert_eq!(detail.pointer("/to/routes/build/model").unwrap(), "qwen3.8-27b");
+        assert_eq!(
+            detail.pointer("/to/routes/build/model").unwrap(),
+            "qwen3.8-27b"
+        );
         assert_eq!(detail["reason"], "bake-off 375a5ca");
-        assert_eq!(body.title().unwrap(), "Models moved from anthropic to vultr: build qwen3.8-27b, vision-parity v-model");
-        assert!(list[0].receipt.verify_with(receipts.keys()).is_ok(), "signed by the published key");
+        assert_eq!(
+            body.title().unwrap(),
+            "Models moved from anthropic to vultr: build qwen3.8-27b, vision-parity v-model"
+        );
+        assert!(
+            list[0].receipt.verify_with(receipts.keys()).is_ok(),
+            "signed by the published key"
+        );
     }
 
     #[test]

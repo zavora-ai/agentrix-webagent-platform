@@ -141,7 +141,8 @@ impl ClaimEvents for ClaimReceipts {
     async fn verified(&self, claim: &Verified) {
         // The receipt binds what the sandbox saw (the TXT answer or the file) and names the
         // method that proved it: `dns` or `file`.
-        let evidence = serde_json::json!({ "account": claim.account.to_string(), "seen": claim.evidence });
+        let evidence =
+            serde_json::json!({ "account": claim.account.to_string(), "seen": claim.evidence });
         if let Err(e) = self
             .store
             .claim_verified(
@@ -211,7 +212,10 @@ impl Delegates for NodeDelegates {
         .bind(session.account.to_string())
         .fetch_optional(&self.pool)
         .await?;
-        Ok(Some(claim.map_or_else(|| "/".to_owned(), |(site,)| format!("/sites/{site}/claim"))))
+        Ok(Some(claim.map_or_else(
+            || "/".to_owned(),
+            |(site,)| format!("/sites/{site}/claim"),
+        )))
     }
 
     async fn begin_approval(

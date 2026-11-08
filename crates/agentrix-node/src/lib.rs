@@ -4,6 +4,7 @@
 //! integration lead wires them together in `app.rs`. Modules are public so a lane's code
 //! compiles warning-free before it is wired.
 
+pub mod app;
 pub mod assess;
 pub mod auth;
 pub mod brief;
@@ -17,6 +18,5 @@ pub mod objects;
 pub mod pages;
 pub mod routing;
 pub mod site;
-pub mod app;
 pub mod state;
 pub mod wiring;

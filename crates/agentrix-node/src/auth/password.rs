@@ -4,8 +4,10 @@
 
 use std::sync::OnceLock;
 
-use argon2::password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use argon2::Argon2;
+use argon2::password_hash::{
+    PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng,
+};
 
 /// Shortest password accepted.
 pub const MIN_CHARS: usize = 12;
@@ -27,13 +29,19 @@ pub fn check_policy(password: &str) -> Result<(), &'static str> {
 /// Hashes a password for storage.
 pub fn hash(password: &str) -> Result<String, argon2::password_hash::Error> {
     let salt = SaltString::generate(&mut OsRng);
-    Ok(Argon2::default().hash_password(password.as_bytes(), &salt)?.to_string())
+    Ok(Argon2::default()
+        .hash_password(password.as_bytes(), &salt)?
+        .to_string())
 }
 
 /// Checks a password against a stored hash.
 pub fn verify(password: &str, stored: &str) -> bool {
     PasswordHash::new(stored)
-        .map(|parsed| Argon2::default().verify_password(password.as_bytes(), &parsed).is_ok())
+        .map(|parsed| {
+            Argon2::default()
+                .verify_password(password.as_bytes(), &parsed)
+                .is_ok()
+        })
         .unwrap_or(false)
 }
 

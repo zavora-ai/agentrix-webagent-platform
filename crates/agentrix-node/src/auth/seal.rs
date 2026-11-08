@@ -27,7 +27,9 @@ impl fmt::Debug for Sealer {
 impl Sealer {
     /// From raw key bytes.
     pub fn from_key(key: [u8; 32]) -> Self {
-        Self { cipher: ChaCha20Poly1305::new(Key::from_slice(&key)) }
+        Self {
+            cipher: ChaCha20Poly1305::new(Key::from_slice(&key)),
+        }
     }
 
     /// From a key file holding exactly 32 bytes.
@@ -56,7 +58,13 @@ impl Sealer {
         rand::rngs::OsRng.fill_bytes(&mut nonce);
         let ciphertext = self
             .cipher
-            .encrypt(Nonce::from_slice(&nonce), Payload { msg: plaintext, aad: associated })
+            .encrypt(
+                Nonce::from_slice(&nonce),
+                Payload {
+                    msg: plaintext,
+                    aad: associated,
+                },
+            )
             .expect("ChaCha20-Poly1305 encryption cannot fail for in-memory input");
         let mut out = Vec::with_capacity(NONCE_BYTES + ciphertext.len());
         out.extend_from_slice(&nonce);
@@ -72,7 +80,13 @@ impl Sealer {
         }
         let (nonce, ciphertext) = sealed.split_at(NONCE_BYTES);
         self.cipher
-            .decrypt(Nonce::from_slice(nonce), Payload { msg: ciphertext, aad: associated })
+            .decrypt(
+                Nonce::from_slice(nonce),
+                Payload {
+                    msg: ciphertext,
+                    aad: associated,
+                },
+            )
             .ok()
     }
 }
@@ -86,9 +100,20 @@ mod tests {
         let sealer = Sealer::from_key([7; 32]);
         let sealed = sealer.seal(b"seed", b"account-a");
         assert_ne!(&sealed[NONCE_BYTES..], b"seed");
-        assert_eq!(sealer.open(&sealed, b"account-a").as_deref(), Some(&b"seed"[..]));
-        assert_eq!(sealer.open(&sealed, b"account-b"), None, "bound to its owner");
-        assert_eq!(Sealer::from_key([8; 32]).open(&sealed, b"account-a"), None, "other key");
+        assert_eq!(
+            sealer.open(&sealed, b"account-a").as_deref(),
+            Some(&b"seed"[..])
+        );
+        assert_eq!(
+            sealer.open(&sealed, b"account-b"),
+            None,
+            "bound to its owner"
+        );
+        assert_eq!(
+            Sealer::from_key([8; 32]).open(&sealed, b"account-a"),
+            None,
+            "other key"
+        );
         let mut altered = sealed.clone();
         *altered.last_mut().unwrap() ^= 1;
         assert_eq!(sealer.open(&altered, b"account-a"), None, "tamper-evident");
