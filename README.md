@@ -41,23 +41,40 @@ and an agent-driven migration process. The old site stays on standby, and undo i
 
 ### The problem
 
-- **WordPress runs 39.4% of all websites**
+**1. Websites are passive, and search sends them fewer visitors.**
+- Netcraft counted 1.49 billion websites in July 2026, and only about 217 million (15%) were
+  active. The rest are parked, redirecting or abandoned
+  ([Netcraft](https://www.netcraft.com/blog/july-2026-web-server-survey)).
+- Even an active site waits for a visitor to search, click or fill in a form, and answers only
+  that. Nobody follows up, and nobody is there at night.
+- Search sends fewer people to click. When Google shows an AI summary, users click a result in 8%
+  of visits, against 15% without one
+  ([Pew Research](https://www.pewresearch.org/short-reads/2025/07/22/google-users-are-less-likely-to-click-on-links-when-an-ai-summary-appears-in-the-results/)).
+  Fewer visits mean fewer sales for a site that only waits.
+
+**2. Customers now send AI agents, and websites aren't built for them.**
+- More than half of web traffic is automated: 53%, and 40% of it is malicious
+  ([Imperva 2026 Bad Bot Report](https://community-cybersec.thalesgroup.com/blogs/tim-chang/2026/05/05/the-2026-bad-bot-report-is-here)).
+- Shoppers are among them. Traffic from AI sources to US retail sites grew 393% year on year in
+  the first quarter of 2026, yet the average retail product page scored 66% on Adobe's check of
+  how well AI can read it
+  ([Adobe](https://business.adobe.com/blog/ai-traffic-surge-retail-sites-not-machine-readable)).
+- A site can't tell a customer's agent from a bad bot, so it blocks both. From 15 Sep 2026,
+  Cloudflare blocks AI agents by default on new domains' pages that show ads
+  ([Help Net Security](https://www.helpnetsecurity.com/2026/07/02/cloudflare-ai-crawler-controls/)).
+
+**3. The software underneath is insecure.**
+- WordPress runs 39.4% of all websites
   ([W3Techs](https://w3techs.com/technologies/details/cm-wordpress), 8 Nov 2026).
-- **A third of WordPress sites run old software.** 34.4% run a WordPress version older than the
-  current 7.1, and 32.4% run a PHP version older than 8.2, which no longer gets security fixes
+- 34.4% of WordPress sites run a version older than the current 7.1, and 32.4% run a PHP version
+  older than 8.2, which no longer gets security fixes
   ([WordPress.org stats](https://wordpress.org/about/stats/) and
   [PHP's supported versions](https://www.php.net/supported-versions.php), 8 Nov 2026).
-- **Plugins are where the holes are.** 11,334 new vulnerabilities were found in the WordPress
-  ecosystem in 2025, 42% more than in 2024. 91% were in plugins, 46% had no fix from the
-  developer by the time they were made public, and the most targeted were exploited at scale
-  within a median of 5 hours
+- 11,334 new vulnerabilities were found in the WordPress ecosystem in 2025, 42% more than in 2024.
+  91% were in plugins, 46% had no fix from the developer by the time they were made public, and
+  the most targeted were exploited at scale within a median of 5 hours
   ([Patchstack, State of WordPress Security in 2026](https://patchstack.com/whitepaper/state-of-wordpress-security-in-2026/)).
-- **Most of the web is idle.** Netcraft counted 1.49 billion websites in July 2026, and only about
-  217 million (15%) were active. The rest are parked, redirecting or abandoned
-  ([Netcraft](https://www.netcraft.com/blog/july-2026-web-server-survey)).
-- **Even the active sites are passive.** A site waits for a visitor to search, click or fill in a
-  form, and answers only that. A small business can't keep its site patched, or staffed around
-  the clock.
+- A small business can't keep its site patched, or staffed around the clock.
 
 ### The solution
 
