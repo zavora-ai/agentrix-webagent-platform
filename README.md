@@ -12,10 +12,6 @@ sealed sandboxes on Vultr with no secrets and no way out except a per-job allowl
 live only when the owner approves it with a passkey, the old site stays on standby, and undo is
 one tap for 30 days. Every step leaves a signed receipt that anyone can check.
 
-By [Zavora Technologies Ltd](https://github.com/zavora-ai) · Rust on
-[adk-rust](https://github.com/zavora-ai/adk-rust) · runs on [Vultr](https://www.vultr.com) ·
-[MIT licensed](LICENSE).
-
 ### For Vultr Agent Rush judges
 
 Challenge 1, Blast Radius Zero. Agentrix is a web agent that moves a small business's website,
@@ -805,3 +801,9 @@ sandbox, or a way to make a decision run without the owner's signature are all i
 ## 15. Licence
 
 MIT, © 2026 Zavora Technologies Ltd. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+---
+
+By [Zavora Technologies Ltd](https://github.com/zavora-ai) · Rust on
+[adk-rust](https://github.com/zavora-ai/adk-rust) · runs on [Vultr](https://www.vultr.com) ·
+[MIT licensed](LICENSE).
