@@ -1,6 +1,10 @@
 //! Platform billing in USD (docs/08-control-plane.md §4.2).
 //!
-//! - **Plans are data**: [`catalogue`] reads `data/plans.json` (01 §6.1's hypothesis prices).
+//! - **Plans are data**: [`catalogue`] reads `data/plans.json` (01 §6.1's hypothesis prices),
+//!   including the discount on a plan paid 12 months up front ([`Catalogue::annual_discount_percent`]),
+//!   the one number every page and the agent door quote it from.
+//! - **Paid monthly or for 12 months** ([`Period`]): an annual plan is charged once, its
+//!   [`Plan::annual_cents`], and renews 12 months later. The AI included still resets monthly.
 //! - **Subscriptions** are PayPal Subscriptions run by W6's Effects Gateway. When it creates one it
 //!   gives us the provider reference ([`Billing::start`]); each verified provider event comes back
 //!   through [`Billing::on_event`]. Money never moves in this crate.
@@ -11,12 +15,13 @@
 //! - **The Money page** reads [`Billing::money`]: MRR from active subscriptions, collections from
 //!   payments, outstanding invoices, reminders by the dunning policy, inference cost.
 //!
-//! Tables: `agentrix-node/src/db/migrations/0310_billing.sql` (W3's range).
+//! Tables: `agentrix-node/src/db/migrations/0310_billing.sql` and `0350_billing_period.sql`
+//! (W3's range).
 
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
-use chrono::{DateTime, Datelike, SecondsFormat, TimeZone, Utc};
+use chrono::{DateTime, Datelike, Months, SecondsFormat, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use uuid::Uuid;
@@ -33,6 +38,10 @@ pub struct Catalogue {
     pub currency: String,
     /// Where the numbers come from.
     pub source: String,
+    /// The discount on a site plan paid 12 months up front, in percent ("a 12-month plan comes
+    /// with a 20% discount"). The only copy of the number: the home page, the price list, the
+    /// agent door and the plan page all read it here.
+    pub annual_discount_percent: i64,
     /// The plans, cheapest first.
     pub plans: Vec<Plan>,
 }
@@ -77,9 +86,82 @@ pub struct PlannedWebAgent {
     pub role: String,
 }
 
+/// How often a plan is paid: each month, or 12 months up front at the catalogue's discount.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Period {
+    /// Charged every month.
+    #[default]
+    Monthly,
+    /// Charged once for 12 months, less [`Catalogue::annual_discount_percent`].
+    Annual,
+}
+
+impl Period {
+    /// `monthly` or `annual`, as stored.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Period::Monthly => "monthly",
+            Period::Annual => "annual",
+        }
+    }
+
+    /// From its stored name; anything else is `None`.
+    pub fn parse(text: &str) -> Option<Self> {
+        match text.trim() {
+            "monthly" => Some(Period::Monthly),
+            "annual" => Some(Period::Annual),
+            _ => None,
+        }
+    }
+
+    /// Months one charge pays for: 1 or 12.
+    pub fn months(self) -> u32 {
+        match self {
+            Period::Monthly => 1,
+            Period::Annual => 12,
+        }
+    }
+
+    /// The next charge after a charge at `at`: one month or 12 months later, on the same day
+    /// (the month's last day when it's shorter).
+    pub fn renewal(self, at: DateTime<Utc>) -> DateTime<Utc> {
+        at.checked_add_months(Months::new(self.months()))
+            .unwrap_or(at)
+    }
+}
+
+/// The price of 12 months paid up front: 12 times `monthly_cents`, less `discount_percent`,
+/// rounded to the nearest cent.
+pub fn annual_cents(monthly_cents: i64, discount_percent: i64) -> i64 {
+    let hundredths = monthly_cents * 12 * (100 - discount_percent.clamp(0, 100));
+    (hundredths + 50).div_euclid(100)
+}
+
 impl Plan {
+    /// 12 months paid up front: 12 times the monthly price less the catalogue's discount,
+    /// rounded to the cent ($29 a month is $278.40 for 12 months at 20% off).
+    pub fn annual_cents(&self) -> i64 {
+        annual_cents(self.price_cents, catalogue().annual_discount_percent)
+    }
+
+    /// What 12 months paid up front saves against 12 monthly charges.
+    pub fn annual_saving_cents(&self) -> i64 {
+        self.price_cents * 12 - self.annual_cents()
+    }
+
+    /// What one charge is for `period`: the monthly price, or the 12-month total.
+    pub fn charge_cents(&self, period: Period) -> i64 {
+        match period {
+            Period::Monthly => self.price_cents,
+            Period::Annual => self.annual_cents(),
+        }
+    }
+
     /// The AI included for a subscription started at `started`, as of `now`: the first-month
-    /// offer for its first 30 days, then the monthly allowance.
+    /// offer for its first 30 days, then the monthly allowance. The same for monthly and annual
+    /// plans: a plan paid for 12 months still gets its AI allowance month by month, never 12
+    /// months of it at once.
     pub fn included_ai(&self, started: Option<DateTime<Utc>>, now: DateTime<Utc>) -> i64 {
         match started {
             Some(at) if now - at < chrono::Duration::days(30) => self
@@ -170,8 +252,10 @@ pub struct Subscription {
     pub plan_id: String,
     /// The catalogue version it started on.
     pub plan_version: i64,
-    /// Its price, cents.
+    /// What one charge is, cents: the monthly price, or the 12-month total for an annual plan.
     pub price_cents: i64,
+    /// `monthly` or `annual` ([`Period`]).
+    pub period: String,
     /// `paypal`.
     pub rail: String,
     /// PayPal's `I-…` id.
@@ -188,6 +272,24 @@ pub struct Subscription {
     pub created_at: String,
     /// Last change.
     pub updated_at: String,
+}
+
+impl Subscription {
+    /// How often it's charged; a row from before periods existed is monthly.
+    pub fn period(&self) -> Period {
+        Period::parse(&self.period).unwrap_or_default()
+    }
+
+    /// The next charge's day: the end of the paid period PayPal reported, or, before that, one
+    /// period after the first charge.
+    pub fn next_charge(&self) -> Option<DateTime<Utc>> {
+        self.period_end.as_deref().and_then(parse).or_else(|| {
+            self.starts_at
+                .as_deref()
+                .and_then(parse)
+                .map(|at| self.period().renewal(at))
+        })
+    }
 }
 
 /// A verified provider event, as W6's Effects Gateway reports it.
@@ -256,7 +358,7 @@ pub enum Applied {
 macro_rules! sub_select {
     ($rest:literal) => {
         concat!(
-            "SELECT subscription_id, site_id, plan_id, plan_version, price_cents, rail, provider_ref, state, period_end, past_due_since, starts_at, created_at, updated_at FROM subscriptions ",
+            "SELECT subscription_id, site_id, plan_id, plan_version, price_cents, period, rail, provider_ref, state, period_end, past_due_since, starts_at, created_at, updated_at FROM subscriptions ",
             $rest
         )
     };
@@ -274,12 +376,26 @@ impl Billing {
         Self { pool }
     }
 
-    /// Records a subscription W6's Effects Gateway created on PayPal for `site` on `plan_id`,
-    /// waiting for the owner to approve it on PayPal's page.
+    /// Records a monthly subscription W6's Effects Gateway created on PayPal for `site` on
+    /// `plan_id`, waiting for the owner to approve it on PayPal's page.
     pub async fn start(
         &self,
         site: &str,
         plan_id: &str,
+        provider_ref: &str,
+        receipt: Option<&str>,
+    ) -> Result<Subscription, Error> {
+        self.start_for(site, plan_id, Period::Monthly, provider_ref, receipt)
+            .await
+    }
+
+    /// [`Billing::start`] for a plan paid monthly or for 12 months: the row keeps the period
+    /// and what one charge is ([`Plan::charge_cents`]).
+    pub async fn start_for(
+        &self,
+        site: &str,
+        plan_id: &str,
+        period: Period,
         provider_ref: &str,
         receipt: Option<&str>,
     ) -> Result<Subscription, Error> {
@@ -294,14 +410,15 @@ impl Billing {
         let now = time(Utc::now());
         let id = format!("sub_{}", Uuid::now_v7().simple());
         sqlx::query(
-            "INSERT INTO subscriptions (subscription_id, site_id, plan_id, plan_version, price_cents, provider_ref, state, receipt, created_at, updated_at) \
-             VALUES (?, ?, ?, ?, ?, ?, 'pending_approval', ?, ?, ?)",
+            "INSERT INTO subscriptions (subscription_id, site_id, plan_id, plan_version, price_cents, period, provider_ref, state, receipt, created_at, updated_at) \
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending_approval', ?, ?, ?)",
         )
         .bind(&id)
         .bind(site)
         .bind(&plan.id)
         .bind(i64::from(catalogue().version))
-        .bind(plan.price_cents)
+        .bind(plan.charge_cents(period))
+        .bind(period.as_str())
         .bind(provider_ref)
         .bind(receipt)
         .bind(&now)
@@ -365,9 +482,7 @@ impl Billing {
             for (id, site, plan_key, provider_ref, state, amount, period_end, created, updated) in
                 rows
             {
-                let (plan_id, version) =
-                    plan_key.split_once('@').unwrap_or((plan_key.as_str(), "1"));
-                let version: i64 = version.parse().unwrap_or(1);
+                let (plan_id, version, period) = plan_key_parts(&plan_key);
                 let unix = |s: i64| Utc.timestamp_opt(s, 0).single().map(time);
                 let state = match state.as_str() {
                     "pending_approval" | "active" | "past_due" | "suspended" | "cancelled"
@@ -375,12 +490,12 @@ impl Billing {
                     _ => continue,
                 };
                 let done = sqlx::query(
-                    "INSERT INTO subscriptions (subscription_id, site_id, plan_id, plan_version, price_cents, provider_ref, state, period_end, created_at, updated_at) \
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) \
-                     ON CONFLICT (subscription_id) DO UPDATE SET state = excluded.state, price_cents = excluded.price_cents, \
+                    "INSERT INTO subscriptions (subscription_id, site_id, plan_id, plan_version, price_cents, period, provider_ref, state, period_end, created_at, updated_at) \
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) \
+                     ON CONFLICT (subscription_id) DO UPDATE SET state = excluded.state, price_cents = excluded.price_cents, period = excluded.period, \
                        provider_ref = excluded.provider_ref, period_end = excluded.period_end, updated_at = excluded.updated_at, \
                        past_due_since = CASE WHEN excluded.state = 'past_due' THEN COALESCE(subscriptions.past_due_since, excluded.updated_at) ELSE NULL END \
-                     WHERE subscriptions.state <> excluded.state OR subscriptions.price_cents <> excluded.price_cents \
+                     WHERE subscriptions.state <> excluded.state OR subscriptions.price_cents <> excluded.price_cents OR subscriptions.period <> excluded.period \
                        OR COALESCE(subscriptions.period_end, '') <> COALESCE(excluded.period_end, '') OR subscriptions.provider_ref IS NOT excluded.provider_ref",
                 )
                 .bind(&id)
@@ -388,6 +503,7 @@ impl Billing {
                 .bind(plan_id)
                 .bind(version)
                 .bind(amount)
+                .bind(period.as_str())
                 .bind(&provider_ref)
                 .bind(&state)
                 .bind(period_end.and_then(unix))
@@ -465,6 +581,11 @@ impl Billing {
         if inserted.rows_affected() == 0 {
             return Ok(Applied::Duplicate);
         }
+        // A payment the provider sent without its period end pays for one period: a month, or
+        // 12 months on an annual plan.
+        let period_end = ev.period_end.or_else(|| {
+            (ev.kind == EventKind::PaymentCompleted).then(|| sub.period().renewal(ev.at))
+        });
         let now = time(Utc::now());
         let state = match ev.kind {
             EventKind::Activated => "active",
@@ -487,7 +608,7 @@ impl Billing {
         sqlx::query("UPDATE subscriptions SET state = ?, past_due_since = ?, period_end = COALESCE(?, period_end), updated_at = ? WHERE subscription_id = ?")
             .bind(state)
             .bind(past_due)
-            .bind(ev.period_end.map(time))
+            .bind(period_end.map(time))
             .bind(&now)
             .bind(&sub.subscription_id)
             .execute(&self.pool)
@@ -613,12 +734,26 @@ impl Billing {
             .unwrap_or_else(|| sub.plan_id.clone());
         sqlx::query("INSERT INTO invoice_lines (invoice_id, line, kind, description, amount_cents) VALUES (?, 1, 'plan', ?, ?)")
             .bind(&id)
-            .bind(format!("{name} plan, {period}"))
+            .bind(match sub.period() {
+                Period::Monthly => format!("{name} plan, {period}"),
+                Period::Annual => format!("{name} plan, 12 months from {period}"),
+            })
             .bind(amount)
             .execute(&self.pool)
             .await?;
         Ok(id)
     }
+}
+
+/// W6's plan key, `<plan_id>@<version>` for a monthly plan or `<plan_id>@<version>:annual` for
+/// one paid 12 months at a time: the plan, its catalogue version and the period.
+pub fn plan_key_parts(key: &str) -> (&str, i64, Period) {
+    let (plan_id, rest) = key.split_once('@').unwrap_or((key, "1"));
+    let (version, period) = match rest.split_once(':') {
+        Some((v, p)) => (v, Period::parse(p).unwrap_or_default()),
+        None => (rest, Period::Monthly),
+    };
+    (plan_id, version.parse().unwrap_or(1), period)
 }
 
 async fn table_exists(pool: &SqlitePool, name: &str) -> Result<bool, sqlx::Error> {
@@ -667,8 +802,10 @@ pub struct Run {
 
 impl Billing {
     /// Drafts the run for `period` from active and past-due subscriptions that have gone live and
-    /// have no invoice for it yet.
+    /// have no invoice for it yet. An annual plan is invoiced once in 12 months: it's left out
+    /// while its last invoice is less than 12 months old.
     pub async fn draft_run(&self, period: &str) -> Result<Run, Error> {
+        let year_before = months_before(period, 12).unwrap_or_default();
         let (issued,): (i64,) =
             sqlx::query_as("SELECT COUNT(*) FROM invoice_runs WHERE period = ?")
                 .bind(period)
@@ -676,9 +813,11 @@ impl Billing {
                 .await?;
         let subs: Vec<Subscription> = sqlx::query_as(sub_select!(
             "WHERE state IN ('active', 'past_due') AND starts_at IS NOT NULL \
-             AND subscription_id NOT IN (SELECT subscription_id FROM invoices WHERE period = ? AND subscription_id IS NOT NULL) ORDER BY site_id"
+             AND subscription_id NOT IN (SELECT subscription_id FROM invoices WHERE period = ? AND subscription_id IS NOT NULL) \
+             AND NOT (subscriptions.period = 'annual' AND subscription_id IN (SELECT i.subscription_id FROM invoices i WHERE i.period > ? AND i.subscription_id IS NOT NULL)) ORDER BY site_id"
         ))
         .bind(period)
+        .bind(&year_before)
         .fetch_all(&self.pool)
         .await?;
         let drafts: Vec<Draft> = subs
@@ -740,6 +879,16 @@ impl Billing {
         }
         Ok(run.drafts.len())
     }
+}
+
+/// `2025-11` for `months_before("2026-11", 12)`.
+fn months_before(period: &str, months: u32) -> Option<String> {
+    let (y, m) = period.split_once('-')?;
+    let at = Utc
+        .with_ymd_and_hms(y.parse().ok()?, m.parse().ok()?, 1, 0, 0, 0)
+        .single()?
+        .checked_sub_months(Months::new(months))?;
+    Some(period_of(at))
 }
 
 /// SHA-256 as hex, without pulling a hash crate into every caller.
@@ -812,7 +961,8 @@ pub struct Money {
     pub month: String,
     /// Subscriptions by state.
     pub by_state: BTreeMap<String, i64>,
-    /// Monthly recurring revenue from active and past-due subscriptions, cents.
+    /// Monthly recurring revenue from active and past-due subscriptions, cents. An annual plan
+    /// counts a twelfth of its 12-month charge.
     pub mrr_cents: i64,
     /// By plan.
     pub mrr_by_plan: Vec<PlanMrr>,
@@ -845,7 +995,7 @@ impl Billing {
                 .fetch_all(&self.pool)
                 .await?;
         let by_plan: Vec<(String, i64, i64)> = sqlx::query_as(
-            "SELECT plan_id, COUNT(*), COALESCE(SUM(price_cents), 0) FROM subscriptions WHERE state IN ('active', 'past_due') GROUP BY plan_id ORDER BY 3 DESC",
+            "SELECT plan_id, COUNT(*), COALESCE(SUM(CASE WHEN period = 'annual' THEN (price_cents + 6) / 12 ELSE price_cents END), 0) FROM subscriptions WHERE state IN ('active', 'past_due') GROUP BY plan_id ORDER BY 3 DESC",
         )
         .fetch_all(&self.pool)
         .await?;

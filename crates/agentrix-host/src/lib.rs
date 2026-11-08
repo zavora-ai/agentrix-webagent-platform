@@ -245,7 +245,7 @@ pub trait Approvals: Send + Sync {
         fingerprint: [u8; 32],
     ) -> anyhow::Result<Option<serde_json::Value>>;
 
-    /// Verifies an approval of the card with `fingerprint` by `account`. `request` is Brick 1's
+    /// Verifies an approval of the card with `fingerprint` by `account`. `request` is the first release's
     /// approve body, `{"method": "passkey", "credential": <PublicKeyCredential JSON>}` or
     /// `{"method": "totp", "code": "123456"}`, or the short form `{"passkey": <credential>}` or
     /// `{"totp": "123456"}`; node accepts both. Returns the proof as

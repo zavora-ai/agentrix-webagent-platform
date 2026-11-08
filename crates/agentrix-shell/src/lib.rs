@@ -6,7 +6,7 @@
 //! Night Time follow the site's quiet hours; Night Time is the one dark theme. Below 900 px the
 //! same shell reflows into the phone's order (status bar, lane, field, command bar, dock).
 //!
-//! Pages read through [`port::ShellPort`] (Brick 1's reads, implemented in `agentrix-node`), and
+//! Pages read through [`port::ShellPort`] (the first release's reads, implemented in `agentrix-node`), and
 //! the shell keeps its own rows in [`store::ShellStore`]. Other workstreams add pages with
 //! [`apps::ConsoleApp`] (contract C9). Routes, all under `/console/{site}`:
 //!
@@ -16,18 +16,23 @@
 //! | `GET /console/{site}/decisions`, `…/decisions/{id}` | Every card; one card |
 //! | `GET /console/{site}/cards/{id}/sheet` | The approval sheet's JSON, with a fresh ceremony |
 //! | `GET /console/{site}/webagents`, `…/trust`, `…/quarantine`, `…/settings` | Pages in the shell |
+//! | `GET /console/{site}/orders`, `…/orders/{id}` | Orders: every order, by state; one order ([`commerce`]) |
+//! | `GET /console/{site}/customers`, `…/customers/{key}` | Customers: everyone the site served, with search; one customer |
 //! | `POST /console/{site}/freeze` | Freeze: no signature needed |
 //! | `POST /console/{site}/unfreeze/sheet`, `POST /console/{site}/unfreeze` | Unfreeze: an approval |
 //! | `POST /console/{site}/settings/quiet-hours` | Change quiet hours |
 //! | `GET, POST /console/{site}/apps/{app}/…` | Registered apps (C9) |
 //! | `GET /os` | The signed-in owner's shell |
+//! | `GET /os/{page}` | The same page of the signed-in owner's shell (`/os/decisions`), for links that don't know the site, such as the first release's old routes and messages |
 //! | `GET /static/os/*` | Stylesheets and scripts |
 //!
-//! Approving a card posts to the card's own approve URL (Brick 1's frozen contract, design
+//! Approving a card posts to the card's own approve URL (the first release's frozen contract, design
 //! §4.1). The shell never approves anything itself.
 
 pub mod apps;
 mod assets;
+pub mod commerce;
+mod commerce_pages;
 pub mod control;
 pub mod live;
 pub mod map;
@@ -90,11 +95,23 @@ pub enum ShellPage {
     Apps,
     /// [`view::AppView`].
     App,
+    /// [`view::OrdersView`].
+    Orders,
+    /// [`view::OrderView`].
+    Order,
+    /// [`view::CustomersView`].
+    Customers,
+    /// [`view::CustomerView`].
+    Customer,
 }
 
 impl ShellPage {
     /// Every page, for the check that each template loads.
-    pub const ALL: [ShellPage; 19] = [
+    pub const ALL: [ShellPage; 23] = [
+        ShellPage::Orders,
+        ShellPage::Order,
+        ShellPage::Customers,
+        ShellPage::Customer,
         ShellPage::Apps,
         ShellPage::Live,
         ShellPage::LiveThread,
@@ -138,6 +155,10 @@ impl ShellPage {
             ShellPage::Walk => "os/walk.html",
             ShellPage::Apps => "os/apps.html",
             ShellPage::App => "os/app.html",
+            ShellPage::Orders => "os/orders.html",
+            ShellPage::Order => "os/order.html",
+            ShellPage::Customers => "os/customers.html",
+            ShellPage::Customer => "os/customer.html",
         }
     }
 }

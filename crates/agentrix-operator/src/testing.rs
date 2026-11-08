@@ -1,4 +1,4 @@
-//! Test helpers: Brick 1's `control.db` schema plus 0300, built from node's own files so tests
+//! Test helpers: the first release's `control.db` schema plus 0300, built from node's own files so tests
 //! run against exactly what production migrates.
 
 use std::path::PathBuf;
@@ -73,7 +73,7 @@ pub async fn file_pool() -> (SqlitePool, tempfile::TempDir) {
     (pool, dir)
 }
 
-/// A person with an account (Brick 1's `accounts`).
+/// A person with an account (the first release's `accounts`).
 pub async fn account(pool: &SqlitePool, email: &str, name: &str) -> Uuid {
     let id = Uuid::now_v7();
     sqlx::query("INSERT INTO accounts (id, email, display_name, created_at) VALUES (?, ?, ?, 0)")
@@ -153,7 +153,7 @@ pub fn approvals() -> (Arc<FakeApprovals>, Arc<dyn Approvals>) {
     (fake.clone(), fake)
 }
 
-/// Brick 1 records for one live site with a finished Move, spend, a gauntlet run, a waiting card
+/// The first release records for one live site with a finished Move, spend, a gauntlet run, a waiting card
 /// and some sealed-room jobs, as the gateway, the Move and the gauntlet write them.
 pub async fn seed_live_site(pool: &SqlitePool, owner: Uuid, domain: &str) -> String {
     let site = format!("site_{}", Uuid::now_v7().simple());

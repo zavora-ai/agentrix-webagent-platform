@@ -68,7 +68,7 @@ class Flavour {
       host: 'tana-valley-times-sample.agentrix.website',
       origin: 'https://tana-valley-times-sample.agentrix.website',
       headline: "The valley's weekly paper, online every day.",
-      intro: "A sample local paper. Its desks answer from Tana Valley Times's published stories and link every one, with its byline and date. They never write news.",
+      intro: "A sample local paper. Its desks answer from Tana Valley Times' published stories and link every one, with its byline and date. They never write news.",
       topics: 'stories, the archive, the Friday five or your subscription',
       starters: ['Where does the rail extension stand?', 'Who has been reporting it?', 'Is the extension a good idea?'],
     ),

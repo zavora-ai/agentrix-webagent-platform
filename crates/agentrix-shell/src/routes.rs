@@ -23,6 +23,7 @@ use crate::{ShellPage, ShellState};
 pub(crate) fn router(state: ShellState) -> Router {
     Router::new()
         .route("/os", get(entry))
+        .route("/os/{*page}", get(entry_page))
         .route("/d/{card}", get(short_link))
         .route("/console/{site}/apps", get(apps_home))
         .route("/console/{site}", get(home))
@@ -31,6 +32,19 @@ pub(crate) fn router(state: ShellState) -> Router {
         .route("/console/{site}/cards/{id}/sheet", get(sheet))
         .route("/console/{site}/webagents", get(webagents))
         .route("/console/{site}/webagents/{id}", get(webagent))
+        .route("/console/{site}/orders", get(crate::commerce_pages::orders))
+        .route(
+            "/console/{site}/orders/{id}",
+            get(crate::commerce_pages::order),
+        )
+        .route(
+            "/console/{site}/customers",
+            get(crate::commerce_pages::customers),
+        )
+        .route(
+            "/console/{site}/customers/{key}",
+            get(crate::commerce_pages::customer),
+        )
         .route("/console/{site}/trust", get(trust))
         .route("/console/{site}/website", get(website))
         .route("/console/{site}/store", get(store))
@@ -97,14 +111,18 @@ impl IntoResponse for PageError {
     }
 }
 
-type PageResult = Result<Response, PageError>;
+pub(crate) type PageResult = Result<Response, PageError>;
 
-fn render(state: &ShellState, page: ShellPage, view: &impl serde::Serialize) -> PageResult {
+pub(crate) fn render(
+    state: &ShellState,
+    page: ShellPage,
+    view: &impl serde::Serialize,
+) -> PageResult {
     let html = state.shell.render(page, view)?;
     Ok(([(header::CACHE_CONTROL, "private, no-store")], Html(html)).into_response())
 }
 
-async fn owner(
+pub(crate) async fn owner(
     state: &ShellState,
     headers: &HeaderMap,
     site: Option<&str>,
@@ -120,7 +138,7 @@ async fn owner(
 
 // ---------- Words ----------
 
-fn base(o: &Owner) -> String {
+pub(crate) fn base(o: &Owner) -> String {
     format!("/console/{}", o.site.id)
 }
 
@@ -362,6 +380,16 @@ pub(crate) async fn chrome(
         current: active == id,
         opens: opens.map(str::to_owned),
     };
+    // Orders waiting for the owner's answer, for the Orders badge; a failed read shows none.
+    let orders_waiting = state
+        .store
+        .commerce()
+        .waiting_count(&o.site.id, now)
+        .await
+        .unwrap_or_else(|e| {
+            tracing::warn!(error = %format!("{e:#}"), "orders unreadable; the badge is hidden");
+            0
+        });
     let system = vec![
         sys(
             "decisions",
@@ -370,6 +398,24 @@ pub(crate) async fn chrome(
             format!("{base}/decisions"),
             "decisions",
             trust.waiting,
+            None,
+        ),
+        sys(
+            "orders",
+            "Orders",
+            "Orders: what customers asked for, and what needs you",
+            format!("{base}/orders"),
+            "orders",
+            orders_waiting,
+            None,
+        ),
+        sys(
+            "customers",
+            "Customers",
+            "Customers: the people your site served",
+            format!("{base}/customers"),
+            "people",
+            0,
             None,
         ),
         sys(
@@ -514,6 +560,8 @@ pub(crate) async fn chrome(
         page("Back office", base.clone()),
         page("Front of house", format!("{base}?world=front")),
         page("Decisions", format!("{base}/decisions")),
+        page("Orders", format!("{base}/orders")),
+        page("Customers", format!("{base}/customers")),
         page("WebAgents", format!("{base}/webagents")),
         page("Trust centre", format!("{base}/trust")),
         page("Website and releases", format!("{base}/website")),
@@ -638,6 +686,38 @@ fn app_context(o: &Owner, base: &str) -> AppContext {
 async fn entry(State(state): State<ShellState>, headers: HeaderMap, uri: Uri) -> PageResult {
     let o = owner(&state, &headers, None, &uri).await?;
     Ok(Redirect::to(&base(&o)).into_response())
+}
+
+/// `GET /os/{page}`: the same page of the signed-in owner's console, for links that don't
+/// know the site (messages, the first release's old routes, other crates' pages): `/os/decisions` goes
+/// to `/console/{site}/decisions`. Only plain path segments pass; the query string follows.
+async fn entry_page(
+    State(state): State<ShellState>,
+    Path(page): Path<String>,
+    headers: HeaderMap,
+    uri: Uri,
+) -> PageResult {
+    let page = page.trim_matches('/');
+    let plain = page.len() <= 200
+        && page.split('/').all(|s| {
+            !s.is_empty()
+                && s != "."
+                && s != ".."
+                && s.bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'_' | b'-' | b'.'))
+        });
+    if !page.is_empty() && !plain {
+        return Err(PageError::NotFound);
+    }
+    let o = owner(&state, &headers, None, &uri).await?;
+    let mut to = base(&o);
+    if !page.is_empty() {
+        to = format!("{to}/{page}");
+    }
+    if let Some(q) = uri.query() {
+        to = format!("{to}?{q}");
+    }
+    Ok(Redirect::to(&to).into_response())
 }
 
 #[derive(Debug, Deserialize)]
@@ -1129,7 +1209,7 @@ async fn website(
             .iter()
             .any(|r| r.seq < l.seq && r.signed_at.is_some() && r.state != "candidate")
     });
-    // Brick 1's undo goes back to the old site for 30 days after the first release went live.
+    // The first release's undo goes back to the old site for 30 days after the first release went live.
     let first = releases.iter().filter_map(|r| r.signed_at).min();
     let old_site_words = first.filter(|t| now - *t < Duration::days(30)).map(|t| {
         format!(

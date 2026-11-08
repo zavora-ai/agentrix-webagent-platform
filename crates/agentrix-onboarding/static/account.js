@@ -1,5 +1,5 @@
 /* Agentrix onboarding · the account island (W4): create the account, sign in, get back in.
-   Passkeys and password + authenticator: Brick 1's /auth/passkey/*, /auth/password, /auth/totp
+   Passkeys and password + authenticator: the first release's /auth/passkey/*, /auth/password, /auth/totp
    (webauthn-rs JSON, base64url). Email codes, recovery codes and recovery: W6's /auth/email/*,
    /auth/recovery-codes, /auth/api/recovery-codes/shown and /auth/recover/*. Errors arrive as
    {message, code}; the words on screen are the server's. Email never approves anything. */
@@ -7,7 +7,7 @@
   const root = document.getElementById("account");
   if (!root) return;
   const mode = root.dataset.mode;
-  const next = root.dataset.next || "/console/today";
+  const next = root.dataset.next || "/os";
   const host = root.dataset.host || "";
   const $ = id => document.getElementById(id);
   const val = id => (($(id) && $(id).value) || "").trim();

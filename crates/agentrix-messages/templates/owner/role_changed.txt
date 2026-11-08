@@ -12,7 +12,7 @@
 {{ role.by }} removed {{ role.who }}'s {{ role.name }} role on {{ site.name }} at {{ role.at }}. Their sessions on the site have ended.
 {% endif %}
 
-If you didn't expect this, check Devices and people in the console.
+If you didn't expect this, check People in the console.
 
-::button Open Devices and people | {{ console_url }}/trust/people
+::button Open People | {{ role.url }}
 {% endblock %}

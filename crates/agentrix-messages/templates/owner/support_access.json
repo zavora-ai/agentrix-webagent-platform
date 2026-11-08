@@ -7,7 +7,7 @@
  "person": {
   "name": "Wanjiru"
  },
- "console_url": "https://agentrix.website/console",
+ "console_url": "https://agentrix.website/console/kilele-bakery-sample",
  "access": {
   "state": "requested",
   "who": "Agentrix support (Kevin)",
@@ -17,6 +17,6 @@
   "at": null,
   "ends": null,
   "summary": null,
-  "url": "https://agentrix.website/console/trust/support/g-12"
+  "url": "https://agentrix.website/support-access/g-12"
  }
 }

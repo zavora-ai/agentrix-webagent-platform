@@ -1,8 +1,8 @@
-//! Read-only views over Brick 1's `control.db` for the operator scope: content-free by
+//! Read-only views over the first release's `control.db` for the operator scope: content-free by
 //! construction (08 §0 principle 5). These read ids, kinds, states, counts, times and money;
 //! never card bodies, conversations, receipt titles or page content.
 //!
-//! Until W8's metric catalogue lands, the numbers come straight from the tables Brick 1 writes
+//! Until W8's metric catalogue lands, the numbers come straight from the tables the first release writes
 //! (sites, moves, move_steps, releases, site_pointer, jobs, decisions, receipts, usage, budgets,
 //! gauntlet_runs, briefs). Each function names its source so the page can say where a number
 //! comes from.

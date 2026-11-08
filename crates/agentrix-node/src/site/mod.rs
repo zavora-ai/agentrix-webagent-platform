@@ -1,6 +1,6 @@
 //! Sites by Host: verified release serving, Ask this site over SSE, and Markdown twins (R8).
 //!
-//! Lane: `experience` (specs/brick-1/design.md §3.0, §4.1, §4.5).
+//! Lane: `experience` (specs/first-release/design.md §3.0, §4.1, §4.5).
 //!
 //! Two routers:
 //! - [`router`] serves every path of a site host: the signed release, `POST /ask`,

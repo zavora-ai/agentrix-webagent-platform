@@ -345,7 +345,7 @@ pub fn move_view(state: console::MoveState) -> agentrix_onboarding::view::MovePa
         },
         card: (state == console::MoveState::Waiting).then(|| console::CardLink {
             title: "Go live: kilele-bakery.example".into(),
-            href: "/console/decisions/dec_0193test".into(),
+            href: "/console/site_0193test/decisions/dec_0193test".into(),
             asked_by: console::AgentMark::default(),
         }),
         spend_words: (state != console::MoveState::None)

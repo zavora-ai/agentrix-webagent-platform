@@ -396,7 +396,7 @@ async fn classy_search_is_read_and_answered_by_the_desks_model_ranked_by_rules()
         page.contains("data-agent=\"&#x2f;search&#x2f;agent?q=a%20gift"),
         "agent link"
     );
-    assert!(page.contains("Model calls</span><b>0</b>"));
+    assert!(page.contains("AI calls</span><b>0</b>"));
     assert_eq!(rig.model.calls(), 0);
     let card = &page[page.find("id=\"answer\"").expect("a rules answer card")..];
     let card = &card[..card.find("</div></div>").unwrap()];
@@ -424,7 +424,7 @@ async fn classy_search_is_read_and_answered_by_the_desks_model_ranked_by_rules()
     let card = &body[body.find("id=\"answer\"").expect("answer card")..];
     assert!(card.contains("<span class=\"wa-ai\">AI</span>"), "{card}");
     assert!(card.contains("Vanilla Gift Set"));
-    assert!(body.contains("Model calls</span><b>2</b>"));
+    assert!(body.contains("AI calls</span><b>2</b>"));
     assert!(body.contains("Read by AI from your words"));
     // Prices and fit badges come from records and rules, not from the model.
     assert!(body.contains("✓ Fits budget"), "{body}");
@@ -453,7 +453,7 @@ async fn classy_search_is_read_and_answered_by_the_desks_model_ranked_by_rules()
     let card = &body[body.find("id=\"answer\"").expect("answer card")..];
     let card = &card[..card.find("</div></div>").unwrap()];
     assert!(!card.contains(">AI<"), "{card}");
-    assert!(body.contains("Model calls</span><b>0</b>"));
+    assert!(body.contains("AI calls</span><b>0</b>"));
     assert!(!body.contains("Read by AI"));
     assert!(body.contains("Vanilla Gift Set"));
 }
@@ -525,7 +525,7 @@ async fn the_visitors_own_number_may_be_repeated() {
 async fn each_sample_is_a_site_the_platform_knows() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let ctx = agentrix_host::testing::context().await.unwrap();
-    // Brick 1's `sites` columns that the samples fill in.
+    // The first release's `sites` columns that the samples fill in.
     sqlx::query(
         "CREATE TABLE sites (site_id TEXT PRIMARY KEY, domain TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', \
          old_origin TEXT NOT NULL, utc_offset_minutes INTEGER NOT NULL DEFAULT 0, owner_account_id TEXT, \

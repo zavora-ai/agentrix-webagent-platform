@@ -210,7 +210,7 @@ Class names are the concepts' own, so ported concept markup and these macros ren
 <ul class="steps">{% for s in items %}<li{% if s.state %} class="{{ s.state }}"{% endif %}>{{ s.text }}</li>{% endfor %}</ul>
 {%- endmacro %}
 
-{#- A receipt with its check (Brick 1's macro): {digest, title, verified, kind_words, at_words, digest_short} -#}
+{#- A receipt with its check (the first release's macro): {digest, title, verified, kind_words, at_words, digest_short} -#}
 {% macro receipt_row(r) -%}
 <li>
   <div class="spread">
@@ -368,7 +368,7 @@ Class names are the concepts' own, so ported concept markup and these macros ren
 
 {#- The site chip in the status bar (site scope). site: {name, sub, monogram, tile?: "#hex", href?} -#}
 {% macro site_chip(site) -%}
-<a class="site-chip" href="{{ site.href if site.href is defined else '/console' }}"><span class="site-tile"{% if site.tile is defined %} data-site-tile="{{ site.tile }}"{% endif %} aria-hidden="true">{{ site.monogram }}</span><span>{{ site.name }}<small>{{ site.sub }}</small></span></a>
+<a class="site-chip" href="{{ site.href if site.href is defined else '/os' }}"><span class="site-tile"{% if site.tile is defined %} data-site-tile="{{ site.tile }}"{% endif %} aria-hidden="true">{{ site.monogram }}</span><span>{{ site.name }}<small>{{ site.sub }}</small></span></a>
 {%- endmacro %}
 
 {#- The scope chip (portfolio and operator scopes). scope: "operator" or "portfolio"; name, sub. -#}

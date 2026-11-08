@@ -3,7 +3,7 @@
 //! saw. Nothing non-public is replayed, copied or rebuilt until a claim is verified (R3.2):
 //! the Move asks [`Claims::is_verified`] first.
 //!
-//! Lane: `control-plane` (specs/brick-1/design.md §3.0).
+//! Lane: `control-plane` (specs/first-release/design.md §3.0).
 //!
 //! | Route | Body | Reply |
 //! |---|---|---|

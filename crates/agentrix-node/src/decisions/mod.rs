@@ -1,6 +1,6 @@
 //! Decision cards and approvals bound to effect fingerprints (R7.2, R5.4, R9.2; design §4.1, D9).
 //!
-//! Lane: `move` (specs/brick-1/design.md §3.0). Tasks S2-01 (approve → go-live) and S2-06's
+//! Lane: `move` (specs/first-release/design.md §3.0). Tasks S2-01 (approve → go-live) and S2-06's
 //! POST (a quarantine restore raises a card).
 //!
 //! Routes ([`router`]):
@@ -323,9 +323,9 @@ impl DecisionsState {
                     card.effect.args["title"].as_str().unwrap_or("an item")
                 );
                 self.issue(body, title).await?;
-                Ok("/console/quarantine".into())
+                Ok(format!("/console/{}/quarantine", card.site))
             }
-            CardKind::OrderHeld => Ok("/console/decisions".into()),
+            CardKind::OrderHeld => Ok(format!("/console/{}/decisions", card.site)),
         }
     }
 
@@ -567,7 +567,7 @@ impl DecisionsState {
             }
             CardKind::OrderHeld => {}
         }
-        Ok("/console/decisions".into())
+        Ok(format!("/console/{}/decisions", card.site))
     }
 
     async fn restore(
@@ -605,7 +605,7 @@ impl DecisionsState {
             return Err(fail(StatusCode::CONFLICT, "That item isn't held any more."));
         }
         if let Some(waiting) = &item.decision {
-            return Ok(format!("/console/decisions/{waiting}"));
+            return Ok(format!("/console/{site}/decisions/{waiting}"));
         }
         if !kind_of_title(&item.title).is_some_and(|k| k.restorable()) {
             return Err(fail(
@@ -621,7 +621,7 @@ impl DecisionsState {
             .ask_restore(&site, &item.id, &card.decision_id, now)
             .await
             .map_err(internal)?;
-        let href = format!("/console/decisions/{}", card.decision_id);
+        let href = format!("/console/{site}/decisions/{}", card.decision_id);
         if let Some(move_id) = &item.move_id {
             let _ = self
                 .events

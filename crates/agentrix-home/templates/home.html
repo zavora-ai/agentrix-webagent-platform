@@ -112,7 +112,7 @@
 <section class="screen wrap" id="price" aria-labelledby="price-title">
   <p class="eyebrow">Pricing</p>
   <h2 id="price-title">{% if from_price %}Plans start at {{ from_price }} a month{% else %}Plans and prices{% endif %}</h2>
-  <p class="lead">Moving your site is free, and a 12-month plan comes with a 20% discount. Pay annually or monthly in US dollars, through PayPal.</p>
+  <p class="lead">Moving your site is free, and a 12-month plan comes with a {{ annual_discount_percent }}% discount. Pay annually or monthly in US dollars, through PayPal.</p>
   {% if plans %}
   <ul class="plans plans-home">
     {% for p in plans %}

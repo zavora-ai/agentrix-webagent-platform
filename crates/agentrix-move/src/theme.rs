@@ -136,6 +136,68 @@ impl Tokens {
     }
 }
 
+impl Tokens {
+    /// The look the owner chose before the Move, kept only where it stays readable: body text
+    /// and secondary text at AA (4.5:1) on the background, the accent at AA on the background,
+    /// and text on the accent at AA. Anything else falls back to the accessible defaults.
+    /// Colours must be `#hex` and font stacks plain names, so nothing else reaches the
+    /// stylesheet.
+    pub fn chosen(look: &Tokens) -> Self {
+        let d = Self::default();
+        let hex = |v: &str| {
+            let h = v.trim().to_ascii_lowercase();
+            (h.starts_with('#')
+                && matches!(h.len(), 4 | 7)
+                && h[1..].chars().all(|c| c.is_ascii_hexdigit()))
+            .then_some(h)
+        };
+        // Family names unquoted (`Cormorant Garamond, Georgia, serif` is valid CSS): the page
+        // template escapes quotes, which would break the declaration inside its <style>.
+        let font = |v: &str| {
+            let f = v.trim();
+            (!f.is_empty()
+                && f.len() <= 200
+                && f.chars().all(|c| {
+                    c.is_ascii_alphanumeric() || matches!(c, ' ' | ',' | '\'' | '"' | '-')
+                }))
+            .then(|| f.replace(['\'', '"'], ""))
+        };
+        let mut t = Self::default();
+        if let (Some(bg), Some(ink)) = (hex(&look.bg), hex(&look.ink))
+            && contrast(&ink, &bg) >= 4.5
+        {
+            t.bg = bg;
+            t.ink = ink;
+            t.soft = hex(&look.soft)
+                .filter(|s| contrast(&t.ink, s) >= 4.5)
+                .unwrap_or_else(|| t.bg.clone());
+            t.line = hex(&look.line).unwrap_or(d.line);
+            t.ink2 = hex(&look.ink2)
+                .filter(|s| contrast(s, &t.bg) >= 4.5)
+                .unwrap_or_else(|| t.ink.clone());
+        }
+        let accent = hex(&look.accent).filter(|a| contrast(a, &t.bg) >= 4.5);
+        if let Some(accent) = accent {
+            t.on_accent = [
+                hex(&look.on_accent),
+                Some("#ffffff".into()),
+                Some(t.ink.clone()),
+            ]
+            .into_iter()
+            .flatten()
+            .find(|c| contrast(c, &accent) >= 4.5)
+            .unwrap_or_else(|| "#ffffff".into());
+            t.accent = accent;
+        } else if contrast(&t.accent, &t.bg) < 4.5 {
+            t.accent = t.ink.clone();
+            t.on_accent = t.bg.clone();
+        }
+        t.display = font(&look.display).unwrap_or(d.display);
+        t.text = font(&look.text).unwrap_or(d.text);
+        t
+    }
+}
+
 /// The site, as the template names it.
 #[derive(Debug, Clone, Serialize)]
 pub struct SiteView {
@@ -219,6 +281,44 @@ mod tests {
             "2026/10/fresh-bread/index.html"
         );
         assert_eq!(twin_file("/about/"), "about/index.md");
+    }
+
+    #[test]
+    fn a_chosen_look_is_kept_only_where_it_stays_readable() {
+        let look = Tokens {
+            bg: "#f6eedf".into(),
+            soft: "#f1e4cf".into(),
+            ink: "#2a1d12".into(),
+            ink2: "#5b4f42".into(),
+            line: "#e0d3bd".into(),
+            accent: "#9a4a1f".into(),
+            on_accent: "#ffffff".into(),
+            display: "'Fraunces', Georgia, serif".into(),
+            text: "'Nunito Sans', system-ui, sans-serif".into(),
+        };
+        let t = Tokens::chosen(&look);
+        assert_eq!(
+            t,
+            Tokens {
+                display: "Fraunces, Georgia, serif".into(),
+                text: "Nunito Sans, system-ui, sans-serif".into(),
+                ..look.clone()
+            }
+        );
+        let pale = Tokens {
+            accent: "#f0c8a0".into(),
+            display: "x;}</style><script>".into(),
+            ..look.clone()
+        };
+        let t = Tokens::chosen(&pale);
+        assert_ne!(t.accent, "#f0c8a0");
+        assert!(contrast(&t.accent, &t.bg) >= 4.5);
+        assert_eq!(t.display, Tokens::default().display);
+        let unreadable = Tokens {
+            ink: "#eeeeee".into(),
+            ..look
+        };
+        assert_eq!(Tokens::chosen(&unreadable).bg, Tokens::default().bg);
     }
 
     #[test]

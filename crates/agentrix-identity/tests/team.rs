@@ -70,7 +70,7 @@ const SITE: &str = "site_kilele";
 async fn world() -> World {
     let mut ctx = agentrix_host::testing::context().await.unwrap();
     agentrix_identity::migrate(&ctx.pool).await.unwrap();
-    // Brick 1's sites table, the columns this crate reads.
+    // The first release's sites table, the columns this crate reads.
     sqlx::query("CREATE TABLE sites (site_id TEXT PRIMARY KEY, domain TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', owner_account_id TEXT)")
         .execute(&ctx.pool)
         .await

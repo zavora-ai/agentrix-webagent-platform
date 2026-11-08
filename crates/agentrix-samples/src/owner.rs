@@ -1344,7 +1344,7 @@ fn rule_words(site: &Site, rule: &str) -> String {
 fn source_words(source: &str) -> String {
     match source {
         "owner grant" => "Given by you".into(),
-        "sandbox payment" => "PayPal (sandbox)".into(),
+        "sandbox payment" => "PayPal test mode".into(),
         "sample payment" => "Sample payment, no money moved".into(),
         other => other.to_owned(),
     }
@@ -1714,11 +1714,11 @@ async fn stock(State(app): State<App>, Path(slug): Path<String>, headers: Header
     let bakery = here.site.archetype == "bakery";
     let sub = if bakery {
         format!(
-            "Today's bake, {} · left is the plan less today's orders and holds",
+            "Today's bake, {}. Left means what you planned, minus today's orders and holds.",
             time::fmt_day(here.now, off)
         )
     } else {
-        "Left is the last count less orders placed since".to_owned()
+        "Left means the last count, minus orders placed since.".to_owned()
     };
     here.render(
         "owner/stock.html",

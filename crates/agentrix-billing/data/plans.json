@@ -2,6 +2,8 @@
   "version": 1,
   "currency": "USD",
   "source": "docs/01-product.md §6.1. Prices are hypotheses until James sets them. First-month AI (launch offer) and hosting included: James, Sun 8 Nov.",
+  "_annual_discount_percent": "A plan paid 12 months up front costs 12 times the monthly price less this percent, rounded to the cent (the price list: a 12-month plan comes with a 20% discount). The home page, /prices, the agent door and /setup/plan all read it from here.",
+  "annual_discount_percent": 20,
   "plans": [
     {
       "id": "essential",

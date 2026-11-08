@@ -4,7 +4,7 @@
 //! details.
 //!
 //! W6 scopes a request to sites (`app_names`) and the customer's visitor account (`vac_…`).
-//! These Brick 1 tables don't know that id; they hold what the customer or their AI agent typed.
+//! These the first release tables don't know that id; they hold what the customer or their AI agent typed.
 //! So this store reads the account's email and phone from W6's `visitor_accounts` (W6 erases
 //! that table last, after every registered store) and matches on them:
 //!

@@ -9,7 +9,7 @@
 //! Declining writes `decision.declined`. An unanswered card waits, and past its expiry it is
 //! recorded as expired, never as declined and never as approved.
 //!
-//! Brick 1's cards (go-live, restore, held order) keep their own table and routes; this crate
+//! The first release's cards (go-live, restore, held order) keep their own table and routes; this crate
 //! never changes a signed type in place (02 §5.3): v1's `DecisionCard` stays as it is.
 //!
 //! Routes ([`router`]): `POST /decisions/v2/{id}/approve` (JSON `{method: "passkey",

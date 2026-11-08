@@ -105,6 +105,8 @@ pub fn set_cookie(app: &App, name: &str, value: &str, max_age: i64) -> HeaderVal
 
 /// The cart cookie's name.
 pub const CART: &str = "agx_cart";
+/// How long the cart cookie lasts, in seconds (30 days; the privacy page says so).
+pub const CART_SECONDS: i64 = 60 * 60 * 24 * 30;
 /// The stand-in session cookie's name.
 pub const SESSION: &str = "agx_customer";
 

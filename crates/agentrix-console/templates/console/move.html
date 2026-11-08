@@ -105,7 +105,7 @@
   <ul class="list" id="quarantine-live" {% if not quarantine.items %}hidden{% endif %}>
     {% for q in quarantine.items %}<li><b>{{ q.title }}</b><p class="small muted">{{ q.reason }} · {{ q.where }}</p></li>{% endfor %}
   </ul>
-  <p class="hint">Each item stays behind unless you restore it, and restoring is a decision you sign. <a href="/console/quarantine">Review them</a></p>
+  <p class="hint">Each item stays behind unless you restore it, and restoring is a decision you sign. <a href="/os/quarantine">Review them</a></p>
 </section>
 {% endif %}
 {% endblock %}

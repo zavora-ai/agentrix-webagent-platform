@@ -16,7 +16,7 @@
 //! - [`EventSink`] writes content-free events (C0, C1) to the outbox, in the same transaction
 //!   as the change when the caller passes its connection; a relay drains them in order.
 //!
-//! Nothing here is wired into node yet (Horizon 1): Brick 1's `control.db` stays the store
+//! Nothing here is wired into node yet (Horizon 1): the first release's `control.db` stays the store
 //! for its own tables until the importer moves them (02 §9 item 4).
 
 mod sqlite;

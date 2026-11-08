@@ -1,7 +1,7 @@
 //! Node's side of the `agentrix-host` seam (contract C11, `specs/platform/how-we-work.md`).
 //!
 //! - [`MODULES`]: every platform crate node mounts. Adding a crate is one line here (W0 only).
-//! - Adapters from Brick 1's receipts, sign-in, approvals and content store to the seam's
+//! - Adapters from the first release's receipts, sign-in, approvals and content store to the seam's
 //!   traits, so crates never depend on `agentrix-node`.
 //! - [`ModuleHosts`]: the hosts modules serve, for the `Host` dispatcher and Caddy's TLS ask.
 
@@ -37,7 +37,7 @@ pub const MODULES: &[ModuleFn] = &[
     // W7: the design system's tokens, fonts, styles and scripts at /static/ui/.
     agentrix_ui::mount,
     // W10: the home page at / (and /home), privacy, terms, the crawler page, robots.txt and the
-    // sitemap. Brick 1's Start page moved to /assess.
+    // sitemap. The first release's Start page moved to /assess.
     agentrix_home::mount_with_front_door,
     // W8: /status, /status.json, /api/numbers; loopback metrics; health checks and retention.
     agentrix_store::mount,
@@ -65,6 +65,10 @@ pub const MODULES: &[ModuleFn] = &[
     // W13: Telegram for a site's owner and customers (polling locally, the webhook on deploy),
     // the Telegram chat transport behind W9's outbox, and the owner app's API (/api/m/v1).
     channels,
+    // W0: the concept stage, "Choose your new look" at /sites/{id}/concepts: three Zavora
+    // agents design three looks in parallel for a claimed site (AGENTRIX_ZAVORA_BIN,
+    // VULTR_INFERENCE_API_KEY; hidden with a plain message without them).
+    agentrix_concepts::mount,
 ];
 
 /// Every effect a decision card can run once approved: W5's (the Store puts a WebAgent on
@@ -161,6 +165,8 @@ pub const MIGRATIONS: &[MigrateFn] = &[
     // W10: agentrix.website's "keep this report" contacts and the exact consent words
     // (1000+, own migrations table).
     agentrix_home::migrate,
+    // W0: concept runs and the three designs, with the owner's choice (1400+, own table).
+    agentrix_concepts::migrate,
 ];
 
 /// Runs each crate's migrator on `control.db`.
@@ -180,7 +186,7 @@ pub async fn run_migrations(
     Ok(())
 }
 
-/// Brick 1's receipt store as the seam's [`Receipts`].
+/// The first release's receipt store as the seam's [`Receipts`].
 pub struct NodeReceipts {
     /// The store.
     pub store: Arc<ReceiptStore>,
@@ -198,7 +204,7 @@ impl Receipts for NodeReceipts {
     }
 }
 
-/// Brick 1's owner sessions as the seam's [`OwnerSessions`].
+/// The first release's owner sessions as the seam's [`OwnerSessions`].
 pub struct NodeOwners {
     /// Sign-in.
     pub auth: AuthState,
@@ -214,7 +220,7 @@ impl OwnerSessions for NodeOwners {
     }
 }
 
-/// Brick 1's owner accounts as the seam's [`OwnerAccounts`], for W6's email and recovery codes.
+/// The first release's owner accounts as the seam's [`OwnerAccounts`], for W6's email and recovery codes.
 /// It reuses `auth/`'s own store and session start; the approve contract is untouched.
 pub struct NodeOwnerAccounts {
     /// Sign-in.
@@ -266,7 +272,7 @@ impl OwnerAccounts for NodeOwnerAccounts {
     }
 }
 
-/// Brick 1's approvals (design §4.1, frozen) as the seam's [`HostApprovals`].
+/// The first release's approvals (design §4.1, frozen) as the seam's [`HostApprovals`].
 pub struct NodeApprovals {
     /// The approvals API.
     pub approvals: Approvals,
@@ -299,7 +305,7 @@ impl HostApprovals for NodeApprovals {
     }
 }
 
-/// Brick 1's tagged approve body (`{"method": "totp", "code": …}`) from either shape crates
+/// The first release's tagged approve body (`{"method": "totp", "code": …}`) from either shape crates
 /// send: the tagged one, or the short one W1's dials and W3's operator pages use
 /// (`{"totp": "123456"}`, `{"passkey": <credential>}`). Before this, every short-shape approval
 /// failed to parse and was refused (found by W3).
@@ -340,7 +346,7 @@ mod approve_shape_tests {
     }
 }
 
-/// Brick 1's content store as the seam's [`Blobs`].
+/// The first release's content store as the seam's [`Blobs`].
 pub struct NodeBlobs {
     /// The content store.
     pub cas: Arc<Cas>,

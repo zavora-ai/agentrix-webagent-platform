@@ -37,10 +37,6 @@ use crate::Home;
 /// The MCP protocol versions the door speaks, newest first (as the samples' door).
 pub const MCP_VERSIONS: &[&str] = &["2025-06-18", "2025-03-26"];
 
-/// The price list's discount on a 12-month plan, in percent ("a 12-month plan comes with a 20%
-/// discount": the Prices page and the Prices desk). W3's catalogue doesn't carry it yet.
-pub const ANNUAL_DISCOUNT_PERCENT: i64 = 20;
-
 /// Starts Assess's free check of a public site.
 #[async_trait]
 pub trait Checks: Send + Sync {
@@ -566,6 +562,8 @@ fn usd(cents: i64) -> String {
 
 fn list_plans(home: &Home) -> (String, Value) {
     let catalogue = agentrix_billing::catalogue();
+    // The price list's one discount on a 12-month plan, the number /setup/plan charges.
+    let discount = catalogue.annual_discount_percent;
     let mut lines = Vec::new();
     let plans: Vec<Value> = catalogue
         .plans
@@ -576,7 +574,7 @@ fn list_plans(home: &Home) -> (String, Value) {
                 .iter()
                 .any(|l| l.to_lowercase().contains("hosting"));
             let site = p.kind == "site";
-            let year = site.then(|| p.price_cents * 12 * (100 - ANNUAL_DISCOUNT_PERCENT) / 100);
+            let year = site.then(|| p.annual_cents());
             let mut line = format!(
                 "{}: {} a {}{}",
                 p.name,
@@ -586,7 +584,7 @@ fn list_plans(home: &Home) -> (String, Value) {
             );
             if let Some(y) = year {
                 line.push_str(&format!(
-                    ", or {} for 12 months ({ANNUAL_DISCOUNT_PERCENT}% off)",
+                    ", or {} for 12 months ({discount}% off)",
                     usd(y)
                 ));
             }
@@ -609,7 +607,7 @@ fn list_plans(home: &Home) -> (String, Value) {
                 "twelve_months": year.map(|y| json!({
                     "price_cents": y,
                     "price": usd(y),
-                    "discount_percent": ANNUAL_DISCOUNT_PERCENT,
+                    "discount_percent": discount,
                 })),
                 "hosting_included": hosting,
                 "ai_each_month_usd_cents": p.included_ai_micro_usd / 10_000,
@@ -895,10 +893,8 @@ mod tests {
 
     #[test]
     fn twelve_months_is_the_monthly_price_less_the_discount() {
-        assert_eq!(
-            usd(2900 * 12 * (100 - ANNUAL_DISCOUNT_PERCENT) / 100),
-            "$278.40"
-        );
+        let essential = agentrix_billing::plan("essential").unwrap();
+        assert_eq!(usd(essential.annual_cents()), "$278.40");
         assert_eq!(usd(7900), "$79");
     }
 }

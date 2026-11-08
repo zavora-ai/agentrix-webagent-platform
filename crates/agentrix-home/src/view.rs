@@ -472,6 +472,10 @@ pub struct HomeView {
     pub team: Vec<TeamCard>,
     /// Screen 6: "USD 29", the lowest plan in W3's catalogue at render time.
     pub from_price: Option<String>,
+    /// The discount on a plan paid 12 months up front, percent, from W3's catalogue
+    /// (`agentrix_billing::catalogue().annual_discount_percent`): "a 12-month plan comes with
+    /// a 20% discount".
+    pub annual_discount_percent: i64,
     /// Screen 5: how many of the last self-attack run's attacks were stopped, and of how many.
     pub held: Option<(u64, u64)>,
     /// Whether the desks answer with a model (the header and screen 2 then say AI).
@@ -1030,6 +1034,7 @@ pub fn home(facts: &Facts, input: &Inputs<'_>) -> HomeView {
         contact: input.contact.map(|c| c.at(Utc::now())),
         page: "home".into(),
         team: team_cards,
+        annual_discount_percent: agentrix_billing::catalogue().annual_discount_percent,
         from_price: input
             .plans
             .iter()

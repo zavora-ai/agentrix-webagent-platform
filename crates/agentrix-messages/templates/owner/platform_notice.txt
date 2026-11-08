@@ -8,9 +8,9 @@ Zavora, who run the Agentrix platform, placed a hold on {{ site.name }} at {{ no
 ::fact Why | {{ notice.reason }}
 ::fact What it does | {{ notice.effect }}
 
-A hold is separate from your own Freeze: you can't lift it, and Zavora can't lift your Freeze. If you think it's wrong, appeal and a person reviews it.
+A hold is separate from your own Freeze: you can't lift it, and Zavora can't lift your Freeze. If you think it's wrong, message us on WhatsApp and a person reviews it.
 
-::button Appeal the hold | {{ notice.appeal_url }}
+::button Appeal on WhatsApp | https://wa.me/254721490933
 {% elif notice.kind == "hold_lifted" %}
 # The hold is lifted
 Zavora lifted the hold on {{ site.name }} at {{ notice.when }}. Everything works as before; your WebAgents pick up where they stopped.

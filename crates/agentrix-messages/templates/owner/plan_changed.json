@@ -7,7 +7,7 @@
  "person": {
   "name": "Wanjiru"
  },
- "console_url": "https://agentrix.website/console",
+ "console_url": "https://agentrix.website/console/kilele-bakery-sample",
  "change": {
   "kind": "changed",
   "plan": "Commerce",
@@ -18,6 +18,6 @@
   "stops": null,
   "paid_until": null,
   "closes_on": null,
-  "export_url": null
+  "url": "https://agentrix.website/billing?site=kilele-bakery-sample"
  }
 }

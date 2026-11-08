@@ -1,7 +1,7 @@
 //! The read side behind every number the owner console and the control plane show.
 //!
 //! [`Metrics`] is the trait W3 (operator console) and W5 (owner console) call. It is read-only.
-//! [`SqliteMetrics`] implements it over Brick 1's `control.db` (the Model Gateway's `usage` and
+//! [`SqliteMetrics`] implements it over the first release's `control.db` (the Model Gateway's `usage` and
 //! `budgets` live there too) and over W8's visit counts. When the per-site stores land, a
 //! second implementation reads them; callers don't change.
 //!
@@ -113,7 +113,7 @@ impl Origin {
     }
 }
 
-/// Where a site is in its life, derived from Brick 1's rows until W3 adds a lifecycle column.
+/// Where a site is in its life, derived from the first release's rows until W3 adds a lifecycle column.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum SiteState {
@@ -167,7 +167,7 @@ pub struct SiteSummary {
     pub live_seq: Option<i64>,
     /// When the first release went live.
     pub live_since: Option<DateTime<Utc>>,
-    /// Minutes from UTC (Brick 1's fixed offset).
+    /// Minutes from UTC (the first release's fixed offset).
     pub utc_offset_minutes: i32,
     /// When the site was first assessed.
     pub created_at: DateTime<Utc>,

@@ -59,7 +59,7 @@ fn clamp32(n: u64) -> u32 {
 // ---------- Marks ----------
 
 /// A WebAgent's mark. Colours are the console's role colours; the glyph is a two-letter
-/// monogram. Brick 1 draws the static layers of ADR-031's mark.
+/// monogram. The first release draws the static layers of ADR-031's mark.
 pub fn mark(webagent: &str, state: view::MarkState, state_words: &str) -> view::AgentMark {
     let color = match webagent.to_ascii_lowercase().as_str() {
         "mover" => "#2f55c4",
@@ -178,6 +178,8 @@ pub fn kind_words(kind: ReceiptKind) -> &'static str {
         ReceiptKind::AccountRecoveryHold => "Account recovery requested",
         ReceiptKind::TeamChanged => "Your team changed",
         ReceiptKind::ChannelChanged => "A chat was linked or unlinked",
+        ReceiptKind::ConceptPage => "A new look was designed",
+        ReceiptKind::ConceptChosen => "You chose a new look",
     }
 }
 
@@ -658,6 +660,7 @@ pub fn move_view(
             ..Default::default()
         };
     };
+    let site = chrome.site.id.clone();
     view::MoveView {
         chrome,
         run: view::MoveRun {
@@ -703,7 +706,7 @@ pub fn move_view(
         },
         card: m.go_live.as_ref().map(|c| view::CardLink {
             title: c.title.clone(),
-            href: format!("/console/decisions/{}", c.decision_id),
+            href: format!("/console/{site}/decisions/{}", c.decision_id),
             asked_by: mark("Mover", view::MarkState::Waiting, "Waiting for you"),
         }),
         spend_words: None,
@@ -752,7 +755,7 @@ pub fn today(
             .iter()
             .map(|r| view::CardLink {
                 title: r.card.title.clone(),
-                href: format!("/console/decisions/{}", r.card.decision_id),
+                href: format!("/console/{}/decisions/{}", r.card.site, r.card.decision_id),
                 asked_by: mark(
                     &r.card.effect.webagent,
                     view::MarkState::Waiting,
@@ -984,7 +987,7 @@ pub fn quarantine(chrome: view::Chrome, rows: &[QuarantineRow]) -> view::Quarant
                 decision_href: q
                     .decision
                     .as_ref()
-                    .map(|d| format!("/console/decisions/{d}")),
+                    .map(|d| format!("/console/{site}/decisions/{d}")),
                 restore_url: format!("/sites/{site}/quarantine/{}/restore", q.id),
             })
             .collect(),

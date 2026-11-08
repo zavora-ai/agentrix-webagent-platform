@@ -137,6 +137,7 @@ impl World {
             wp_content: Some(put(WP_CONTENT).await),
             crawl: None,
             fixture: true,
+            look: None,
         }
     }
 

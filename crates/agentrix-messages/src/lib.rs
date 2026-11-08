@@ -11,12 +11,15 @@
 //! |---|---|
 //! | `site` | `{name, host, sample, owner, accent, url}`: the site the message is about. Customer messages are sent in its name; `sample: true` adds the sample band |
 //! | `person` | `{name}`: the recipient's first name, or `null` |
-//! | `console_url` | The owner console's address, for owner messages |
+//! | `console_url` | For owner messages: `{origin}/console/{site}` when the message is about one site, `{origin}/os` when it's about the account. Printed as it is, never with a path added |
 //! | `unsubscribe_url` | Required for digest messages: the one-tap stop link |
 //! | `preferences_url` | Optional for owner messages: where they choose channels and quiet hours |
 //!
 //! Each message's own keys are in its example beside the template
-//! (`templates/<audience>/<name>.json`). A missing key is an error, never a blank.
+//! (`templates/<audience>/<name>.json`). A missing key is an error, never a blank. A link to
+//! a page deeper than the console (billing, People, an order) is its own key, and every link
+//! must be a page that exists: the tests in `links.rs` check every template and builder
+//! against the routes listed there.
 //!
 //! # Sending from another crate
 //!
@@ -31,6 +34,8 @@ pub mod channels;
 pub mod directory;
 pub mod email;
 pub mod identity;
+#[cfg(test)]
+mod links;
 pub mod lint;
 pub mod markup;
 pub mod orders;

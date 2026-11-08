@@ -148,7 +148,7 @@ pub struct LaneCard {
     pub from_words: String,
     /// `ok`, `wait` or `risk`, for the chip class.
     pub risk_class: String,
-    /// "Low risk", "Medium", "High risk", from Brick 1's words.
+    /// "Low risk", "Medium", "High risk", from the first release's words.
     pub risk_words: String,
     /// "Raised 06:40".
     pub created_words: String,
@@ -611,4 +611,214 @@ pub struct AppsView {
     pub chrome: Chrome,
     /// W11's Talk app, when node has it.
     pub talk_href: Option<String>,
+}
+
+// ---------- Orders and Customers (crate::commerce) ----------
+
+/// A filter above a list: "New 2".
+#[derive(Debug, Clone, Serialize)]
+pub struct FilterTab {
+    pub label: String,
+    pub href: String,
+    pub count: usize,
+    pub current: bool,
+}
+
+/// One order in the list.
+#[derive(Debug, Clone, Serialize)]
+pub struct OrderRow {
+    pub href: String,
+    /// "K-3F9A2C" once approved, else the words "Held".
+    pub number: String,
+    pub name: String,
+    /// What they asked for, cut to one line.
+    pub what: String,
+    /// "Sat 14 Nov" or the date as sent.
+    pub wanted: String,
+    /// "Yesterday 21:40".
+    pub placed: String,
+    /// "A customer's AI agent".
+    pub source: String,
+    pub label: String,
+    pub tone: String,
+    /// "No payment" or "KSh 4,500 paid".
+    pub money: String,
+}
+
+/// `/console/{site}/orders`.
+#[derive(Debug, Serialize)]
+pub struct OrdersView {
+    #[serde(flatten)]
+    pub chrome: Chrome,
+    pub tabs: Vec<FilterTab>,
+    pub rows: Vec<OrderRow>,
+    /// Orders of every state.
+    pub total: usize,
+    /// The filter's own empty words.
+    pub empty: String,
+    /// The whole page's empty title and words, when the site has no orders at all.
+    pub empty_title: String,
+    pub empty_body: String,
+}
+
+/// A payment line on an order.
+#[derive(Debug, Clone, Serialize)]
+pub struct PaymentLine {
+    pub id: String,
+    pub provider: String,
+    pub amount: String,
+    pub label: String,
+    pub tone: String,
+    pub sandbox: bool,
+    pub at: String,
+}
+
+/// A refund line on an order.
+#[derive(Debug, Clone, Serialize)]
+pub struct RefundLine {
+    pub id: String,
+    pub amount: String,
+    pub label: String,
+    pub tone: String,
+    pub at: String,
+    pub receipt: Option<String>,
+}
+
+/// A receipt line on an order.
+#[derive(Debug, Clone, Serialize)]
+pub struct OrderReceiptLine {
+    pub href: String,
+    pub words: String,
+    pub at: String,
+    pub short: String,
+}
+
+/// One order, display-ready.
+#[derive(Debug, Clone, Serialize)]
+pub struct OrderDetail {
+    pub id: String,
+    pub reference: String,
+    /// Whether the customer's agent was given the reference (the owner approved).
+    pub reference_given: bool,
+    /// `new`, `waiting`, `done`, `refunded`, `closed`.
+    pub filter: String,
+    pub label: String,
+    pub tone: String,
+    pub name: String,
+    pub email: String,
+    pub what: String,
+    pub wanted: String,
+    pub placed: String,
+    pub source: String,
+    /// How it came in, in a sentence.
+    pub source_words: String,
+    /// The decision card's page, where the owner approves or declines.
+    pub decision_href: String,
+    /// The card waits for the owner.
+    pub waiting: bool,
+    /// "Approved with your passkey, Sat 7 Nov 09:40" or "Declined …".
+    pub decided_words: String,
+    /// "Expires Mon 10 Nov 18:00", while it waits.
+    pub expires_words: String,
+    /// What happens next, or that nothing more is to do.
+    pub next_words: String,
+    pub payments: Vec<PaymentLine>,
+    pub refunds: Vec<RefundLine>,
+    pub receipts: Vec<OrderReceiptLine>,
+    pub customer_href: String,
+    /// The customer's other orders.
+    pub other_orders: usize,
+}
+
+/// `/console/{site}/orders/{id}`.
+#[derive(Debug, Serialize)]
+pub struct OrderView {
+    #[serde(flatten)]
+    pub chrome: Chrome,
+    pub o: OrderDetail,
+}
+
+/// One customer in the list.
+#[derive(Debug, Clone, Serialize)]
+pub struct CustomerRow {
+    pub href: String,
+    /// Their name, or their contact when no name is known.
+    pub name: String,
+    pub contact: String,
+    pub has_account: bool,
+    pub orders: usize,
+    pub questions: usize,
+    /// "Yesterday 21:40".
+    pub last: String,
+}
+
+/// `/console/{site}/customers`.
+#[derive(Debug, Serialize)]
+pub struct CustomersView {
+    #[serde(flatten)]
+    pub chrome: Chrome,
+    /// The search, as typed.
+    pub q: String,
+    pub rows: Vec<CustomerRow>,
+    /// Customers before the search.
+    pub total: usize,
+    pub accounts: usize,
+}
+
+/// An order on a customer's page.
+#[derive(Debug, Clone, Serialize)]
+pub struct CustomerOrderLine {
+    pub href: String,
+    pub number: String,
+    pub what: String,
+    pub placed: String,
+    pub label: String,
+    pub tone: String,
+}
+
+/// Something a customer said to the site: a question passed to the owner, or an order their
+/// agent sent.
+#[derive(Debug, Clone, Serialize)]
+pub struct ConversationLine {
+    pub at: String,
+    /// "Passed to you from Ask" or "Sent by their AI agent".
+    pub how: String,
+    pub said: String,
+    pub href: Option<String>,
+}
+
+/// A consent on a customer's account.
+#[derive(Debug, Clone, Serialize)]
+pub struct ConsentLine {
+    pub purpose: String,
+    pub given: String,
+    /// "Withdrawn Sat 7 Nov 10:00", or empty while it stands.
+    pub withdrawn: String,
+    pub receipt: Option<String>,
+}
+
+/// One customer, display-ready.
+#[derive(Debug, Clone, Serialize)]
+pub struct CustomerDetail {
+    pub name: String,
+    pub contact: String,
+    pub phone: String,
+    /// "Since Sat 7 Nov, email confirmed", or empty without an account.
+    pub account_words: String,
+    pub has_account: bool,
+    pub first: String,
+    pub last: String,
+    pub orders: Vec<CustomerOrderLine>,
+    pub conversations: Vec<ConversationLine>,
+    pub consents: Vec<ConsentLine>,
+    /// Their own page for downloading or erasing what the site holds, on the site's host.
+    pub rights_url: String,
+}
+
+/// `/console/{site}/customers/{key}`.
+#[derive(Debug, Serialize)]
+pub struct CustomerView {
+    #[serde(flatten)]
+    pub chrome: Chrome,
+    pub c: CustomerDetail,
 }

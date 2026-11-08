@@ -1,4 +1,4 @@
-/* Agentrix WebAgent Platform · Brick 1 console and public pages.
+/* Agentrix WebAgent Platform · the first release console and public pages.
    Tokens from concept/styles.css (Zavora lineage), plus a dark theme. Phone first; WCAG 2.2 AA.
    Fonts are the concepts' own, self-hosted by agentrix-ui under /static/ui/fonts (SIL OFL): no
    third-party font requests. Buttons follow the concepts: 12 px corners, indigo primary. */
@@ -138,7 +138,7 @@ h1, h2, h3, p, li, dd, summary { overflow-wrap: anywhere; }
 .effects { margin: 0; padding: 12px 12px 12px 30px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); display: grid; gap: 6px; font-size: var(--fs-14); color: var(--ink-2); }
 .effects-title { font: 700 var(--fs-12)/1 var(--font-text); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 
-/* ---------- The mark: a squircle, never a circle (ADR-031). Brick 1 draws the static layers. ---------- */
+/* ---------- The mark: a squircle, never a circle (ADR-031). The first release draws the static layers. ---------- */
 .mark { --c: var(--indigo); --s: 32px; position: relative; display: inline-grid; place-items: center; flex: none; width: var(--s); height: var(--s); border-radius: 30%; background: var(--c); color: #fff; font: 800 calc(var(--s) * .4)/1 var(--font-display); }
 .mark.lg { --s: 40px; } .mark.sm { --s: 24px; }
 .mark[data-state="waiting"]::after { content: ""; position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; border-radius: 50%; background: #b26b00; box-shadow: 0 0 0 2px var(--paper); }

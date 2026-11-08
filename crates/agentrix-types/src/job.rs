@@ -35,7 +35,7 @@ impl JobKind {
         }
     }
 
-    /// The default caps for this kind (design §3.1). `out_mb` is a Brick 1 default to tune.
+    /// The default caps for this kind (design §3.1). `out_mb` is a the first release default to tune.
     pub fn default_caps(self) -> Caps {
         let (pids, seconds) = match self {
             Self::Replay => (512, 15 * 60),

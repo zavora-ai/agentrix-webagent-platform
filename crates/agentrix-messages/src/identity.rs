@@ -48,7 +48,7 @@ fn mask(email: &str) -> String {
 
 /// The catalogue message, its context and the outbox reason for one of W6's mails to a
 /// customer of a site.
-fn customer(mail: &Mail) -> Option<(&'static str, Json, String)> {
+pub(crate) fn customer(mail: &Mail) -> Option<(&'static str, Json, String)> {
     let site = &mail.site;
     let origin = site.origin.trim_end_matches('/');
     let site_json = json!({
@@ -129,8 +129,10 @@ fn role_facts(role: &str) -> (&str, &'static str, &'static str) {
     (name, can, cannot)
 }
 
-/// The same for mail to an owner (site id `platform`).
-fn owner(mail: &Mail) -> (&'static str, Json, String) {
+/// The same for mail to an owner (site id `platform`). Sign-in mail is about the account, not
+/// one site, so `console_url` is `/os` (agentrix-shell sends the owner on to their site's
+/// console) and nothing is added to it.
+pub(crate) fn owner(mail: &Mail) -> (&'static str, Json, String) {
     let origin = mail.site.origin.trim_end_matches('/');
     let console_url = format!("{origin}/os");
     match &mail.kind {
@@ -183,7 +185,9 @@ fn owner(mail: &Mail) -> (&'static str, Json, String) {
                 "recovery": {
                     "email": mask(&mail.to),
                     "opens_at": release,
-                    "stop_url": format!("{origin}/auth/signin?next=/os"),
+                    // Signing in doesn't stop the hold by itself: agentrix-onboarding's
+                    // /account/recover lists a signed-in owner's holds with "Stop the recovery".
+                    "stop_url": format!("{origin}/account/signin?next=%2Faccount%2Frecover"),
                 },
             }),
             "Account recovery by email started; the 24-hour hold began".to_string(),
@@ -192,7 +196,11 @@ fn owner(mail: &Mail) -> (&'static str, Json, String) {
             business,
             inviter,
             role,
-            link,
+            // W6's link is `/team/join?t=…`, and no page serves it yet: the invitation is
+            // accepted only through `POST /team/api/invites/accept`. Until a join page exists,
+            // the email links where the invitee can make their account (agentrix-onboarding's
+            // `/account/new`) and says plainly that accepting online isn't ready.
+            link: _,
         } => {
             let (role, can, cannot) = role_facts(role);
             // W6 keeps an invitation open for 7 days (agentrix-identity's invite mail says so).
@@ -209,7 +217,7 @@ fn owner(mail: &Mail) -> (&'static str, Json, String) {
                         "can": can,
                         "cannot": cannot,
                         "expires": expires,
-                        "url": link,
+                        "url": format!("{origin}/account/new"),
                     },
                 }),
                 format!("An owner invited someone to help run {business}"),

@@ -1,4 +1,4 @@
-//! `agentrix-node`: edge, control and kernel in one process (specs/brick-1/design.md §3, §4.1).
+//! `agentrix-node`: edge, control and kernel in one process (specs/first-release/design.md §3, §4.1).
 //!
 //! Each module below belongs to one lane (design §3.0) and exposes a router or a plain API; the
 //! integration lead wires them together in `app.rs`. Modules are public so a lane's code

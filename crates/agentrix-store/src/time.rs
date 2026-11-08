@@ -1,6 +1,6 @@
 //! Times as `control.db` stores them, and the windows every number is counted over.
 //!
-//! Brick 1 stores RFC 3339 UTC text with microseconds, so text order is time order
+//! The first release stores RFC 3339 UTC text with microseconds, so text order is time order
 //! (`crates/agentrix-node/src/db/mod.rs`). The auth and claim tables use Unix seconds; nothing
 //! here reads them.
 
@@ -60,7 +60,7 @@ impl Span {
 impl Window {
     /// Resolves the window at `now` for a place `utc_offset_minutes` from UTC.
     ///
-    /// Brick 1 keeps a fixed offset per site (`sites.utc_offset_minutes`), so "today" is right
+    /// The first release keeps a fixed offset per site (`sites.utc_offset_minutes`), so "today" is right
     /// for Nairobi but drifts by an hour across a daylight-saving change elsewhere. The IANA
     /// zone W3 adds to `sites` fixes that (03-data.md §2.4).
     pub fn span(self, now: DateTime<Utc>, utc_offset_minutes: i32) -> Span {

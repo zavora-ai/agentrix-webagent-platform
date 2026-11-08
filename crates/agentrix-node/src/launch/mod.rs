@@ -1,6 +1,6 @@
 //! The LaunchGate: go-live, the release pointer and rollback (R7.3, R7.4, R8.1; design §4.5).
 //!
-//! Lane: `move` (specs/brick-1/design.md §3.0). Task S2-01.
+//! Lane: `move` (specs/first-release/design.md §3.0). Task S2-01.
 //!
 //! **Go-live** ([`LaunchGate::go_live`]), only after `decisions/` has verified the owner's
 //! approval of the go-live card's fingerprint (release digest + charter v1):

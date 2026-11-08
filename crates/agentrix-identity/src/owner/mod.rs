@@ -1,5 +1,5 @@
 //! Owner recovery and sign-in by email code (01b §4.1, plan decision 8, James: "must have,
-//! including email OTP"). JSON on the platform host; W4 draws the pages. Brick 1's `auth/` and
+//! including email OTP"). JSON on the platform host; W4 draws the pages. The first release's `auth/` and
 //! its approve contract stay untouched: accounts and sessions go through node's
 //! [`OwnerAccounts`], step-up goes through the frozen [`Approvals`].
 //!

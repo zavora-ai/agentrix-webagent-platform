@@ -151,7 +151,7 @@ impl SiteLook {
     }
 }
 
-/// The colours and face the Move extracted (Brick 1's `agentrix_move::theme::Tokens`, the
+/// The colours and face the Move extracted (the first release's `agentrix_move::theme::Tokens`, the
 /// fields the mark needs).
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Tokens {

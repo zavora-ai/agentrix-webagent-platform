@@ -32,7 +32,7 @@ DEPLOY_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 ENV_FILE=${AGENTRIX_DEPLOY_ENV:-$DEPLOY_DIR/.env}
 STATE_DIR=${AGENTRIX_DEPLOY_STATE:-$DEPLOY_DIR/.state}   # the checkout that ran apply holds it
 API=https://api.vultr.com/v2
-PREFIX=agx-b1
+PREFIX=${AGENTRIX_PREFIX:-agx}   # agx-b1 for the VMs made before the move to the new account (8 Nov)
 TAGS='["agentrix","agentrix-platform"]'
 
 die() { printf 'provision: %s\n' "$*" >&2; exit 1; }
@@ -356,18 +356,44 @@ cmd_apply() {
   c_ip=$(main_ip "$c" main_ip); c_ip6=$(main_ip "$c" v6_main_ip)
   f_ip=$(main_ip "$f" main_ip); f_ip6=$(main_ip "$f" v6_main_ip)
   s_vpc=$(vpc_ip "$s" "$vpc"); f_vpc=$(vpc_ip "$f" "$vpc")
-  dns_upsert "$PLATFORM_ZONE" "$PLATFORM_NAME" A "$c_ip"
-  dns_upsert "$PLATFORM_ZONE" "$PLATFORM_NAME" AAAA "$c_ip6"
-  # Live sites' platform addresses ({domain-with-dashes}.<platform>) via on-demand TLS on control.
-  dns_upsert "$PLATFORM_ZONE" "*${PLATFORM_NAME:+.$PLATFORM_NAME}" A "$c_ip"
-  dns_upsert "$PLATFORM_ZONE" "*${PLATFORM_NAME:+.$PLATFORM_NAME}" AAAA "$c_ip6"
-  dns_upsert "$FIXTURE_ZONE" "$FIXTURE_NAME" A "$f_ip"
-  dns_upsert "$FIXTURE_ZONE" "$FIXTURE_NAME" AAAA "$f_ip6"
+  # AGENTRIX_DNS_LATER=1 (a move to a new account while the old stack still serves): create the
+  # VMs and write the inventory, but leave the records alone until `provision.sh dns --yes`.
+  if [ "${AGENTRIX_DNS_LATER:-0}" = 1 ]; then
+    say "  dns          left as it is (AGENTRIX_DNS_LATER=1); point it here later with: deploy/provision.sh dns --yes"
+  else
+    point_dns "$c_ip" "$c_ip6" "$f_ip" "$f_ip6"
+  fi
 
   write_inventory "$vpc" "$c" "$c_ip" "$c_ip6" "$c_vpc" "$s" "$s_vpc" "$f" "$f_ip" "$f_ip6" "$f_vpc"
   say ""
   say "Done. Inventory: $(tilde "$STATE_DIR")/inventory.env · SSH: ssh -F $(tilde "$STATE_DIR")/ssh_config agx-control (or agx-sandbox, agx-fixture)"
   say "cloud-init takes a few minutes; then: deploy/provision.sh status"
+}
+
+# point_dns CONTROL_IP CONTROL_IP6 FIXTURE_IP FIXTURE_IP6: the platform's apex and wildcard to
+# control, the fixture's name to the fixture.
+point_dns() {
+  dns_upsert "$PLATFORM_ZONE" "$PLATFORM_NAME" A "$1"
+  dns_upsert "$PLATFORM_ZONE" "$PLATFORM_NAME" AAAA "$2"
+  # Live sites' platform addresses ({domain-with-dashes}.<platform>) via on-demand TLS on control.
+  dns_upsert "$PLATFORM_ZONE" "*${PLATFORM_NAME:+.$PLATFORM_NAME}" A "$1"
+  dns_upsert "$PLATFORM_ZONE" "*${PLATFORM_NAME:+.$PLATFORM_NAME}" AAAA "$2"
+  dns_upsert "$FIXTURE_ZONE" "$FIXTURE_NAME" A "$3"
+  dns_upsert "$FIXTURE_ZONE" "$FIXTURE_NAME" AAAA "$4"
+}
+
+# `dns --yes`: points the records at the VMs in the inventory (after AGENTRIX_DNS_LATER=1 apply).
+cmd_dns() {
+  [ "${1:-}" = --yes ] || die "dns changes live records: run it with --yes"
+  local f="$STATE_DIR/inventory.env"
+  [ -f "$f" ] || die "no inventory at $f: run apply first"
+  iv() { grep -E "^$1=" "$f" | tail -n 1 | cut -d= -f2-; }
+  local c_ip c_ip6 f_ip f_ip6
+  c_ip=$(iv CONTROL_IP); c_ip6=$(iv CONTROL_IP6); f_ip=$(iv FIXTURE_IP); f_ip6=$(iv FIXTURE_IP6)
+  [ -n "$c_ip" ] && [ -n "$f_ip" ] || die "the inventory lacks CONTROL_IP or FIXTURE_IP"
+  ensure_zone "$PLATFORM_ZONE"
+  [ "$FIXTURE_ZONE" = "$PLATFORM_ZONE" ] || ensure_zone "$FIXTURE_ZONE"
+  point_dns "$c_ip" "$c_ip6" "$f_ip" "$f_ip6"
 }
 
 write_inventory() {
@@ -898,7 +924,8 @@ case ${1:-plan} in
   snapshot) shift; cmd_snapshot "$@" ;;
   sleep) shift; cmd_sleep "$@" ;;
   wake) shift; cmd_wake "$@" ;;
+  dns) shift; cmd_dns "$@" ;;
   restore-test) shift; cmd_restore_test "$@" ;;
   -h|--help|help) sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//' ;;
-  *) die "unknown command $1 (plan, apply --yes, status, render-file F, ssh-close --yes, destroy --yes, costs, snapshot, sleep, wake, restore-test)" ;;
+  *) die "unknown command $1 (plan, apply --yes, dns --yes, status, render-file F, ssh-close --yes, destroy --yes, costs, snapshot, sleep, wake, restore-test)" ;;
 esac

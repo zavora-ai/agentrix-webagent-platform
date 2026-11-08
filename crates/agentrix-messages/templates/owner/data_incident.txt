@@ -13,7 +13,7 @@ We're telling you within 72 hours of confirming it, as we promised.
 
 What you should do: {{ incident.your_steps }}
 
-We'll update you as we learn more. The full report, with the receipts behind it, is in the Trust centre.
+We'll update you as we learn more. Your site's receipts are on your Trust page.
 
-::button Read the incident report | {{ incident.url }}
+::button Open your Trust page | {{ incident.url }}
 {% endblock %}

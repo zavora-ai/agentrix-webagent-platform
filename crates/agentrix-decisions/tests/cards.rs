@@ -1,5 +1,5 @@
 //! Card v2: raise, approve through the approvals port, decline, expiry, tampering, and the
-//! limits on spoken answers. Sites come from Brick 1's `sites` table, created here.
+//! limits on spoken answers. Sites come from the first release's `sites` table, created here.
 
 use std::sync::{Arc, Mutex};
 

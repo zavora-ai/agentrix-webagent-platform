@@ -1,7 +1,7 @@
 //! Pure mappers from `control.db` rows and `agentrix-types` values to view models.
 //!
-//! Ported from Brick 1's `agentrix-node/src/pages/map.rs` (the console's pages move into the
-//! shell at handover), so a page in the shell says exactly what Brick 1's page said. No I/O and
+//! Ported from the first release's `agentrix-node/src/pages/map.rs` (the console's pages move into the
+//! shell at handover), so a page in the shell says exactly what the first release's page said. No I/O and
 //! no clock: callers pass `now`.
 
 use agentrix_console::view;
@@ -144,7 +144,7 @@ pub fn receipt_row(r: &Receipt, offset: i32, now: DateTime<Utc>) -> Option<view:
     })
 }
 
-/// Brick 1's decisions table states.
+/// The first release's decisions table states.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DecisionState {
     /// Waiting for the owner.
@@ -157,7 +157,7 @@ pub enum DecisionState {
     Expired,
 }
 
-/// A row of Brick 1's `decisions` table.
+/// A row of the first release's `decisions` table.
 #[derive(Debug, Clone)]
 pub struct DecisionRow {
     /// The card.

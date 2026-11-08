@@ -252,7 +252,7 @@ pub struct Unreachable {
 /// endpoints (S1-07).
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct AuthView {
-    /// Where to go after signing in, e.g. `/console/today` or the page that asked.
+    /// Where to go after signing in, e.g. `/os` or the page that asked.
     pub next: String,
     /// Whether passkeys are offered on this deployment.
     pub passkeys: bool,

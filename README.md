@@ -261,7 +261,7 @@ More detail: [docs/02-architecture.md §4.4](docs/02-architecture.md),
 
 ## 3. The main parts
 
-All Rust crates are in [`crates/`](crates/); there are 27. Platform crates mount into
+All Rust crates are in [`crates/`](crates/); there are 28. Platform crates mount into
 `agentrix-node` through one seam, `agentrix-host`, so the deployed stack stays three binaries:
 `agentrix-node`, `agentrix-models` and `agentrix-runner` (plus `agentrix-egress` and the
 `agentrix-gauntlet` tool).
@@ -276,7 +276,7 @@ All Rust crates are in [`crates/`](crates/); there are 27. Platform crates mount
 | **Decisions, effects and billing** | `agentrix-decisions`, `agentrix-effects`, `agentrix-billing` | One decision card for every surface, bound to an effect's fingerprint; the Effects Gateway's first slice (PayPal sandbox checkout and subscriptions, once per fingerprint, receipted); plans in US dollars |
 | **Identity** | `agentrix-identity` | Customer accounts on each site's own host (passkeys, email codes, recovery codes, consent receipts), owner recovery and teams, operator identity |
 | **Sample sites** | `agentrix-samples`, `agentrix-records`, `agentrix-themes` | Kilele Bakery, Classy Perfumes and Tana Valley Times on `-sample` hosts, marked Sample: pages, Ask, the agent door, accounts, checkout, on real commerce and content records |
-| **Owner console** | `agentrix-shell`, `agentrix-console`, `agentrix-onboarding` | Agentrix OS for owners (status bar, dock, worlds, Day Time and Night Time, Freeze), and the way in: Start, Assess, sign-up, plan, claim, the Move and go-live |
+| **Owner console** | `agentrix-shell`, `agentrix-console`, `agentrix-onboarding`, `agentrix-concepts` | Agentrix OS for owners (status bar, dock, worlds, Day Time and Night Time, Freeze, Orders and Customers), and the way in: Start, Assess, sign-up, plan, the concept stage (three agents each design a new look in parallel, and the owner chooses one), claim, the Move and go-live |
 | **Operator console** | `agentrix-operator` | Operator sign-in and roles, the fleet, sites, support grants, break-glass, platform holds and the operator ledger, on its own `ops.` host |
 | **Channels** | `agentrix-channels` | Telegram linked to an owner's site, one rule table every surface asks, the `/d/{card}` short link, and the API the apps use. Approving always opens the console |
 | **Messages** | `agentrix-messages` | Every message to owners and customers: the catalogue, plain text and HTML, the outbox, preferences and quiet hours. Email goes out through Resend once a key is set; until then each message is marked Not sent |
@@ -740,7 +740,7 @@ form, deck, cover and video script: [`specs/submission/`](specs/submission/).
 ## 10. Repository layout
 
 ```text
-crates/          27 Rust crates (section 3); the room images are in crates/agentrix-sandbox/images/
+crates/          28 Rust crates (section 3); the room images are in crates/agentrix-sandbox/images/
 apps/            Flutter workspace: owner app, customer app, shared packages
 deploy/          provision.sh, deploy.sh, cloud-init, systemd units, Caddy, nftables, smoke tests
 fixtures/        the infected WordPress fixture and the three sample businesses' seeds
@@ -773,7 +773,7 @@ program/         the build boards used while the platform was made
 ## 12. Prior work and licences
 
 **Built during the event.** Everything in this repository, apart from the files listed in
-[NOTICE](NOTICE), was written from Sat 7 Nov 2026, 13:26 EAT: the documents, the ADRs, the UI concepts, the specs, all 27 crates, the apps,
+[NOTICE](NOTICE), was written from Sat 7 Nov 2026, 13:26 EAT: the documents, the ADRs, the UI concepts, the specs, all 28 crates, the apps,
 [`deploy/`](deploy/), the fixture's attacks and the submission. The development history is kept
 in Zavora's private repository; this public copy starts from a single commit.
 

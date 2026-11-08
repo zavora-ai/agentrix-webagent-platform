@@ -592,7 +592,16 @@ impl Mover {
         let old: OldSite = self.resumed(mv, StepName::Replay, "old").await?;
         let site: CleanSite = self.resumed(mv, StepName::Clean, "clean").await?;
         let mut outputs = Vec::new();
-        let (tokens, legacy_theme) = self.theme_tokens(mv, &old, &mut outputs).await?;
+        // The look the owner chose before the Move wins over the old theme's; the old theme's
+        // build step then never runs.
+        let inputs: MoveInputs = self.resumed(mv, StepName::Claim, "inputs").await?;
+        let (tokens, legacy_theme) = match &inputs.look {
+            Some(look) => (
+                Tokens::chosen(look),
+                Some("Your site was rebuilt in the new look you chose, so the old theme's styles weren't used.".to_owned()),
+            ),
+            None => self.theme_tokens(mv, &old, &mut outputs).await?,
+        };
         let site_paths: BTreeSet<String> = site.pages.iter().map(|p| p.path.clone()).collect();
         let total = u32::try_from(site.pages.len()).unwrap_or(u32::MAX);
         // Pages build concurrently (N1: a 50-page Move reaches its card in minutes); events
@@ -1352,7 +1361,7 @@ impl Mover {
             Err(e) => tracing::warn!(error = %e, "no risk score for the go-live card"),
         }
         self.store.insert_card(&card).await?;
-        let href = format!("/console/decisions/{}", card.decision_id);
+        let href = format!("/console/{}/decisions/{}", mv.site, card.decision_id);
         self.emit(
             &mv.site,
             &mv.id,

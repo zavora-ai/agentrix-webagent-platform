@@ -7,7 +7,7 @@
 
 Changed your mind? Undo works until {{ change.closes_on }}.
 
-::button Download your export | {{ change.export_url }}
+A one-file export of your site isn't ready yet. Every receipt stays on your Trust page.
 {% else %}
 # Your plan is now {{ change.plan }}
 {{ change.effective }}
@@ -21,7 +21,7 @@ Changed your mind? Undo works until {{ change.closes_on }}.
 
 What stops: {{ change.stops }}.
 {% endif %}
-
-::button Open billing | {{ console_url }}/billing
 {% endif %}
+
+::button Open billing | {{ change.url }}
 {% endblock %}

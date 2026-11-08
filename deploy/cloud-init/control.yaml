@@ -6,8 +6,8 @@
 # What this host runs: Caddy (TLS on 80/443), agentrix-node and agentrix-models on loopback,
 # SQLite and the CAS on local disk. Builds also run here (D8), so it has a Rust toolchain and swap.
 
-hostname: agx-b1-control
-fqdn: agx-b1-control
+hostname: agx-control
+fqdn: agx-control
 preserve_hostname: false
 timezone: Africa/Nairobi
 
@@ -121,4 +121,4 @@ runcmd:
   # Facts the provisioning script reads back over SSH.
   - [sh, -c, "printf '{\"role\":\"control\",\"kvm\":%s,\"nft\":\"%s\",\"caddy\":\"%s\"}\\n' \"$( [ -e /dev/kvm ] && echo true || echo false )\" \"$(nft --version | head -1)\" \"$(caddy version | cut -d' ' -f1)\" > /var/lib/agentrix/host-facts.json"]
 
-final_message: "agx-b1-control ready after $UPTIME s"
+final_message: "agx-control ready after $UPTIME s"

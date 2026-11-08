@@ -1,7 +1,7 @@
 //! Live (concept/console/live.html): the owner sits in on a Front of house conversation, takes it
 //! over as a person and hands it back to the desk.
 //!
-//! The seam for a site's Ask (W2's samples, Brick 1's moved sites). Ask keeps no conversation
+//! The seam for a site's Ask (W2's samples, the first release's moved sites). Ask keeps no conversation
 //! today, so it calls [`Live`]:
 //!
 //! 1. before answering, [`Live::owner_has_it`]: when the owner has taken the conversation over,

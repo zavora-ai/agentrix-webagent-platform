@@ -3249,7 +3249,7 @@ async fn plan_request(
     if fresh {
         r.headers_mut().append(
             header::SET_COOKIE,
-            set_cookie(&app, CART, &cart_id, 60 * 60 * 24 * 30),
+            set_cookie(&app, CART, &cart_id, crate::web::CART_SECONDS),
         );
     }
     Ok(r)

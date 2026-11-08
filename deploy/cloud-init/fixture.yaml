@@ -6,8 +6,8 @@
 # script. This file prepares Docker, Caddy and the firewall. Nothing on this host is trusted:
 # it can reach nothing on the VPC, and only control can SSH in.
 
-hostname: agx-b1-fixture
-fqdn: agx-b1-fixture
+hostname: agx-fixture
+fqdn: agx-fixture
 preserve_hostname: false
 timezone: Africa/Nairobi
 
@@ -80,4 +80,4 @@ runcmd:
   - [install, -d, -m, "0755", -o, deploy, -g, deploy, /opt/fixture]
   - [sh, -c, "install -d -m 0700 -o deploy -g deploy /home/deploy/.ssh && install -m 0600 -o deploy -g deploy /root/.ssh/authorized_keys /home/deploy/.ssh/authorized_keys"]
 
-final_message: "agx-b1-fixture ready after $UPTIME s"
+final_message: "agx-fixture ready after $UPTIME s"

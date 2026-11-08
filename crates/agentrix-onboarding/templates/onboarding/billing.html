@@ -1,13 +1,17 @@
 {% extends "onboarding/base.html" %}
 {#- OnboardingPage::Billing · view::BillingPage { site_id, state_chip {class, words}, summary,
-      has_plan, spent_words?, budget_words?, spent_pct, plans, current_plan,
+      has_plan, period_words, next_charge?, switch? {to, words, button, agree_to?, pending?},
+      spent_words?, budget_words?, spent_pct, plans, current_plan,
       cancel? {title, sign_words, fingerprint, passkey_options?}, said?, plan_href }
+    Paid monthly or 12 months up front (W3's catalogue discount). A switch applies at the next
+    renewal: POST /billing/period saves it, then PayPal's page asks the owner to agree on a
+    live plan.
     concept/journeys/owner-billing.html (O9.1 to O9.4) on W3's billing and W6's Effects Gateway.
     Cancelling is approved with a passkey or a code bound to exactly what it signs (the frozen
     approve contract); static/onboarding/billing.js drives the tabs and the approval. -#}
 {% block title %}Billing{% endblock %}
 {% block body_class %}page-setup page-billing{% endblock %}
-{% block topright %}<a class="btn btn-ghost btn-sm" href="/console/today">Console</a>{% endblock %}
+{% block topright %}<a class="btn btn-ghost btn-sm" href="/os">Console</a>{% endblock %}
 {% block main %}
 <section class="panel setup setup-wide" aria-labelledby="billing-h">
   <div class="o-body setup-body" id="billing" data-site="{{ site_id }}">
@@ -26,6 +30,21 @@
     </div>
 
     <div role="tabpanel" id="t-inv" aria-labelledby="tab-inv" class="o-sec">
+      {% if has_plan %}
+      <div class="o-card" id="period">
+        <div class="spread"><h3>How often you pay</h3><span class="chip">{{ period_words }}</span></div>
+        {% if next_charge %}<p class="small">Next charge: <b>{{ next_charge }}</b></p>{% endif %}
+        {% if switch %}
+        <p class="small">{{ switch.words }}</p>
+        {% if switch.pending %}<p class="o-hint">{{ switch.pending }}</p>{% endif %}
+        <div class="o-acts">
+          {% if switch.agree_to %}<form method="post" action="/billing/period"><input type="hidden" name="site" value="{{ site_id }}"><input type="hidden" name="period" value="{{ switch.agree_to }}"><button class="btn btn-primary" type="submit">Agree on PayPal</button></form>{% endif %}
+          <form method="post" action="/billing/period"><input type="hidden" name="site" value="{{ site_id }}"><input type="hidden" name="period" value="{{ switch.to }}"><button class="btn" type="submit">{{ switch.button }}</button></form>
+        </div>
+        {% endif %}
+        <p class="o-hint">The AI budget is monthly either way, and the included AI resets each month.</p>
+      </div>
+      {% endif %}
       {% if budget_words %}
       <div class="o-budget">
         <div class="spread"><span>{% if spent_words %}<b>{{ spent_words }}</b> of your {{ budget_words }} AI budget this period{% else %}Your AI budget: <b>{{ budget_words }}</b> a month{% endif %}</span></div>
@@ -43,6 +62,7 @@
           {% if p.id == current_plan %}<span class="rec">Your plan</span>{% endif %}
           <h3>{{ p.name }}</h3>
           <div class="price">{{ p.price_words }} <small>a month</small></div>
+          {% if p.annual_words %}<p class="o-hint">or {{ p.annual_words }} for 12 months</p>{% endif %}
           <ul>{% for line in p.includes %}<li>{{ line }}</li>{% endfor %}</ul>
         </div>
         {% endfor %}
@@ -73,7 +93,7 @@
 
     <div role="tabpanel" id="t-export" aria-labelledby="tab-export" class="o-sec" hidden>
       <p class="small">Your site and its data are yours. A one-file export of your records, every signed release and every receipt isn't ready yet. For now, every receipt is on your Trust page, where anyone can check its signature.</p>
-      <a class="btn self-start" href="/console/trust">Open your receipts</a>
+      <a class="btn self-start" href="/os/trust#receipts">Open your receipts</a>
     </div>
   </div>
 </section>

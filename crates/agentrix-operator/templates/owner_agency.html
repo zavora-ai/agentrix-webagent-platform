@@ -15,7 +15,7 @@
 {#- An owner grants a partner a charter role on their site (08 §2.5, decision contract ADR-014). -#}
 {%- set words = {"editor": "draft and edit pages, and lower or pause a WebAgent", "approver": "approve the cards your charter lets an Approver approve", "publisher": "publish releases and roll back to an earlier one", "viewer": "see your site's state, decisions and spend"} -%}
 <main class="wrap grant-wrap">
-  <a class="logo" href="/console/today"><span class="mark" aria-hidden="true"></span>Agentrix</a>
+  <a class="logo" href="/os"><span class="mark" aria-hidden="true"></span>Agentrix</a>
   <article class="card decision{% if state != 'invited' %} done{% endif %}" id="grant" data-approve-url="/agency-access/{{ p.partner_id }}/{{ site }}/approve" data-method="{{ method }}"{% if options %} data-options="{{ options }}"{% endif %}>
     <div class="head"><span class="from"><span class="avatar sm" style="background:var(--pf)">{{ p.name|initials }}</span>{{ p.name }} asks</span>
       {%- if state == "invited" %}<span class="chip chip-wait">Waiting for you</span>{% elif state == "granted" %}<span class="chip chip-ok">Granted</span>{% else %}<span class="chip">{{ {"declined": "You declined", "revoked": "Taken back"}[state] }}</span>{% endif %}</div>
@@ -47,7 +47,7 @@
     <div class="done-line" role="status">{{ "You declined. " ~ p.name ~ " has no role on your site." if state == "declined" else "You took the role back. " ~ p.name ~ " can't act on your site any more." }}</div>
     {%- endif %}
   </article>
-  <p class="small muted" style="margin-top:12px">Signed in as {{ owner_name }}. Receipts for this are in your <a href="/console/trust">Trust centre</a>.</p>
+  <p class="small muted" style="margin-top:12px">Signed in as {{ owner_name }}. Receipts for this are in your <a href="/os/trust">Trust centre</a>.</p>
 </main>
 </body>
 </html>

@@ -67,17 +67,36 @@ while IFS= read -r f; do flag "${f#"$export_dir"/}"; done < <(
     -o -name '*.db' -o -name '*.db-wal' -o -name 'objects.json' \) -print)
 
 echo "== files over 5 MB"
-while IFS= read -r f; do flag "${f#"$export_dir"/} is over 5 MB"; done < <(find "$export_dir" -type f -size +5120k)
+# Deliberate large files, each by exact path and capped at 15 MB.
+big_ok=(
+  "specs/submission/deck/agentrix-vultr-deck.pdf"   # the submission's 19-slide deck
+)
+while IFS= read -r f; do
+  rel=${f#"$export_dir"/}
+  allowed=0
+  for ok in "${big_ok[@]}"; do [ "$rel" = "$ok" ] && allowed=1; done
+  if [ "$allowed" -eq 1 ] && [ -z "$(find "$f" -size +15360k)" ]; then
+    echo "  allowed: $rel ($(du -h "$f" | cut -f1))"
+  else
+    flag "$rel is over 5 MB"
+  fi
+done < <(find "$export_dir" -type f -size +5120k)
 
 echo "== secret scan"
 if command -v gitleaks >/dev/null 2>&1; then
   gitleaks dir "$export_dir" --redact --no-banner --log-level error \
     --report-format json --report-path "$tmp/gitleaks.json" --exit-code 0
-  # Known false positive: `runuser -u agentrix-egress -- curl …` reads as a curl password.
+  # Known false positives:
+  # - `runuser -u agentrix-egress -- curl …` reads as a curl password;
+  # - a test in agentrix-concepts writes a made-up key ("vk-secret-" and six digits) to check that
+  #   a leak is caught. It is allowed at that exact line only, so if the line moves it is flagged
+  #   again and someone looks.
   jq -r --arg root "$export_dir/" '.[]
-      | select(((.File | ltrimstr($root)) == "deploy/smoke/sandbox-rooms.sh"
-                and .RuleID == "curl-auth-user") | not)
-      | "\(.File | ltrimstr($root)):\(.StartLine) \(.RuleID)"' "$tmp/gitleaks.json" > "$tmp/leaks.txt"
+      | (.File | ltrimstr($root)) as $f
+      | select((($f == "deploy/smoke/sandbox-rooms.sh" and .RuleID == "curl-auth-user")
+                or ($f == "crates/agentrix-concepts/src/runner.rs" and .RuleID == "generic-api-key"
+                    and .StartLine == 319)) | not)
+      | "\($f):\(.StartLine) \(.RuleID)"' "$tmp/gitleaks.json" > "$tmp/leaks.txt"
   while IFS= read -r line; do flag "gitleaks: $line"; done < "$tmp/leaks.txt"
 else
   echo "  gitleaks is not installed; checking known key shapes instead"

@@ -5,7 +5,7 @@
     and says what comes next. -#}
 {% block title %}{% if host %}Setting up {{ host }}{% else %}Your account is ready{% endif %}{% endblock %}
 {% block body_class %}page-setup{% endblock %}
-{% block topright %}{% if host %}<span class="chip chip-outline">{{ host }}</span>{% endif %}<a class="btn btn-ghost btn-sm" href="/console/today">Console</a>{% endblock %}
+{% block topright %}{% if host %}<span class="chip chip-outline">{{ host }}</span>{% endif %}<a class="btn btn-ghost btn-sm" href="/os">Console</a>{% endblock %}
 {% block main %}
 <section class="panel setup" aria-labelledby="setup-h">
   <div class="o-body setup-body">

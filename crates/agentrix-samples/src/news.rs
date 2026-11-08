@@ -363,7 +363,7 @@ async fn subscription_of(
 }
 
 /// The view every Tana page starts from: the shell, today's date and the sections.
-async fn view(
+pub(crate) async fn view(
     app: &App,
     ctx: &Ctx,
     current: &str,
@@ -794,7 +794,7 @@ async fn digest_page(app: &App, ctx: &Ctx, extra: Value) -> anyhow::Result<Value
         ctx,
         "subscriptions",
         "Your Friday five",
-        "Choose topics for the Friday five: five published stories, two lines each, with links. Double opt-in, one-tap stop.",
+        "Choose topics for the Friday five: five published stories, two lines each, with links. We email you a link to confirm first. One tap stops it.",
         extra,
     )
     .await

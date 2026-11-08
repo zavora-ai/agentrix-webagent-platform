@@ -1,6 +1,6 @@
 //! The agent door: a site built for AI customers (R9; design §4.1, §4.4).
 //!
-//! Lane: `experience` (specs/brick-1/design.md §3.0).
+//! Lane: `experience` (specs/first-release/design.md §3.0).
 //!
 //! Routes on a site host (merge this router into [`crate::site::router`]'s, which has the
 //! fallback):
@@ -84,7 +84,7 @@ pub fn router(state: DoorState) -> Router {
         .with_state(state)
 }
 
-/// The capabilities every site offers through the door in Brick 1.
+/// The capabilities every site offers through the door in the first release.
 pub fn capabilities() -> CapabilityManifestV2 {
     let mut ask = CapabilityV2::new(
         "ask_site",

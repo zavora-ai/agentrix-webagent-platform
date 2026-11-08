@@ -576,7 +576,7 @@ pub(crate) fn render_def(def: &MessageDef, ctx: &Json) -> Result<Rendered, Rende
         })?;
         let url = get("push_url")?
             .map(|u| one_line(&u))
-            .unwrap_or_else(|| "/console".to_string());
+            .unwrap_or_else(|| "/os".to_string());
         rendered.push = Some(Push {
             title: push_title(ctx),
             body: one_line(&body),

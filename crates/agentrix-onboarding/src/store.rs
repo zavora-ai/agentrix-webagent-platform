@@ -1,5 +1,6 @@
 //! W4's own records in `control.db`, with their own migrator (`migrations/`, range 0400–0499).
 
+use agentrix_billing::Period;
 use chrono::{SecondsFormat, Utc};
 use futures::future::BoxFuture;
 use sqlx::SqlitePool;
@@ -28,6 +29,8 @@ pub struct PlanChoice {
     pub plan_id: String,
     /// The monthly AI budget the owner set as a limit, whole US dollars.
     pub ai_budget_usd: i64,
+    /// Paid monthly, or 12 months up front at the catalogue's discount.
+    pub period: Period,
     /// When, RFC 3339 UTC.
     pub chosen_at: String,
 }
@@ -35,15 +38,16 @@ pub struct PlanChoice {
 /// Saves `choice`, replacing an earlier one for the same site.
 pub async fn save_plan_choice(pool: &SqlitePool, choice: &PlanChoice) -> anyhow::Result<()> {
     sqlx::query(
-        "INSERT INTO onboarding_plan_choices (site_id, account, plan_id, ai_budget_usd, chosen_at)
-         VALUES (?1, ?2, ?3, ?4, ?5)
-         ON CONFLICT(site_id) DO UPDATE SET account = ?2, plan_id = ?3, ai_budget_usd = ?4, chosen_at = ?5",
+        "INSERT INTO onboarding_plan_choices (site_id, account, plan_id, ai_budget_usd, chosen_at, period)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+         ON CONFLICT(site_id) DO UPDATE SET account = ?2, plan_id = ?3, ai_budget_usd = ?4, chosen_at = ?5, period = ?6",
     )
     .bind(&choice.site_id)
     .bind(&choice.account)
     .bind(&choice.plan_id)
     .bind(choice.ai_budget_usd)
     .bind(&choice.chosen_at)
+    .bind(choice.period.as_str())
     .execute(pool)
     .await?;
     Ok(())
@@ -51,21 +55,40 @@ pub async fn save_plan_choice(pool: &SqlitePool, choice: &PlanChoice) -> anyhow:
 
 /// The plan chosen for `site_id`, if any.
 pub async fn plan_choice(pool: &SqlitePool, site_id: &str) -> anyhow::Result<Option<PlanChoice>> {
-    let row: Option<(String, String, String, i64, String)> = sqlx::query_as(
-        "SELECT site_id, account, plan_id, ai_budget_usd, chosen_at FROM onboarding_plan_choices WHERE site_id = ?1",
+    let row: Option<(String, String, String, i64, String, String)> = sqlx::query_as(
+        "SELECT site_id, account, plan_id, ai_budget_usd, chosen_at, period FROM onboarding_plan_choices WHERE site_id = ?1",
     )
     .bind(site_id)
     .fetch_optional(pool)
     .await?;
     Ok(row.map(
-        |(site_id, account, plan_id, ai_budget_usd, chosen_at)| PlanChoice {
+        |(site_id, account, plan_id, ai_budget_usd, chosen_at, period)| PlanChoice {
             site_id,
             account,
             plan_id,
             ai_budget_usd,
+            period: Period::parse(&period).unwrap_or_default(),
             chosen_at,
         },
     ))
+}
+
+/// Switches the period of `site_id`'s chosen plan. On a live plan it applies at the next
+/// renewal; the subscription keeps its period until then. Returns false when nothing was chosen.
+pub async fn set_plan_period(
+    pool: &SqlitePool,
+    site_id: &str,
+    period: Period,
+) -> anyhow::Result<bool> {
+    let done = sqlx::query(
+        "UPDATE onboarding_plan_choices SET period = ?2, chosen_at = ?3 WHERE site_id = ?1",
+    )
+    .bind(site_id)
+    .bind(period.as_str())
+    .bind(now())
+    .execute(pool)
+    .await?;
+    Ok(done.rows_affected() > 0)
 }
 
 /// Now, as stored.

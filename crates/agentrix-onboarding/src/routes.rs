@@ -8,13 +8,14 @@
 //! | `GET /account/recover?next=` | Recover with a code, or by email with a hold |
 //! | `GET /setup?next=&host=` | The Chief WebAgent introduces itself (O2.4); signed in only |
 //! | `GET /setup/plan?site=&host=&next=` | Choose a plan and the AI budget (O3.1); signed in only |
-//! | `POST /setup/plan` (form `site, plan_id, ai_budget_usd, next, host`) | Saves the choice, then `next` |
+//! | `POST /setup/plan` (form `site, plan_id, period, ai_budget_usd, next, host`) | Saves the choice (`period` is `monthly` or `annual`, 12 months at the catalogue's discount), then `next` |
 //!
 //! The account pages are static apart from the query; `static/onboarding/account.js` drives
-//! Brick 1's passkey and authenticator endpoints and W6's email-code and recovery endpoints.
+//! The first release's passkey and authenticator endpoints and W6's email-code and recovery endpoints.
 
 use std::sync::Arc;
 
+use agentrix_billing::Period;
 use agentrix_host::OwnerSessions;
 use axum::Router;
 use axum::extract::{Form, Query, State};
@@ -30,7 +31,7 @@ use crate::view::{
 use crate::{OnboardingPage, Pages};
 
 /// Where a signed-in owner goes when nothing else is asked for.
-pub const DEFAULT_NEXT: &str = "/console/today";
+pub const DEFAULT_NEXT: &str = "/os";
 
 /// `next` if it's a path on this host, otherwise [`DEFAULT_NEXT`]. Refuses other hosts
 /// (`//evil.example`, `https://…`), backslashes and control characters, so a link can't send
@@ -133,7 +134,7 @@ async fn start(State(st): State<RouteState>, headers: HeaderMap) -> Response {
 async fn account(st: RouteState, mode: AccountMode, headers: HeaderMap, q: Q) -> Response {
     let next = safe_next(q.next.as_deref());
     let mut view = AccountPage::new(mode, &next, safe_host(q.host.as_deref()));
-    // Brick 1's passkey "register" adds a passkey to whoever is signed in, so the create and
+    // The first release's passkey "register" adds a passkey to whoever is signed in, so the create and
     // sign-in forms are never shown to a signed-in browser (W0, 8 Nov: a passkey landed on the
     // wrong account). Recovery keeps its page: it shows a signed-in owner's holds.
     view.signed_in =
@@ -280,6 +281,9 @@ async fn plan_page(
         && view.plans.iter().any(|p| p.id == choice.plan_id)
     {
         view.chosen = choice.plan_id;
+        if view.annual {
+            view.period = choice.period.as_str().to_owned();
+        }
     }
     html(&st.pages, OnboardingPage::Plan, &view)
 }
@@ -289,6 +293,9 @@ struct PlanForm {
     site: String,
     plan_id: String,
     ai_budget_usd: i64,
+    /// `monthly` (the default, for a form without the choice) or `annual`.
+    #[serde(default)]
+    period: Option<String>,
     #[serde(default)]
     next: Option<String>,
 }
@@ -330,6 +337,21 @@ async fn plan_save(
         )
             .into_response();
     };
+    let period = match f.period.as_deref().map(str::trim) {
+        None | Some("") => Period::Monthly,
+        Some(p) => {
+            match Period::parse(p).filter(|p| *p == Period::Monthly || plan.annual_cents > 0) {
+                Some(p) => p,
+                None => {
+                    return (
+                        StatusCode::BAD_REQUEST,
+                        "That way of paying isn't offered. Nothing was saved.",
+                    )
+                        .into_response();
+                }
+            }
+        }
+    };
     let most = (plan.included_ai_micro_usd / 1_000_000).max(5) * 4;
     if !(0..=most).contains(&f.ai_budget_usd) {
         return (
@@ -343,6 +365,7 @@ async fn plan_save(
         account: owner.account.to_string(),
         plan_id: plan.id.clone(),
         ai_budget_usd: f.ai_budget_usd,
+        period,
         chosen_at: crate::store::now(),
     };
     if let Err(e) = save_plan_choice(&st.pool, &choice).await {

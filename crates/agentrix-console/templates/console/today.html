@@ -56,7 +56,7 @@
 
 {% if recent %}
 <section class="card" aria-labelledby="recent-h">
-  <div class="spread"><h2 id="recent-h">Recently</h2><a class="small" href="/console/trust">All receipts</a></div>
+  <div class="spread"><h2 id="recent-h">Recently</h2><a class="small" href="/os/trust#receipts">All receipts</a></div>
   <ul class="list">{% for r in recent %}{{ m.receipt_row(r) }}{% endfor %}</ul>
 </section>
 {% endif %}

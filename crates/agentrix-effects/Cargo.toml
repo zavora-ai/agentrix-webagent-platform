@@ -8,7 +8,7 @@ license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
-# Owner: W6 (identity, payments and trust). The PayPal client is adapted from Brick 2's
+# Owner: W6 (identity, payments and trust). The PayPal client is adapted from the fleet release's
 # steward-paypal (same authors, MIT). Horizon 1 runs in node's process; Horizon 2 moves it to
 # its own process and user, the only holder of provider keys (ADR-004).
 

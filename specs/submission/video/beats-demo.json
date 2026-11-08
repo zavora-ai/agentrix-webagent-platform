@@ -1,0 +1,136 @@
+{
+  "note": "The screen-share cut: a presenter walks the problem, the solution, the architecture, a live run, the hackathon themes and the terminal. Clips are under clips/demo/ (demo.py). Narration reuses the deck's and the README's wording, spoken by Vultr's qwen3-tts.",
+  "beats": [
+    {
+      "id": "d01",
+      "pic": "slide:1",
+      "min": 7,
+      "say": "This is Agentrix WebAgent Platform, by Zavora Technologies. Our entry for the Vultr Agent Rush, Challenge 1: Blast Radius Zero."
+    },
+    {
+      "id": "d02",
+      "pic": "clip:demo/problem.mp4",
+      "fallback": 2,
+      "start": 1.5,
+      "badge": [
+        "Live",
+        "github.com/zavora-ai/agentrix-webagent-platform"
+      ],
+      "say": "Let's start with the problem. Websites are passive, insecure and not built for AI agents. Netcraft counted 1.49 billion websites, and only about 217 million were active. When Google shows an AI summary, people click a result in 8% of visits, against 15% without one. More than half of web traffic is automated. And WordPress runs 39.4% of all websites, with 11,334 new vulnerabilities in its ecosystem in 2025. A small business can't keep its site patched, or staffed around the clock."
+    },
+    {
+      "id": "d03",
+      "pic": "slide:3",
+      "say": "Our solution: Agentrix WebAgent Platform turns a WordPress, Shopify or React website into an autonomous AI business. WebAgents work 24/7 for the owner and the customer. They act before anyone asks, answer when asked, and keep the owner in control."
+    },
+    {
+      "id": "d04",
+      "pic": "clip:demo/solution.mp4",
+      "fallback": 14,
+      "start": 1.0,
+      "fit": "clip",
+      "badge": [
+        "Live",
+        "agentrix.website, on Vultr"
+      ],
+      "say": "This is agentrix.website, the front door. Paste your address for a free health report, watch the film, or open a sample. Here is Kilele Bakery, one of three businesses showcasing WebAgents. Each menu item is an AI WebAgent that answers from this site, and Wanjiru approves anything that costs money. A customer asks: are you open on Sunday? The site answers at any hour from its own pages, and shows the page it used."
+    },
+    {
+      "id": "d05",
+      "pic": "clip:demo/architecture.mp4",
+      "fallback": 4,
+      "start": 1.0,
+      "fit": "clip",
+      "badge": [
+        "Live",
+        "the repository's architecture"
+      ],
+      "say": "Here is the architecture, straight from the repository. Untrusted input only goes into sealed rooms, on separate hosts with no secrets, and only two services hold secrets. Each WebAgent is a governed process, not a chatbot. It wakes for a reason, reasons through the Model Gateway, and proposes a tool call. The governed path decides: allow, hold for the owner's passkey, or deny. Every effect runs through a gateway, once, and leaves a signed receipt."
+    },
+    {
+      "id": "d06a",
+      "pic": "clip:demo/run.mp4",
+      "fallback": 13,
+      "start": 1.0,
+      "end": 12,
+      "fit": "clip",
+      "badge": [
+        "Live",
+        "Assess, on Vultr"
+      ],
+      "say": "Now let's run it. I paste the address of Zavora's infected test site. No account, just an address."
+    },
+    {
+      "id": "d06b",
+      "pic": "clip:demo/run.mp4",
+      "fallback": 13,
+      "start": 12,
+      "end": 100,
+      "speed": 6,
+      "fit": "clip",
+      "speed_label": "6x speed",
+      "badge": [
+        "Live",
+        "Assess, on Vultr"
+      ],
+      "say": "A real browser reads every page in sealed rooms on a separate Vultr VM. Each room holds no keys, reaches only this site, and is destroyed when its job is done."
+    },
+    {
+      "id": "d06c",
+      "pic": "clip:demo/run.mp4",
+      "fallback": 13,
+      "start": 100,
+      "fit": "clip",
+      "badge": [
+        "Live",
+        "Assess, on Vultr"
+      ],
+      "say": "Then the honest report, ten things worth knowing: hidden spam links, hidden instructions aimed at AI assistants, and two pages that sent our sealed room somewhere it isn't allowed to go. Refused, and written on the room's signed receipt."
+    },
+    {
+      "id": "d07",
+      "pic": "clip:demo/themes.mp4",
+      "fallback": 11,
+      "start": 1.0,
+      "fit": "clip",
+      "badge": [
+        "Deck",
+        "the Challenge 1 themes"
+      ],
+      "say": "Here are the hackathon's themes at work. The Move rebuilds the old site in sealed rooms, never trusted. Plan, dispatch, verify: every job is signed going in and receipted coming out. A control plane plans and signs every job, a sealed sandbox runs it, and one gateway reaches the models on Vultr Serverless Inference. Untrusted code runs only in a room built for one job, a Docker container under gVisor, and the room is gone afterwards. Ten attacks are planted in a hacked WordPress copy, scored from receipts."
+    },
+    {
+      "id": "d08",
+      "pic": "clip:demo/terminal.mp4",
+      "fallback": 5,
+      "start": 0.5,
+      "fit": "clip",
+      "badge": [
+        "Live",
+        "a terminal, against the live site"
+      ],
+      "say": "And in a terminal, this is what a customer's AI agent sees. The agent door lists what agents may do, and custom orders are held for the owner. The agent searches the catalogue over MCP, and asks a question with cited sources. Every action leaves a signed receipt, checkable against the site's published key."
+    },
+    {
+      "id": "d09",
+      "pic": "slide:15",
+      "say": "Free to move. Paid to run. Plans start at twenty-nine dollars a month, paid with PayPal."
+    },
+    {
+      "id": "d10",
+      "pic": "slide:16",
+      "say": "Website builders make sites that wait. Agentrix makes sites that work."
+    },
+    {
+      "id": "d11",
+      "pic": "slide:17",
+      "say": "Made in Kenya, by the makers of ADK-Rust. We believe AGI is intelligent orchestration."
+    },
+    {
+      "id": "d12",
+      "pic": "slide:19",
+      "min": 6,
+      "say": "Agentrix. Upgrade your website into WebAgents. Try it at agentrix.website."
+    }
+  ]
+}

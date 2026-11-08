@@ -133,7 +133,7 @@ pub fn environment() -> Environment<'static> {
 
 /// Writes a value into the page. Text is HTML-escaped (`& < > " '`), which is enough in text
 /// and in quoted attributes. minijinja's default formatter also turns `/` into `&#x2f;`, which
-/// is safe but makes every URL in the page source unreadable. Same as Brick 1's console.
+/// is safe but makes every URL in the page source unreadable. Same as the first release's console.
 pub fn format(out: &mut Output, state: &State, value: &Value) -> Result<(), minijinja::Error> {
     match (state.auto_escape(), value.as_str()) {
         (AutoEscape::Html, Some(text)) if !value.is_safe() => {

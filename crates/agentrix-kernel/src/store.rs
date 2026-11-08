@@ -2,14 +2,14 @@
 //!
 //! - A **sample** site has a `webagent_sites` row, written by [`Rosters::seed_sample`] when W2
 //!   seeds it: the concept's look, the sample's team and its section desks.
-//! - A **moved Brick 1 site** has no row. Its look comes from the `--wa-*` tokens in its live
+//! - A **moved the first release site** has no row. Its look comes from the `--wa-*` tokens in its live
 //!   release's home page (the Move extracted them), and its team from charter v1: the Chief,
 //!   the Concierge, the Editor and the Guardian on duty, the Mover handed over.
 //! - The site's newest **charter** overlays the starting levels, so the dials show what the
 //!   owner signed.
 //! - The newest owner-approved **spec version** of a WebAgent replaces its template.
 //!
-//! Brick 1's tables (`sites`, `site_pointer`, `charters`) are read only, by id, and a missing
+//! The first release's tables (`sites`, `site_pointer`, `charters`) are read only, by id, and a missing
 //! table reads as "nothing recorded".
 
 use std::sync::Arc;
@@ -141,7 +141,7 @@ impl Rosters {
         }
     }
 
-    /// Records who owns a site that isn't in Brick 1's `sites` table (a sample).
+    /// Records who owns a site that isn't in the first release's `sites` table (a sample).
     pub async fn set_owner(&self, site_id: &str, account: uuid::Uuid) -> anyhow::Result<()> {
         let done = sqlx::query(
             "UPDATE webagent_sites SET owner_account = ?, updated_at = ? WHERE site_id = ?",
@@ -158,7 +158,7 @@ impl Rosters {
         Ok(())
     }
 
-    /// Whether `account` owns `site_id`: Brick 1's `sites.owner_account_id`, or the owner
+    /// Whether `account` owns `site_id`: the first release's `sites.owner_account_id`, or the owner
     /// recorded with the site's team.
     pub async fn owns(&self, site_id: &str, account: uuid::Uuid) -> anyhow::Result<bool> {
         let account = account.to_string();
@@ -181,7 +181,7 @@ impl Rosters {
         Ok(false)
     }
 
-    /// Every site the kernel can build a roster for: Brick 1's sites and the seeded samples.
+    /// Every site the kernel can build a roster for: the first release's sites and the seeded samples.
     pub async fn site_ids(&self) -> anyhow::Result<Vec<String>> {
         let mut ids: Vec<String> = Vec::new();
         for sql in [
@@ -222,7 +222,7 @@ impl Rosters {
             let on_duty: Vec<&str> = on_duty.iter().map(String::as_str).collect();
             Roster::build(site_id, look, &on_duty, &desks)
         } else {
-            let Some((name, live)) = self.brick_one_site(site_id).await? else {
+            let Some((name, live)) = self.first_release_site(site_id).await? else {
                 return Ok(None);
             };
             let tokens = match &live {
@@ -254,8 +254,8 @@ impl Rosters {
         Ok(Some(roster))
     }
 
-    /// Brick 1's record of a site: its name (or domain) and its live manifest, if live.
-    async fn brick_one_site(
+    /// The first release's record of a site: its name (or domain) and its live manifest, if live.
+    async fn first_release_site(
         &self,
         site_id: &str,
     ) -> anyhow::Result<Option<(String, Option<String>)>> {

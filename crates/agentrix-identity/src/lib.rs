@@ -6,7 +6,7 @@
 //! recovery codes, a list of devices and sessions, "Sign out everywhere", a new-device alert
 //! and consent receipts for each optional use of their details.
 //!
-//! Brick 1's owner sign-in stays in `agentrix-node/src/auth/` (its approve contract is frozen);
+//! The first release's owner sign-in stays in `agentrix-node/src/auth/` (its approve contract is frozen);
 //! this crate takes it over in Horizon 2.
 //!
 //! **Wiring** (the coordinator, in node):

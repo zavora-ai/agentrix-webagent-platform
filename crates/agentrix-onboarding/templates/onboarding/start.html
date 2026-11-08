@@ -17,7 +17,7 @@
     <label class="sr-only" for="url">Your website address</label>
     <div class="addr{% if error %} has-error{% endif %}">
       <div class="input">{{ m.icon("globe") }}<input id="url" name="url" type="text" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false" placeholder="your-business.example" value="{{ url or '' }}" required autofocus{% if error %} aria-invalid="true" aria-describedby="addr-error"{% endif %}></div>
-      <button class="btn btn-primary btn-lg" type="submit">Show me</button>
+      <button class="btn btn-primary btn-lg" type="submit">Check my site</button>
     </div>
   </form>
   <div class="assure">
@@ -33,7 +33,7 @@
   {% endif %}
 </section>
 
-<section class="paste-facts" aria-label="What happens when you press Show me">
+<section class="paste-facts" aria-label="What happens when you press Check my site">
   <div class="fact"><b>Every page opens in a sealed room</b>A fresh browser with no keys that can reach only your site. It's destroyed when the check ends, and its receipt is signed.</div>
   <div class="fact"><b>A polite, named reader</b>It says it's <a href="/bot">Agentrix's reader</a>, follows your robots.txt and waits between requests.</div>
   <div class="fact"><b>A report with evidence</b>Security, speed, broken links, and whether AI assistants can use your site. Every finding shows its evidence; one we can't show isn't listed.</div>

@@ -94,11 +94,17 @@ pub enum ReceiptKind {
     /// An owner linked a chat (Telegram) to their site or unlinked it (platform W13).
     #[serde(rename = "channel.changed")]
     ChannelChanged,
+    /// The concept stage: a designer's finished page, its sha256 as the output.
+    #[serde(rename = "concept.page")]
+    ConceptPage,
+    /// The concept stage: the look the owner chose before the Move.
+    #[serde(rename = "concept.chosen")]
+    ConceptChosen,
 }
 
 impl ReceiptKind {
     /// Every kind, in the order design §4.4 lists them.
-    pub const ALL: [Self; 27] = [
+    pub const ALL: [Self; 29] = [
         Self::JobFetch,
         Self::JobReplay,
         Self::JobRender,
@@ -126,6 +132,8 @@ impl ReceiptKind {
         Self::AccountRecoveryHold,
         Self::TeamChanged,
         Self::ChannelChanged,
+        Self::ConceptPage,
+        Self::ConceptChosen,
     ];
 
     /// The kind as stored and filtered on, for example `job.fetch`.
@@ -158,6 +166,8 @@ impl ReceiptKind {
             Self::AccountRecoveryHold => "account.recovery-hold",
             Self::TeamChanged => "team.changed",
             Self::ChannelChanged => "channel.changed",
+            Self::ConceptPage => "concept.page",
+            Self::ConceptChosen => "concept.chosen",
         }
     }
 

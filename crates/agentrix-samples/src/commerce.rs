@@ -319,7 +319,7 @@ async fn bag_add(
     if fresh {
         response.headers_mut().append(
             header::SET_COOKIE,
-            web::set_cookie(&app, web::CART, &cart, 60 * 60 * 24 * 30),
+            web::set_cookie(&app, web::CART, &cart, web::CART_SECONDS),
         );
     }
     Ok(response)

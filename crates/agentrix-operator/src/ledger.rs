@@ -15,7 +15,7 @@ use uuid::Uuid;
 /// The hash before the first entry.
 pub const GENESIS: &str = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
 
-/// A time as stored: RFC 3339, UTC, with microseconds (the same as Brick 1's `db::time`).
+/// A time as stored: RFC 3339, UTC, with microseconds (the same as the first release's `db::time`).
 pub fn time(at: DateTime<Utc>) -> String {
     at.to_rfc3339_opts(SecondsFormat::Micros, true)
 }

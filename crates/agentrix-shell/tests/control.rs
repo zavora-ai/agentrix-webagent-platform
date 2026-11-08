@@ -1,4 +1,4 @@
-//! The shell on Brick 1's real `control.db` schema, through `mount`: the reads in `control.rs`
+//! The shell on the first release's real `control.db` schema, through `mount`: the reads in `control.rs`
 //! run against the same tables node migrates. The schema files are read from agentrix-node's
 //! folder at test time, so a schema change there breaks this test rather than the live console.
 
@@ -23,7 +23,7 @@ fn t(at: chrono::DateTime<Utc>) -> String {
 }
 
 #[tokio::test]
-async fn the_shell_reads_brick_1s_tables() {
+async fn the_shell_reads_the_first_releases_tables() {
     let account = Uuid::now_v7();
     let mut ctx = context().await.unwrap();
     ctx.owners = Arc::new(FixedOwner::passkey(account));
@@ -477,7 +477,7 @@ async fn a_mission_starts_when_its_contract_is_approved_and_counts_from_then() {
     assert!(html.contains("Resume mission"), "{html}");
 }
 
-/// A site on Brick 1's schema with its team, and the signed-in owner.
+/// A site on the first release's schema with its team, and the signed-in owner.
 async fn moved_site() -> (agentrix_host::NodeContext, Uuid) {
     let account = Uuid::now_v7();
     let mut ctx = context().await.unwrap();

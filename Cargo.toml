@@ -35,6 +35,8 @@ members = [
     "crates/agentrix-decisions",
     # W13 · mobile and channels.
     "crates/agentrix-channels",
+    # W0 · the concept stage between Assess and the Move.
+    "crates/agentrix-concepts",
 ]
 
 [workspace.package]
@@ -69,6 +71,7 @@ agentrix-shell = { path = "crates/agentrix-shell" }
 agentrix-messages = { path = "crates/agentrix-messages" }
 agentrix-samples = { path = "crates/agentrix-samples" }
 agentrix-channels = { path = "crates/agentrix-channels" }
+agentrix-concepts = { path = "crates/agentrix-concepts" }
 
 # adk-rust v3 is not on crates.io yet: one pinned `main` commit (ADR-001, design D3). Only the
 # integration lead moves the pin, after the framework's PRs merge. Enable features in your own

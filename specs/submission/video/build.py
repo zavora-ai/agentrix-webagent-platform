@@ -187,9 +187,10 @@ def main():
     ap.add_argument("--only")
     ap.add_argument("--no-voice", action="store_true")
     ap.add_argument("--final", action="store_true", help="refuse to build while a live capture is missing")
+    ap.add_argument("--beats", default=os.path.join(HERE, "beats.json"), help="the beat list to build (beats.json, or beats-demo.json for the screen-share cut)")
     a = ap.parse_args()
     os.makedirs(WORK, exist_ok=True)
-    beats = json.load(open(os.path.join(HERE, "beats.json")))["beats"]
+    beats = json.load(open(a.beats))["beats"]
     if a.only:
         keep = set(a.only.split(","))
         beats = [b for b in beats if b["id"] in keep]

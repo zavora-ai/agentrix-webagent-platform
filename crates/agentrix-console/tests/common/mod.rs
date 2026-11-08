@@ -241,7 +241,7 @@ pub fn assess_unreachable() -> AssessView {
 }
 pub fn auth(passkeys: bool) -> AuthView {
     AuthView {
-        next: s("/console/today"),
+        next: s("/os"),
         passkeys,
     }
 }

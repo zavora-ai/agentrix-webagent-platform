@@ -3,7 +3,7 @@
 //!
 //! | Route | Body | Reply |
 //! |---|---|---|
-//! | `GET /auth/signin`, `GET /auth/register` | `?next=` | The page: `agentrix_console` `Page::SignIn` / `Page::Register` with `AuthView` |
+//! | `GET /auth/signin`, `GET /auth/register` | `?next=` | Deprecated: a redirect to the platform's `/account/signin` or `/account/new`, keeping `next` |
 //! | `POST /auth/passkey/register/start` | `{email, display_name?, next?}`; signed in: adds a passkey | webauthn-rs `CreationChallengeResponse` |
 //! | `POST /auth/passkey/register/finish` | webauthn-rs `RegisterPublicKeyCredential` | `{redirect}` and the session cookie |
 //! | `POST /auth/passkey/login/start` | `{email, next?}` | webauthn-rs `RequestChallengeResponse` |
@@ -137,7 +137,7 @@ impl Throttle {
 // ---- helpers --------------------------------------------------------------------------------
 
 /// Lower-cased, trimmed, and plausibly an address. Real proof of an email is out of scope for
-/// Brick 1 (no email is sent); the address is a sign-in name and a contact.
+/// The first release (no email is sent); the address is a sign-in name and a contact.
 fn email_of(raw: &str) -> Result<String, AuthError> {
     let email = raw.trim().to_lowercase();
     let ok = email.len() <= 254
@@ -230,22 +230,44 @@ struct PageQuery {
     next: Option<String>,
 }
 
+// Deprecated: the first sign-in and register pages. The platform's own pages replaced them
+// (agentrix-onboarding: `/account/signin` with passkey first and an email code, `/account/new`),
+// so these two routes only send people there, keeping `next`. The JSON routes in this file stay:
+// the new pages call them.
+
 async fn signin_page(
     State(auth): State<AuthState>,
     axum::extract::Query(q): axum::extract::Query<PageQuery>,
-) -> Result<Response, AuthError> {
-    auth.render_page(agentrix_console::Page::SignIn, q.next.as_deref())
+) -> Redirect {
+    Redirect::to(&account_page(
+        "/account/signin",
+        q.next.as_deref(),
+        &auth.config.after_sign_in,
+    ))
 }
 
 async fn register_page(
     State(auth): State<AuthState>,
     axum::extract::Query(q): axum::extract::Query<PageQuery>,
-) -> Result<Response, AuthError> {
-    auth.render_page(agentrix_console::Page::Register, q.next.as_deref())
+) -> Redirect {
+    Redirect::to(&account_page(
+        "/account/new",
+        q.next.as_deref(),
+        &auth.config.after_sign_in,
+    ))
+}
+
+/// `page?next=…`, with `next` checked like every other `next` here and percent-encoded.
+fn account_page(page: &str, next: Option<&str>, default: &str) -> String {
+    let next = next_of(next, default);
+    let encoded: String = url::form_urlencoded::byte_serialize(next.as_bytes()).collect();
+    format!("{page}?next={encoded}")
 }
 
 impl AuthState {
-    /// Renders a sign-in page. With `passkeys: false` the page hides the passkey button.
+    /// Deprecated with the pages above: renders the first sign-in page. Kept, unused, until the
+    /// old console crate goes. With `passkeys: false` the page hides the passkey button.
+    #[allow(dead_code)]
     fn render_page(
         &self,
         page: agentrix_console::Page,
@@ -636,6 +658,22 @@ mod tests {
     use super::*;
 
     #[test]
+    fn the_old_pages_send_people_to_the_platforms_own() {
+        assert_eq!(
+            account_page("/account/signin", Some("/sites/s1/claim"), "/os"),
+            "/account/signin?next=%2Fsites%2Fs1%2Fclaim"
+        );
+        assert_eq!(
+            account_page("/account/new", None, "/os"),
+            "/account/new?next=%2Fos"
+        );
+        assert_eq!(
+            account_page("/account/signin", Some("//evil.example"), "/os"),
+            "/account/signin?next=%2Fos"
+        );
+    }
+
+    #[test]
     fn emails_and_redirects() {
         assert_eq!(
             email_of("  Wanjiru@Kilele.Example ").unwrap(),
@@ -644,21 +682,14 @@ mod tests {
         for bad in ["", "no-at", "a@b", "a@@b.c", "@b.c", "a@.b.c", "a b@c.d"] {
             assert!(email_of(bad).is_err(), "{bad}");
         }
-        assert_eq!(
-            next_of(Some("/console/move"), "/console/today"),
-            "/console/move"
-        );
+        assert_eq!(next_of(Some("/console/move"), "/os"), "/console/move");
         for bad in [
             "https://evil.example",
             "//evil.example",
             "/\\evil",
             "console",
         ] {
-            assert_eq!(
-                next_of(Some(bad), "/console/today"),
-                "/console/today",
-                "{bad}"
-            );
+            assert_eq!(next_of(Some(bad), "/os"), "/os", "{bad}");
         }
         assert_eq!(display_name_of(None, "wanjiru@kilele.example"), "wanjiru");
     }

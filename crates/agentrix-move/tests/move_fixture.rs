@@ -72,6 +72,7 @@ impl World {
             wp_content: Some(blobs.insert(&site, WP_CONTENT)),
             crawl: None,
             fixture: true,
+            look: None,
         };
         Self {
             pool,
@@ -336,6 +337,57 @@ async fn the_infected_fixture_reaches_a_candidate_with_the_infection_left_behind
 }
 
 #[tokio::test]
+async fn the_rebuild_uses_the_look_chosen_before_the_move() {
+    use agentrix_move::pipeline::BuiltSite;
+    use agentrix_move::theme::Tokens;
+    let mut world = World::new().await;
+    let look = Tokens {
+        bg: "#fffbf2".into(),
+        soft: "#eceee2".into(),
+        ink: "#1a1a1a".into(),
+        ink2: "#5f5e5b".into(),
+        line: "#ddd9d2".into(),
+        accent: "#14532d".into(),
+        on_accent: "#ffffff".into(),
+        display: "'Archivo Black', system-ui, sans-serif".into(),
+        text: "'DM Sans', system-ui, sans-serif".into(),
+    };
+    world.inputs.look = Some(look.clone());
+    let mover = world.mover(world.rooms(), Arc::new(FakeGateway::default()));
+    let move_id = mover
+        .start(&world.site, &world.inputs, None, None)
+        .await
+        .unwrap();
+    assert_eq!(mover.run(&move_id).await.unwrap(), MoveState::AwaitingOwner);
+
+    let store = MoveStore::new(world.pool.clone());
+    let resume = store
+        .resume_of(&move_id, StepName::Rebuild)
+        .await
+        .unwrap()
+        .unwrap();
+    let digest = resume["built"].as_str().unwrap().parse().unwrap();
+    let built: BuiltSite = serde_json::from_slice(
+        &agentrix_move::ports::Blobs::get(world.blobs.as_ref(), &world.site, &digest)
+            .await
+            .unwrap()
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(built.tokens, Tokens::chosen(&look));
+    assert_eq!(built.tokens.accent, "#14532d");
+    assert_eq!(built.tokens.display, "Archivo Black, system-ui, sans-serif");
+    assert!(
+        built
+            .legacy_theme
+            .as_deref()
+            .is_some_and(|w| w.contains("new look you chose")),
+        "{:?}",
+        built.legacy_theme
+    );
+}
+
+#[tokio::test]
 async fn a_move_that_stops_resumes_from_its_last_finished_step() {
     let world = World::new().await;
     let broken = Arc::new(FakeGateway {
@@ -541,6 +593,7 @@ async fn the_live_fifty_page_fixture_reaches_a_candidate_with_the_infection_left
         )),
         crawl: None,
         fixture: true,
+        look: None,
     };
     // A runner that takes only 32 inputs a room: the pages go in batches.
     let mut rooms = FakeRooms::new(world.blobs.clone());

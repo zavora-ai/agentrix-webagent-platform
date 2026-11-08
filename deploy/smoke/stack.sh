@@ -52,9 +52,12 @@ is "Caddy's running config asks node before issuing a certificate" \
   "$("${C[@]}" "curl -s -m 5 http://localhost:2019/config/apps/tls/automation/on_demand | grep -c 127.0.0.1:8079/internal/tls-ask")" 1
 
 echo "== public: https://$PLATFORM"
-for path in / /healthz /.well-known/agentrix/keys /auth/signin /auth/register; do
+for path in / /healthz /.well-known/agentrix/keys /account/signin /account/new; do
   is "GET $path is 200" "$(code "https://$PLATFORM$path")" 200
 done
+# The first release's sign-in pages are deprecated: they send people to the platform's own.
+is "GET /auth/signin sends people to /account/signin" \
+  "$(curl -s -o /dev/null -m 15 -w '%{http_code} %{redirect_url}' "https://$PLATFORM/auth/signin" | sed "s|https://$PLATFORM||; s|?.*||")" "303 /account/signin"
 redirect=$(curl -s -o /dev/null -m 15 -w '%{http_code} %{redirect_url}' "http://$PLATFORM/")
 case $redirect in
   "301 https://$PLATFORM/"|"308 https://$PLATFORM/") pass "http:// redirects to https://" ;;

@@ -126,7 +126,7 @@ function start(root) {
     if (words) caption("Chief WebAgent", words);
   }
   // A spoken decision waits 3 seconds for a cancel, then runs: a v2 card through /decide
-  // (W5's decide_spoken), a Brick 1 card through its own decline form in the lane.
+  // (W5's decide_spoken), a the first release card through its own decline form in the lane.
   function decideAfter(act, heard) {
     const el = document.querySelector(`[data-decision][data-card="${CSS.escape(act.card)}"]`);
     const form = el && el.querySelector("form[data-decline]");

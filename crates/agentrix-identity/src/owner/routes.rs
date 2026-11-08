@@ -72,7 +72,7 @@ async fn email_start(
 ) -> Result<Response, OwnerError> {
     let purpose = OwnerPurpose::parse(&body.purpose)
         .ok_or_else(|| OwnerError::BadRequest("Say signup, signin or recover.".into()))?;
-    let next = next_of(body.next.as_deref(), "/console/today");
+    let next = next_of(body.next.as_deref(), "/os");
     let (pending, sent_to) = o
         .start(
             &body.email,

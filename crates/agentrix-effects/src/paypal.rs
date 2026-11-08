@@ -1,5 +1,5 @@
 //! A small PayPal REST client: OAuth client-credentials with a cached token, JSON requests with
-//! `PayPal-Request-Id` idempotency keys, and readable errors. Adapted from Brick 2's
+//! `PayPal-Request-Id` idempotency keys, and readable errors. Adapted from the fleet release's
 //! `steward-paypal` (same authors, MIT).
 //!
 //! Sandbox only in Horizon 1: the live API needs `"environment": "live"` **and**
@@ -140,7 +140,7 @@ struct SecretFile {
 
 impl PayPalConfig {
     /// Reads the secret file `{client_id, client_secret, webhook_id?, environment?}`. An empty
-    /// or missing file means payments are off (`Ok(None)`), as with Brick 1's objects.json.
+    /// or missing file means payments are off (`Ok(None)`), as with the first release's objects.json.
     pub fn from_file(path: &Path) -> Result<Option<Self>, PayPalError> {
         let text = match std::fs::read_to_string(path) {
             Ok(text) => text,

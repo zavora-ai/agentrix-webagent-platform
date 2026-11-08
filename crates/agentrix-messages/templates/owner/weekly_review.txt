@@ -19,5 +19,5 @@ Your WebAgents could do more without asking. Each is only a suggestion; nothing 
 {% endfor %}
 {% endif %}
 
-::button Open the weekly review | {{ console_url }}/review
+::button Open the console | {{ console_url }}
 {% endblock %}

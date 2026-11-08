@@ -1,6 +1,6 @@
 //! Effect requests and their fingerprints (ADR-006, design D2).
 //!
-//! No effect runs in Brick 1; approvals end at a signed decision. The type and its fingerprint
+//! No effect runs in the first release; approvals end at a signed decision. The type and its fingerprint
 //! ship now so the Effects Gateway's seam is fixed.
 
 use chrono::{DateTime, Utc};

@@ -1,5 +1,5 @@
 //! Team members and roles for an owner's staff (01b §4.2, 07 §5.6). The owner is the site's
-//! `owner_account_id` (Brick 1's `sites`, read only); everyone else is a member with one role:
+//! `owner_account_id` (the first release's `sites`, read only); everyone else is a member with one role:
 //!
 //! | Role | Can |
 //! |---|---|
@@ -330,7 +330,7 @@ impl Team {
             .with_state(self.clone())
     }
 
-    /// The site's owner and business name, from Brick 1's `sites` (read only).
+    /// The site's owner and business name, from the first release's `sites` (read only).
     async fn site(&self, site: &SiteId) -> Result<(Option<Uuid>, String), TeamError> {
         let row: Option<(Option<String>, String, String)> =
             sqlx::query_as("SELECT owner_account_id, name, domain FROM sites WHERE site_id = ?")
@@ -740,7 +740,7 @@ impl Team {
         )
         .await;
         let (_, name) = self.site(&site).await?;
-        Ok(json!({ "site": site, "site_name": name, "role": role, "redirect": "/console/today" }))
+        Ok(json!({ "site": site, "site_name": name, "role": role, "redirect": "/os" }))
     }
 }
 

@@ -3,7 +3,7 @@
 //! Sign-in proves presence the way an approval does (02 §8): the server picks a fresh sign-in
 //! fingerprint, and the person approves it with a passkey (a WebAuthn assertion whose challenge
 //! commits to the fingerprint) or, without a passkey, a fresh authenticator code. The check is
-//! Brick 1's approvals API behind `agentrix_host::Approvals`, so this crate never handles a credential.
+//! The first release's approvals API behind `agentrix_host::Approvals`, so this crate never handles a credential.
 //!
 //! Operator sessions live in `operator_sessions` with their own cookie, `__Host-agx_ops`
 //! (HttpOnly, Secure, SameSite=Strict, 12 hours), on the ops host only.
@@ -58,7 +58,7 @@ pub(crate) async fn approve(
 ) -> Result<Proof, String> {
     let request = match body.get("method").and_then(Value::as_str) {
         Some("passkey") => {
-            // Both shapes: the seam documents {"passkey": cred}; node's adapter parses Brick 1's
+            // Both shapes: the seam documents {"passkey": cred}; node's adapter parses the first release's
             // ApproveRequest, {"method":"passkey","credential": cred}. Extra fields are ignored.
             let credential = body.get("credential").cloned().unwrap_or(Value::Null);
             json!({ "method": "passkey", "credential": credential.clone(), "passkey": credential })
@@ -94,7 +94,7 @@ pub(crate) async fn approve(
     }
 }
 
-/// Brick 1's refusals are already plain words for people; anything else gets a safe line.
+/// The first release's refusals are already plain words for people; anything else gets a safe line.
 fn refusal_words(message: &str) -> String {
     let known = [
         "That code didn't work",

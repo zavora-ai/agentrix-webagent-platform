@@ -1,11 +1,11 @@
-//! The metric catalogue against control.db's real schema, seeded with rows like Brick 1's.
+//! The metric catalogue against control.db's real schema, seeded with rows like the first release's.
 
 use agentrix_types::SiteId;
 use chrono::{DateTime, Duration, Utc};
 use sqlx::SqlitePool;
 
 use super::*;
-use crate::testing::{apply, brick1_db, control_db};
+use crate::testing::{apply, control_db, first_release_db};
 use crate::time::{parse, stamp};
 use crate::visits::{Device, Visit, VisitStore};
 use crate::words::{MicroUsd, Shown};
@@ -875,9 +875,9 @@ async fn visits_hide_small_cells_and_say_when_nothing_counts() {
 }
 
 #[tokio::test]
-async fn usage_rebuild_keeps_brick_1_rows_and_writers() {
-    // Brick 1's shape, with rows as the gateway writes them.
-    let pool = brick1_db().await;
+async fn usage_rebuild_keeps_first_release_rows_and_writers() {
+    // The first release's shape, with rows as the gateway writes them.
+    let pool = first_release_db().await;
     sqlx::query("INSERT INTO sites (site_id, domain, old_origin, created_at) VALUES ('s', 'a.example', 'https://a.example', ?)")
         .bind(ago(10)).execute(&pool).await.unwrap();
     // The gateway's own INSERT, word for word (crates/agentrix-models/src/meter.rs).
@@ -919,7 +919,7 @@ async fn usage_rebuild_keeps_brick_1_rows_and_writers() {
         .bind(ago(0))
         .execute(&pool)
         .await;
-    assert!(image.is_err(), "Brick 1's CHECK refuses image");
+    assert!(image.is_err(), "the first release's CHECK refuses image");
 
     apply(&pool, "0800_visit_counts.sql").await;
     apply(&pool, "0801_usage_open.sql").await;
@@ -971,7 +971,7 @@ async fn usage_rebuild_keeps_brick_1_rows_and_writers() {
         .execute(&pool)
         .await;
     assert!(bad.is_err(), "tier is still checked");
-    // Brick 1's reader (agentrix-node db::usage) still runs.
+    // The first release's reader (agentrix-node db::usage) still runs.
     let (sum,): (i64,) = sqlx::query_as(
         "SELECT COALESCE(SUM(cost_micro_usd), 0) FROM usage WHERE site_id = ? AND at >= ?",
     )

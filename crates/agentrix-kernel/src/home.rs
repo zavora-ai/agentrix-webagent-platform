@@ -473,7 +473,7 @@ fn count(r: Result<i64, sqlx::Error>) -> anyhow::Result<i64> {
 mod tests {
     use super::*;
 
-    /// node's tables, as Brick 1, W9 and W5 create them (only the columns read here).
+    /// node's tables, as the first release, W9 and W5 create them (only the columns read here).
     async fn node() -> (SqlitePool, Rosters) {
         let ctx = agentrix_host::testing::context().await.unwrap();
         crate::migrate(&ctx.pool).await.unwrap();
@@ -504,7 +504,7 @@ mod tests {
     #[tokio::test]
     async fn agentrix_website_is_a_site_the_platform_knows() {
         let ctx = agentrix_host::testing::context().await.unwrap();
-        // Brick 1's `sites` columns the row fills in.
+        // The first release's `sites` columns the row fills in.
         sqlx::query(
             "CREATE TABLE sites (site_id TEXT PRIMARY KEY, domain TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', \
              old_origin TEXT NOT NULL, utc_offset_minutes INTEGER NOT NULL DEFAULT 0, owner_account_id TEXT, \

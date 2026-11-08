@@ -93,7 +93,17 @@ if ! "${C[@]}" "mkdir $LOCK 2>/dev/null && printf '%s\n' '$ME' > $LOCK/holder"; 
   die "another deploy holds the lock: $(holder). If it died, run deploy/deploy.sh --break-lock"
 fi
 TMP=$(mktemp -d)
-cleanup() { rm -rf "$TMP"; "${C[@]}" "rm -rf $LOCK" 2>/dev/null || true; }
+# The one-time key control uses to copy the sandbox's programs over the VPC: gone from both hosts.
+remove_push_key() {
+  [ -n "${PUSH_KEY:-}" ] || return 0
+  "${S[@]}" "sed -i '/agx-deploy-push/d' ~/.ssh/authorized_keys" 2>/dev/null || true
+  "${C[@]}" "rm -f /tmp/agx-push /tmp/agx-push.pub" 2>/dev/null || true
+  PUSH_KEY=""
+}
+cleanup() {
+  remove_push_key
+  rm -rf "$TMP"; "${C[@]}" "rm -rf $LOCK" 2>/dev/null || true
+}
 trap cleanup EXIT
 
 # Gives group agentrix write on node's database and its -wal/-shm (the gateway, agentrix-models,
@@ -107,10 +117,19 @@ EOF
 # the sandbox, then the gateway, then node.
 restart_all() {
   say "restart the runner on the sandbox"
-  "${S[@]}" "sudo -n sh -c 'systemctl daemon-reload; systemctl enable agentrix-runner >/dev/null 2>&1; systemctl restart agentrix-runner; sleep 2; systemctl is-active agentrix-runner'"
+  # The runner needs control's job key, which node creates on its first start: on a new sandbox
+  # it waits, and the job key step below starts it.
+  "${S[@]}" "sudo -n sh -c 'systemctl daemon-reload; systemctl enable agentrix-runner >/dev/null 2>&1; if [ -s /etc/agentrix/control-job.pub ]; then systemctl restart agentrix-runner; sleep 2; systemctl is-active agentrix-runner; else systemctl stop agentrix-runner; echo \"waiting for the control job key (first install); started after node\"; fi'"
   say "restart models, then node, on control"
   "${C[@]}" "sudo -n systemctl daemon-reload && sudo -n systemctl enable agentrix-node agentrix-models >/dev/null 2>&1"
   "${C[@]}" "$DB_MODES" >/dev/null
+  # A new control has no database yet: node creates it on its first start, and the gateway
+  # exits until it can open it. So on a first install node starts first.
+  if [ "$("${C[@]}" 'sudo -n test -e /var/lib/agentrix/control.db && echo yes || echo no')" = no ]; then
+    say "first start: node creates the database before the gateway opens it"
+    "${C[@]}" "sudo -n systemctl restart agentrix-node && for i in \$(seq 1 60); do sudo -n test -e /var/lib/agentrix/control.db && exit 0; sleep 1; done; echo 'node made no database in 60 s' >&2; sudo -n journalctl -u agentrix-node -n 20 --no-pager >&2; exit 1"
+    "${C[@]}" "$DB_MODES" >/dev/null
+  fi
   "${C[@]}" "sudo -n systemctl restart agentrix-models && for i in \$(seq 1 30); do c=\$(curl -s -o /dev/null -m 2 -w '%{http_code}' http://127.0.0.1:8090/); [ \"\$c\" != 000 ] && exit 0; sleep 1; done; echo 'models did not answer in 30 s' >&2; sudo -n journalctl -u agentrix-models -n 20 --no-pager >&2; exit 1"
   "${C[@]}" "sudo -n systemctl restart agentrix-node"
   "${C[@]}" "for i in \$(seq 1 30); do c=\$(curl -s -o /dev/null -m 2 -w '%{http_code}' -H 'Host: $PLATFORM' http://127.0.0.1:8080/healthz); [ \"\$c\" = 200 ] && exit 0; sleep 1; done; echo 'node did not answer /healthz in 30 s' >&2; sudo -n journalctl -u agentrix-node -n 20 --no-pager >&2; exit 1"
@@ -182,9 +201,18 @@ if [ "$MODE" = rollback ]; then
   printf 'deployed: %s\n' "$(deployed)"
 else
   # --- ship and build --------------------------------------------------------------------
-  say "ship $(git log -1 --format='%h %s' "$SHA") to control"
-  "${C[@]}" "sudo -n install -d -o deploy -g deploy $SRC $TARGET && find $SRC -mindepth 1 -delete"
-  git archive "$SHA" | "${C[@]}" "tar -x -C $SRC && printf '%s\n' $SHA > $SRC/.commit"
+  say "ship $(git log -1 --format='%h %s' "$SHA") to control (changed files only)"
+  "${C[@]}" "sudo -n install -d -o deploy -g deploy $SRC $TARGET"
+  mkdir "$TMP/src" && git archive "$SHA" | tar -x -C "$TMP/src"
+  if command -v rsync >/dev/null && "${C[@]}" 'command -v rsync >/dev/null'; then
+    # Only changed files cross this machine's link, compressed; unchanged files keep their dates
+    # on control, so cargo rebuilds only what changed. (The whole tree is about 29 MB.)
+    rsync -rlpcz --delete --exclude=/.commit -e "$(printf '%q ' ssh "${SSH_OPTS[@]}")" "$TMP/src/" "agx-control:$SRC/"
+  else
+    "${C[@]}" "find $SRC -mindepth 1 -delete"
+    git archive "$SHA" | "${C[@]}" "tar -x -C $SRC"
+  fi
+  "${C[@]}" "printf '%s\n' $SHA > $SRC/.commit"
 
   # systemd will not start a unit whose LoadCredential= file is missing, so check them all on
   # control before building or restarting anything.
@@ -305,11 +333,32 @@ EOF
   "${C[@]}" "sudo -n sh -c 'set -e; rm -rf /opt/agentrix/bin.prev; cp -a /opt/agentrix/bin /opt/agentrix/bin.prev; for b in ${CONTROL_BINS[*]}; do install -m 0755 $REL/\$b /opt/agentrix/bin/\$b; done; printf \"%s %s\\n\" $SHA \"\$(date -u +%Y-%m-%dT%H:%M:%SZ)\" > /opt/agentrix/bin/DEPLOYED'"
 
   say "runner and egress to the sandbox"
-  for b in "${SANDBOX_BINS[@]}"; do "${C[@]}" "cat $REL/$b" > "$TMP/$b"; done
   "${S[@]}" "sudo -n sh -c 'rm -rf /opt/agentrix/bin.prev /opt/agentrix/bin.new; cp -a /opt/agentrix/bin /opt/agentrix/bin.prev; cp -a /opt/agentrix/bin /opt/agentrix/bin.new'"
-  for b in "${SANDBOX_BINS[@]}"; do
-    "${S[@]}" "sudo -n install -m 0755 /dev/stdin /opt/agentrix/bin.new/$b" < "$TMP/$b"
-  done
+  # Straight from control to the sandbox over the VPC, in seconds. The hosts forward no agent, so
+  # control makes a one-time key, the sandbox accepts it from control's VPC address only, and both
+  # are removed right after (and by cleanup if the run dies). If that fails, the programs go
+  # through this machine as before.
+  SANDBOX_VPC=$(inv SANDBOX_VPC_IP)
+  direct=0
+  if [ -n "$SANDBOX_VPC" ]; then
+    PUSH_PUB=$("${C[@]}" "rm -f /tmp/agx-push /tmp/agx-push.pub; ssh-keygen -q -t ed25519 -N '' -C agx-deploy-push -f /tmp/agx-push && cat /tmp/agx-push.pub" 2>/dev/null) || PUSH_PUB=""
+    if [ -n "$PUSH_PUB" ] && printf 'from="%s" %s\n' "$CONTROL_VPC_IP" "$PUSH_PUB" | "${S[@]}" 'umask 077; mkdir -p ~/.ssh; cat >> ~/.ssh/authorized_keys'; then
+      PUSH_KEY=1 direct=1
+      for b in "${SANDBOX_BINS[@]}"; do
+        "${C[@]}" "ssh -i /tmp/agx-push -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=15 -o StrictHostKeyChecking=accept-new deploy@$SANDBOX_VPC 'sudo -n install -m 0755 /dev/stdin /opt/agentrix/bin.new/$b' < $REL/$b" || { direct=0; break; }
+      done
+      remove_push_key
+    fi
+  fi
+  if [ "$direct" = 1 ]; then
+    echo "copied over the VPC"
+  else
+    echo "the VPC copy didn't work; copying through this machine"
+    for b in "${SANDBOX_BINS[@]}"; do "${C[@]}" "cat $REL/$b" > "$TMP/$b"; done
+    for b in "${SANDBOX_BINS[@]}"; do
+      "${S[@]}" "sudo -n install -m 0755 /dev/stdin /opt/agentrix/bin.new/$b" < "$TMP/$b"
+    done
+  fi
   git show "$SHA:deploy/systemd/agentrix-runner.service" | "${S[@]}" "sudo -n install -m 0644 /dev/stdin /etc/systemd/system/agentrix-runner.service"
   "${S[@]}" "sudo -n sh -s" <<EOF
 set -e
@@ -331,7 +380,7 @@ EOF
   "${C[@]}" "curl -s -m 5 -H 'Host: $PLATFORM' http://127.0.0.1:8080/.well-known/agentrix/keys" |
     python3 -I -c 'import json,sys; print(json.load(sys.stdin)["keys"][0]["public_key"])' > "$TMP/control-job.pub"
   [ -s "$TMP/control-job.pub" ] || die "node published no job key"
-  "${S[@]}" "sudo -n sh -c 't=\$(mktemp); cat > \$t; if cmp -s \$t /etc/agentrix/control-job.pub; then rm -f \$t; else install -m 0644 \$t /etc/agentrix/control-job.pub; rm -f \$t; systemctl restart agentrix-runner; echo \"job key changed; runner restarted\"; fi'" < "$TMP/control-job.pub"
+  "${S[@]}" "sudo -n sh -c 't=\$(mktemp); cat > \$t; if cmp -s \$t /etc/agentrix/control-job.pub; then rm -f \$t; else install -m 0644 \$t /etc/agentrix/control-job.pub; rm -f \$t; systemctl restart agentrix-runner; echo \"job key changed; runner restarted\"; fi; sleep 2; systemctl is-active agentrix-runner'" < "$TMP/control-job.pub"
 fi
 
 # --- smoke test ----------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 //! Who owns which site, and how to reach an owner: read from control.db.
 //!
-//! Brick 1 keeps sites in `sites` (with `owner_account_id`) and owners in `accounts`
+//! The first release keeps sites in `sites` (with `owner_account_id`) and owners in `accounts`
 //! (control-plane lane). This module only reads them. When W6's `agentrix-identity` and W8's
 //! stores take over, node swaps in another [`Directory`].
 
@@ -46,7 +46,7 @@ pub trait Directory: Send + Sync {
     async fn owner_by_email(&self, email: &str) -> anyhow::Result<Option<Contact>>;
 }
 
-/// The [`Directory`] over Brick 1's `sites` and `accounts` tables.
+/// The [`Directory`] over the first release's `sites` and `accounts` tables.
 #[derive(Clone)]
 pub struct ControlDb {
     pool: SqlitePool,

@@ -5,9 +5,7 @@
 # {{ site.name }} closes on {{ dunning.closes_on }}
 The {{ dunning.plan }} plan has been unpaid for {{ dunning.day }} days, so {{ site.name }} closes on {{ dunning.closes_on }}. Your data is kept for 90 days after that, then deleted.
 
-Download your export now: it has your pages, customers, orders and receipts, so you can take the site anywhere.
-
-::button Download your export | {{ dunning.export_url }}
+Every receipt stays on your Trust page. A one-file export of your site isn't ready yet.
 
 Paying before {{ dunning.closes_on }} keeps the site open.
 {% elif dunning.day >= 14 %}
@@ -22,15 +20,15 @@ Pay {{ dunning.amount|money(dunning.currency) }} and everything starts again wit
 Nothing has changed on your site. {% if dunning.retry_on %}We'll try again on {{ dunning.retry_on }}.{% endif %} If it's still unpaid on {{ dunning.read_only_on }}, the site becomes read-only until it's paid.
 {% endif %}
 
-::button Pay now | {{ dunning.pay_url }}
+::button Open billing | {{ dunning.pay_url }}
 {% endblock %}
 {% block chat %}
 {% if dunning.day >= 30 %}
-Agentrix: {{ site.name }} closes on {{ dunning.closes_on }} because the plan is unpaid. Download your export or pay to keep it open.
+Agentrix: {{ site.name }} closes on {{ dunning.closes_on }} because the plan is unpaid. Pay before then to keep it open.
 {% elif dunning.day >= 14 %}
 Agentrix: {{ site.name }} is read-only because the plan is unpaid. Pay {{ dunning.amount|money(dunning.currency) }} to start everything again.
 {% else %}
 Agentrix: {{ dunning.method }} declined {{ dunning.amount|money(dunning.currency) }} for your plan. Nothing has changed yet; the site becomes read-only on {{ dunning.read_only_on }} if it stays unpaid.
 {% endif %}
-::button Pay now | {{ dunning.pay_url }}
+::button Open billing | {{ dunning.pay_url }}
 {% endblock %}

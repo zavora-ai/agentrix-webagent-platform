@@ -24,7 +24,10 @@ struct Mock {
     captures: usize,
     refunds: HashMap<String, String>,       // request id → refund id
     subscriptions: HashMap<String, String>, // id → status
+    subscription_plans: HashMap<String, String>, // id → PayPal plan id, once revised
+    revisions: Vec<(String, Value)>,        // (subscription id, body)
     plans: usize,
+    plan_bodies: Vec<Value>,
 }
 
 type Shared = Arc<Mutex<Mock>>;
@@ -113,9 +116,10 @@ async fn product() -> Json<Value> {
     Json(json!({ "id": "PROD-1" }))
 }
 
-async fn plan(State(m): State<Shared>) -> Json<Value> {
+async fn plan(State(m): State<Shared>, Json(body): Json<Value>) -> Json<Value> {
     let mut m = m.lock().unwrap();
     m.plans += 1;
+    m.plan_bodies.push(body);
     Json(json!({ "id": format!("P-{}", m.plans) }))
 }
 
@@ -130,15 +134,26 @@ async fn create_subscription(State(m): State<Shared>) -> Json<Value> {
 }
 
 async fn get_subscription(State(m): State<Shared>, Path(id): Path<String>) -> Json<Value> {
-    let status = m
-        .lock()
-        .unwrap()
-        .subscriptions
+    let m = m.lock().unwrap();
+    let status = m.subscriptions.get(&id).cloned().unwrap_or_default();
+    let plan = m
+        .subscription_plans
         .get(&id)
         .cloned()
-        .unwrap_or_default();
+        .unwrap_or_else(|| "P-1".into());
     Json(
-        json!({ "id": id, "status": status, "billing_info": { "next_billing_time": "2026-12-08T10:00:00Z" } }),
+        json!({ "id": id, "status": status, "plan_id": plan, "billing_info": { "next_billing_time": "2026-12-08T10:00:00Z" } }),
+    )
+}
+
+async fn revise(
+    State(m): State<Shared>,
+    Path(id): Path<String>,
+    Json(body): Json<Value>,
+) -> Json<Value> {
+    m.lock().unwrap().revisions.push((id.clone(), body.clone()));
+    Json(
+        json!({ "plan_id": body["plan_id"], "links": [{ "rel": "approve", "href": format!("https://www.sandbox.paypal.com/webapps/billing/subscriptions/update?ba_token={id}") }] }),
     )
 }
 
@@ -159,6 +174,7 @@ async fn paypal() -> (String, Shared) {
         .route("/v1/billing/plans", post(plan))
         .route("/v1/billing/subscriptions", post(create_subscription))
         .route("/v1/billing/subscriptions/{id}", get(get_subscription))
+        .route("/v1/billing/subscriptions/{id}/revise", post(revise))
         .route("/v1/notifications/verify-webhook-signature", post(verify))
         .with_state(state.clone());
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -399,6 +415,7 @@ async fn plans_subscribe_in_usd_and_webhooks_must_be_signed() {
             currency: "USD".into(),
             minor: 4900,
         },
+        annual: None,
     };
     let start = SubscriptionStart {
         site: kilele(),
@@ -425,9 +442,57 @@ async fn plans_subscribe_in_usd_and_webhooks_must_be_signed() {
             currency: "KES".into(),
             minor: 650_000,
         },
-        ..plan
+        ..plan.clone()
     };
     assert!(effects.ensure_plan(&kes).await.is_err(), "plans are in USD");
+
+    // 12 months up front: its own PayPal plan, billed once a year for the 12-month total.
+    let annual = PlanPrice {
+        annual: Some(Money {
+            currency: "USD".into(),
+            minor: 47_040,
+        }),
+        ..plan.clone()
+    };
+    let yearly = effects
+        .start_subscription(SubscriptionStart {
+            site: SiteId::new("annual-site"),
+            plan: annual,
+            subscriber_email: None,
+            return_url: "https://agentrix.website/setup/pay/return".into(),
+            cancel_url: "https://agentrix.website/setup/pay".into(),
+            starts_at: None,
+        })
+        .await
+        .unwrap();
+    {
+        let m = mock.lock().unwrap();
+        assert_eq!(m.plans, 2, "a second PayPal plan for 12 months");
+        let cycle = &m.plan_bodies[1]["billing_cycles"][0];
+        assert_eq!(cycle["frequency"]["interval_unit"], "YEAR");
+        assert_eq!(cycle["frequency"]["interval_count"], 1);
+        assert_eq!(cycle["pricing_scheme"]["fixed_price"]["value"], "470.40");
+        assert_eq!(
+            cycle["pricing_scheme"]["fixed_price"]["currency_code"],
+            "USD"
+        );
+    }
+    let row = &effects
+        .subscriptions_for_site(&SiteId::new("annual-site"))
+        .await
+        .unwrap()[0];
+    assert_eq!(
+        (
+            row.plan_key.as_str(),
+            row.amount_minor,
+            row.provider_ref.as_deref()
+        ),
+        (
+            "business@1:annual",
+            47_040,
+            Some(yearly.provider_ref.as_str())
+        )
+    );
 
     // A webhook PayPal didn't sign changes nothing.
     let event = json!({ "id": "WH-EVT-1", "event_type": "BILLING.SUBSCRIPTION.ACTIVATED", "resource": { "id": started.provider_ref } });
@@ -464,9 +529,64 @@ async fn plans_subscribe_in_usd_and_webhooks_must_be_signed() {
     let subs = effects.subscriptions_for_site(&kilele()).await.unwrap();
     assert_eq!(subs[0].state, "active");
     assert!(subs[0].period_end.is_some());
+    // Started, the annual one started, activated.
     assert_eq!(
         kinds(&receipts),
-        ["subscription.changed", "subscription.changed"]
+        [
+            "subscription.changed",
+            "subscription.changed",
+            "subscription.changed"
+        ]
+    );
+
+    // Switching the live plan to 12 months: PayPal's revise to the 12-month plan, agreed on
+    // PayPal's page; once PayPal reports the new plan, the key and the amount follow.
+    let annual_plan = PlanPrice {
+        annual: Some(Money {
+            currency: "USD".into(),
+            minor: 47_040,
+        }),
+        ..plan.clone()
+    };
+    let approve = effects
+        .revise_subscription(
+            &kilele(),
+            &started.subscription_id,
+            &annual_plan,
+            "https://agentrix.website/billing/period/return",
+            "https://agentrix.website/billing",
+        )
+        .await
+        .unwrap();
+    assert!(approve.contains(&started.provider_ref));
+    {
+        let m = mock.lock().unwrap();
+        assert_eq!(m.revisions.len(), 1);
+        assert_eq!(m.revisions[0].0, started.provider_ref);
+        assert_eq!(
+            m.revisions[0].1["plan_id"], "P-2",
+            "the 12-month plan made earlier"
+        );
+    }
+    let before = effects
+        .refresh_subscription(&started.provider_ref)
+        .await
+        .unwrap();
+    assert_eq!(
+        before.plan_key, "business@1",
+        "nothing changes until the owner agrees"
+    );
+    mock.lock()
+        .unwrap()
+        .subscription_plans
+        .insert(started.provider_ref.clone(), "P-2".into());
+    let after = effects
+        .refresh_subscription(&started.provider_ref)
+        .await
+        .unwrap();
+    assert_eq!(
+        (after.plan_key.as_str(), after.amount_minor),
+        ("business@1:annual", 47_040)
     );
 
     // The first charge: recorded once for W3's Money page, however often PayPal retries.

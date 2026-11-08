@@ -463,6 +463,10 @@ pub fn customer(site: &SiteFacts, order: &OrderFacts, event: &OrderEvent, email:
 /// The owner's "new order" message (email, push and WhatsApp), for
 /// [`crate::Messages::send_to_site_owner`]: returns the message id, context, reason and key.
 /// `platform_origin` is the console's origin (`ctx.origin`, e.g. `https://agentrix.website`).
+///
+/// "Open the order" goes to the order in W2's back office (`/samples/{site}/orders/{id}`,
+/// agentrix-samples), the only page that shows an order to its owner: the console has no
+/// Orders app yet, so `/console/{site}/apps/orders` is a 404.
 pub fn owner_new_order(
     site: &SiteFacts,
     order: &OrderFacts,
@@ -471,13 +475,13 @@ pub fn owner_new_order(
     let origin = platform_origin.trim_end_matches('/');
     let ctx = json!({
         "site": site_json(site),
-        "console_url": format!("{origin}/os"),
+        "console_url": format!("{origin}/console/{}", site.id),
         "order": {
             "number": order.order_id, "customer": first_name(&order.customer_name),
             "currency": "KES", "total": order.total,
             "charged": order.usd.as_ref().map(|usd| json!({ "amount": usd, "currency": "USD", "method": "PayPal" })),
             "lines": lines_json(order), "fulfilment": fulfilment(order),
-            "url": format!("{origin}/console/{}/apps/orders", site.id),
+            "url": format!("{origin}/samples/{}/orders/{}", site.id, order.order_id),
         },
     });
     (

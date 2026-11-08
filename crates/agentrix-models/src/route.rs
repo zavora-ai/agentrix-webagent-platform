@@ -349,7 +349,7 @@ pub struct Routing {
     overrides: HashMap<Purpose, (Provider, String)>,
 }
 
-/// The image and speech specialists (Brick 1 design §4.3's `AGENTRIX_IMAGE`, `_IMAGE_FAST`,
+/// The image and speech specialists (the first release design §4.3's `AGENTRIX_IMAGE`, `_IMAGE_FAST`,
 /// `_STT`, `_STT_REALTIME` and `_TTS`). Always on Vultr.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Media {

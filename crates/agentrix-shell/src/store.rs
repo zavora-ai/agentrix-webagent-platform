@@ -89,6 +89,11 @@ impl ShellStore {
         crate::missions::Missions::new(self.pool.clone()).with_records(self.records.clone())
     }
 
+    /// Orders and customers of a site, read-only (`commerce`).
+    pub fn commerce(&self) -> crate::commerce::Commerce {
+        crate::commerce::Commerce::new(self.pool.clone())
+    }
+
     /// Front of house conversations the owner can sit in on.
     pub fn live(&self) -> crate::live::Live {
         crate::live::Live::new(self.pool.clone())

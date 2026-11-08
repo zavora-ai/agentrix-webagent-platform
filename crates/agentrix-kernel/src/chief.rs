@@ -12,7 +12,7 @@
 //! - **Bounds.** At most [`MAX_ROUNDS`] tool rounds and [`BUDGET`] in all; then one last call
 //!   without tools, and plain words if the gateway can't answer at all.
 //! - **Honest data.** Tools read recorded rows only: the samples' records (W2's `records.db`),
-//!   decision cards (Brick 1's and W5's v2), the gateway's spend and limits (W8's metrics),
+//!   decision cards (the first release's and W5's v2), the gateway's spend and limits (W8's metrics),
 //!   receipts and the roster. A site that keeps no such records gets "none recorded", never a
 //!   guess. Customers' emails and phone numbers never reach the model.
 
@@ -1356,7 +1356,7 @@ impl Chief {
                 decided.push(item);
             }
         }
-        // Brick 1's cards (go-live, restore, held orders) keep their own table.
+        // The first release's cards (go-live, restore, held orders) keep their own table.
         let v1: Vec<(String, String, String)> = sqlx::query_as(
             "SELECT decision_id, kind, card FROM decisions WHERE site_id = ? AND state = 'waiting'",
         )
@@ -1372,7 +1372,7 @@ impl Chief {
             cards.push(CardRef {
                 id: id.clone(),
                 title: title.clone(),
-                href: format!("/console/decisions/{id}"),
+                href: format!("/console/{site}/decisions/{id}"),
             });
             waiting.push(json!({ "title": title, "kind": kind, "state": "waiting" }));
         }

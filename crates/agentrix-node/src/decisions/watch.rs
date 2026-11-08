@@ -135,7 +135,7 @@ async fn show(State(s): State<WatchState>, Path(id): Path<String>, headers: Head
         .unwrap_or_default()
         .into_iter()
         .find(|c| c.card.effect.args.get("move").and_then(|m| m.as_str()) == Some(id.as_str()))
-        .map(|c| json!({ "decision_id": c.card.decision_id, "title": c.card.title, "href": format!("/console/decisions/{}", c.card.decision_id) }));
+        .map(|c| json!({ "decision_id": c.card.decision_id, "title": c.card.title, "href": format!("/console/{}/decisions/{}", mv.site, c.card.decision_id) }));
     axum::Json(json!({
         "move_id": mv.id,
         "site": mv.site,

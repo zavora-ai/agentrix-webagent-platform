@@ -17,7 +17,15 @@
 
     <div class="effect-box">
       <h4>If you approve, exactly this happens</h4>
-      <ul>{% for e in card.effects %}<li>{{ e }}</li>{% endfor %}</ul>
+      <ul>{% for e in card.effects %}<li>{{ e }}</li>{% endfor %}
+      {%- if card.kind == "go-live" %}
+        <li>{{ site.host }}'s address record doesn't change. We don't edit your DNS, so your own address keeps showing your old site until you point it here. After you change it, your DNS provider's settings decide how soon visitors see the new site.</li>
+        {%- set agents = card.levels|map(attribute="webagent")|unique|list %}
+        {%- if agents %}
+        <li>Your WebAgents start work: {% for a in agents %}{% if not loop.first %}{{ " and " if loop.last else ", " }}{% endif %}the {{ a }}{% endfor %}. Below is what each may do without asking.</li>
+        {%- endif %}
+        <li>Going live charges nothing. Your plan's first charge is the day you approve it on PayPal's page, just before go-live. Its price is under Your plan and payment, on the Move page.</li>
+      {%- endif %}</ul>
     </div>
     <p class="why-line"><b>Why {{ card.risk_words|lower }}:</b> {{ card.why_words }}</p>
     {% if card.facts %}<dl class="kv">{% for f in card.facts %}<dt>{{ f.label }}</dt><dd>{{ f.value }}</dd>{% endfor %}</dl>{% endif %}
@@ -47,6 +55,7 @@
       <a class="btn btn-primary" href="#approve" data-sheet="{{ row.sheet_url }}">Approve</a>
       <form method="post" action="{{ card.decline_url }}" data-decline><button class="btn btn-ghost" type="submit">Decline</button></form>
     </div>
+    {% if card.kind == "go-live" %}<p class="small muted">Not ready? Leave the card. It keeps waiting for you here, and leaving it never declines it.</p>{% endif %}
     <details class="fallback" id="approve">
       <summary>Approve with your authenticator app instead</summary>
       <form method="post" action="{{ card.approve_url }}" class="code-form">

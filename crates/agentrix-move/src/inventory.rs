@@ -51,6 +51,11 @@ pub struct MoveInputs {
     /// Zavora's fixture site (R3.3); every screen labels it.
     #[serde(default)]
     pub fixture: bool,
+    /// The look the owner chose before the Move (the concept stage, `agentrix-concepts`): the
+    /// rebuild uses its colours and fonts, through [`crate::theme::Tokens::chosen`], instead of
+    /// the old theme's.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub look: Option<crate::theme::Tokens>,
 }
 
 /// The pages a crawl read, as the Assess pipeline stores them (one JSON blob in the CAS).

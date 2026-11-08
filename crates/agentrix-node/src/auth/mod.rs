@@ -2,7 +2,7 @@
 //! an authenticator (TOTP) code; sessions in an HttpOnly, Secure, SameSite cookie. Also the
 //! approvals API that `decisions/` uses for go-live and other cards ([`Approvals`]).
 //!
-//! Lane: `control-plane` (specs/brick-1/design.md §3.0).
+//! Lane: `control-plane` (specs/first-release/design.md §3.0).
 //!
 //! Wiring (the integration lead, in `app.rs`):
 //! ```ignore
@@ -76,7 +76,7 @@ impl AuthConfig {
             rp_name: "Agentrix".into(),
             issuer: "Agentrix".into(),
             secure_cookies,
-            after_sign_in: "/console/today".into(),
+            after_sign_in: "/os".into(),
         })
     }
 }

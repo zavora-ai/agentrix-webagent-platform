@@ -7,7 +7,7 @@
       state_words, took_words, receipt?, receipt_short?}], tick, frame?, parity? {score_words,
       score_pct, ok, pages_words, pages: [{url, chip, score_words, verdict, flagged}]},
       quarantine {count, items: [{title, reason, where}]}, card? {title, href}, spend_words?, uploads,
-      pictures_href? }
+      pictures_href?, look? {name, sentence, href} }
     concept/move.html (O5.2 to O5.5) with owner-golive.html's "you're live" and undo (O6.2).
     The go-live card itself is the console's decision page (card.href), approved with a passkey
     or a code under the frozen approve contract. static/onboarding/move.js follows the Move live.
@@ -17,7 +17,7 @@
     W11's library), the live card says so and links Pictures. -#}
 {% block title %}{{ title }}{% endblock %}
 {% block body_class %}page-move{% endblock %}
-{% block topright %}<span class="chip chip-outline">{{ host }}</span><a class="btn btn-ghost btn-sm" href="/console/today">Console</a>{% endblock %}
+{% block topright %}<span class="chip chip-outline">{{ host }}</span><a class="btn btn-ghost btn-sm" href="/os">Console</a>{% endblock %}
 {% block main %}
 <div class="move" id="move" data-state="{{ state }}" data-events="{{ '/moves/' ~ move_id ~ '/events' if move_id else '' }}">
 <div class="move-head">
@@ -35,6 +35,7 @@
       {% if quarantine.count %}<span class="chip chip-risk">{{ quarantine.count }} left behind</span>{% endif %}
     </div>
     {% if spend_words %}<p class="small muted spend" id="move-spend">{{ spend_words }}</p>{% endif %}
+    {% if look %}<p class="small move-look" id="move-look">Your new look: <b>{{ look.name }}</b>. {{ look.sentence }} The rebuild uses its colours and fonts. <a href="{{ look.href }}">Change it</a></p>{% endif %}
   </div>
   <div class="row mover"><span class="avatar av-mover">Mv</span><div><b class="small">Mover</b><div class="small muted">Hands over to your WebAgents after go-live</div></div></div>
 </div>
@@ -135,7 +136,7 @@
         </article>
         {% endfor %}
       </div>
-      {% if quarantine.count %}<p class="small q-review"><a href="/console/quarantine">See the evidence, or ask to restore one</a></p>{% else %}<p class="small muted" id="quarantine-empty">Nothing left behind so far.</p>{% endif %}
+      {% if quarantine.count %}<p class="small q-review"><a href="/console/{{ site_id }}/quarantine">See the evidence, or ask to restore one</a></p>{% else %}<p class="small muted" id="quarantine-empty">Nothing left behind so far.</p>{% endif %}
     </section>
 
     <section class="block" id="prove" aria-labelledby="prove-h">
@@ -167,10 +168,13 @@
     <article class="card golive" id="golive" aria-labelledby="golive-title">
       <div class="spread"><span class="chip chip-wait">Mover asks</span></div>
       <h3 id="golive-title">{{ card.title if card else host ~ " is ready to go live" }}</h3>
+      <p class="small">If you approve, this happens:</p>
       <ul>
-        <li>{{ m.icon("check") }}<span>Your new site starts serving from a signed release.</span></li>
-        <li>{{ m.icon("check") }}<span><b>Old site kept as a fallback</b>, untouched.</span></li>
-        <li>{{ m.icon("check") }}<span><b>Undo in one tap for 30 days.</b></span></li>
+        <li>{{ m.icon("check") }}<span>Within seconds, your new site starts answering at its Agentrix address, from a signed release.</span></li>
+        <li>{{ m.icon("check") }}<span><b>{{ host }}'s address record doesn't change.</b> We don't edit your DNS, so your own address keeps showing your old site until you point it here. After you change it, your DNS provider's settings decide how soon visitors see the new site.</span></li>
+        <li>{{ m.icon("check") }}<span>Your WebAgents start work, at the starting levels the card lists. Anything that can't be undone still asks you first.</span></li>
+        <li>{{ m.icon("check") }}<span>Going live charges nothing. Your plan's first charge is the day you approve it on PayPal's page, just before go-live. Its price is under Your plan and payment.</span></li>
+        <li>{{ m.icon("check") }}<span><b>Old site kept as a fallback</b>, untouched. <b>Undo in one tap for 30 days.</b></span></li>
         {% if quarantine.count == 1 %}<li>{{ m.icon("check") }}<span>The item left behind stays behind.</span></li>{% elif quarantine.count %}<li>{{ m.icon("check") }}<span>The {{ quarantine.count }} items left behind stay behind.</span></li>{% endif %}
       </ul>
       <div class="checks">
@@ -180,6 +184,7 @@
       </div>
       <a class="btn plan-pay" href="/setup/pay?site={{ site_id }}&amp;next=/console/move">Your plan and payment</a>
       {% if card %}<a class="btn btn-primary btn-lg" href="{{ card.href }}">Go live · approve with passkey</a>{% endif %}
+      <p class="small muted">Not ready? Leave the card. It keeps waiting for you in Decisions, and leaving it never declines it.</p>
       <p class="small muted">Your approval is signed by your device and bound to this exact release. No passkey on this device? The card takes a code from your authenticator app.</p>
     </article>
     {% elif state == "live" %}

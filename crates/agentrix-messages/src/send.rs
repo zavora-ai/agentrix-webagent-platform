@@ -893,7 +893,7 @@ fn envelope_from_entry(entry: &Entry) -> Envelope {
     let push = (entry.channel == Channel::Push).then(|| Push {
         title: payload["title"].as_str().unwrap_or("Agentrix").to_string(),
         body: entry.body_text.clone(),
-        url: payload["url"].as_str().unwrap_or("/console").to_string(),
+        url: payload["url"].as_str().unwrap_or("/os").to_string(),
     });
     let chat = (entry.channel == Channel::Chat).then(|| Chat {
         text: entry.body_text.clone(),

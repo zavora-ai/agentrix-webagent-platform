@@ -8,8 +8,8 @@
 # It holds no secret (N6, D6): only control's public key for job specs, which the deploy
 # script places in /etc/agentrix/control.pub.
 
-hostname: agx-b1-sandbox
-fqdn: agx-b1-sandbox
+hostname: agx-sandbox
+fqdn: agx-sandbox
 preserve_hostname: false
 timezone: Africa/Nairobi
 
@@ -128,4 +128,4 @@ runcmd:
   # Facts: is KVM exposed (microVM rooms need it), and which runsc and Docker are installed.
   - [sh, -c, "printf '{\"role\":\"sandbox\",\"kvm\":%s,\"runsc\":\"%s\",\"docker\":\"%s\",\"default_runtime\":\"%s\",\"nft_agentrix\":%s}\\n' \"$( [ -e /dev/kvm ] && echo true || echo false )\" \"$(runsc --version 2>/dev/null | head -1)\" \"$(docker version --format '{{.Server.Version}}' 2>/dev/null)\" \"$(docker info --format '{{.DefaultRuntime}}' 2>/dev/null)\" \"$(nft list table inet agentrix >/dev/null 2>&1 && echo true || echo false)\" > /var/lib/agentrix/host-facts.json"]
 
-final_message: "agx-b1-sandbox ready after $UPTIME s"
+final_message: "agx-sandbox ready after $UPTIME s"

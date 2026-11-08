@@ -195,7 +195,7 @@ async def scene_assess(tab, base):
     await tab.js(f"document.querySelector({json.dumps(sel)}).form.requestSubmit()")
     await tab.wait_for("location.pathname.startsWith('/assess/') || document.body.innerText.includes('Checking ')", 30)
     await asyncio.sleep(2)
-    await tab.wait_for("document.body.innerText.includes('In short') || (document.body.innerText.includes('Act now') && !document.body.innerText.includes('Reading your pages'))", 200)
+    await tab.wait_for("document.body.innerText.includes('In short') || document.body.innerText.includes('Your report is ready')", 240)
     await asyncio.sleep(3)
     await tab.scroll_to(900, 3)
     await asyncio.sleep(4)
@@ -227,6 +227,30 @@ async def scene_receipts(tab, base):
             await tab.click(text="Check the signature")
             await asyncio.sleep(3.5)
         await asyncio.sleep(1.5)
+
+
+async def scene_ask(tab, base):
+    """A site's Ask bar: AGX_URL, then each question in AGX_QUESTIONS (separated by ||), answered live."""
+    await tab.goto(os.environ.get("AGX_URL", base), settle=2)
+    await asyncio.sleep(1.5)
+    sel = "input[placeholder^='Ask '][placeholder$='anything…'], input[placeholder*='anything']"
+    for q in [x.strip() for x in os.environ.get("AGX_QUESTIONS", "").split("||") if x.strip()]:
+        await tab.click(selector=sel)
+        await asyncio.sleep(0.6)
+        await tab.type_into(sel, q, cps=16)
+        await asyncio.sleep(0.5)
+        await tab.send("Input.dispatchKeyEvent", {"type": "keyDown", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "text": "\r"})
+        await tab.send("Input.dispatchKeyEvent", {"type": "keyUp", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13})
+        await asyncio.sleep(2)
+        last, still = -1, 0
+        for _ in range(120):  # until the page text stops growing for 3 s, at most 60 s
+            n = await tab.js("document.body.innerText.length")
+            still = still + 1 if n == last else 0
+            last = n
+            if still >= 6:
+                break
+            await asyncio.sleep(0.5)
+        await asyncio.sleep(4)
 
 
 SCENES = {name[6:]: fn for name, fn in globals().items() if name.startswith("scene_")}

@@ -5,12 +5,12 @@ submission session); James submits.
 
 | Form item | File | State |
 |---|---|---|
-| Title, short and long descriptions, mode, categories, technologies, links | [`form.md`](form.md); check the lengths with `python3 specs/submission/count.py` | Drafted. The gauntlet score and the Vultr routes wait on the live run |
+| Title, short and long descriptions, mode, categories, technologies, links | [`form.md`](form.md); check the lengths with `python3 specs/submission/count.py` | Ready. Paste the video's upload link |
 | Cover image, 16:9 | [`cover/cover.png`](cover/cover.png), 1920 × 1080 | Ready |
-| Slides, PDF | [`deck/agentrix-vultr-deck.pdf`](deck/agentrix-vultr-deck.pdf), 15 slides; source [`deck/deck.html`](deck/deck.html) | Drafted. Live values marked in the deck's `LIVE` table |
-| Demo video, under 5 minutes | [`video/agentrix-vultr-demo.mp4`](video/agentrix-vultr-demo.mp4); script [`video/script.md`](video/script.md), beats [`video/beats.json`](video/beats.json) | Waits on the live captures |
-| README: Vultr services, architecture, use case, how tasks run, containment | The repository's [`README.md`](../../README.md) | Updated; live values marked TODO(live) |
-| Repository, demo platform, demo URL | Public repo: being published by the "Publish Agentrix to zavora-ai on GitHub" session · Vultr · https://agentrix.website | Repo URL to come |
+| Slides, PDF | [`deck/agentrix-vultr-deck.pdf`](deck/agentrix-vultr-deck.pdf), 19 slides; source [`deck/deck.html`](deck/deck.html) | Ready; the last slide's video card waits on the upload link |
+| Demo video, under 5 minutes | `video/agentrix-vultr-demo.mp4` (4:51, kept out of git; upload it). Screen-share cut: [`video/beats-demo.json`](video/beats-demo.json), scenes in [`video/demo.py`](video/demo.py) | Ready to upload |
+| README: Vultr services, architecture, use case, how tasks run, containment | The repository's [`README.md`](../../README.md), sections 2, 4, 6 and 9 | Public |
+| Repository, demo platform, demo URL | https://github.com/zavora-ai/agentrix-webagent-platform · Other (Vultr) · https://agentrix.website | Ready |
 
 ## Rebuild any of it
 

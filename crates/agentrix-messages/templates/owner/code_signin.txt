@@ -6,13 +6,13 @@
 
 If it was you, there's nothing to do.
 
-If it wasn't, sign in with your passkey or authenticator, open Devices and people, and sign out everywhere.
+If it wasn't, message us on WhatsApp now: the link is at the end of this email. The console can't show your devices or sign them out yet.
 
-::button Review your devices | {{ console_url }}
+::button Open the console | {{ console_url }}
 {% endblock %}
 {% block push %}Someone signed in to your account with a code. Open Agentrix to check.{% endblock %}
-{% block push_url %}/os{% endblock %}
+{% block push_url %}{{ console_url }}{% endblock %}
 {% block chat %}
-Agentrix: someone signed in to your account on {{ signin.device }} with {{ signin.method }} ({{ signin.when }}). If it wasn't you, sign in with your passkey and sign out everywhere.
-::button Review your devices | {{ console_url }}
+Agentrix: someone signed in to your account on {{ signin.device }} with {{ signin.method }} ({{ signin.when }}). If it wasn't you, message us on WhatsApp now: https://wa.me/254721490933
+::button Open the console | {{ console_url }}
 {% endblock %}

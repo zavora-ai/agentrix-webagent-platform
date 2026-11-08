@@ -2,7 +2,7 @@
 //!
 //! A WebAgent is a governed worker with its own principal, mandate, jobs, budget and per-job
 //! autonomy dial, and a living mark that shows truthfully what it is doing (ADR-010, ADR-031).
-//! Horizon 1 builds the platform layer beside Brick 1's code:
+//! Horizon 1 builds the platform layer beside the first release's code:
 //! - the living marks' assets, served on every surface ([`agentrix_marks`]);
 //! - the roster of nine as data, with `MarkSpec`s, for every site ([`roster`], [`store`]);
 //! - presence from real activity over SSE; the dial check on the governed path; section desks

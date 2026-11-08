@@ -36,12 +36,12 @@ async fn run_file(pool: &SqlitePool, file: &PathBuf) {
         .unwrap_or_else(|e| panic!("applying {}: {e}", file.display()));
 }
 
-/// Brick 1's `control.db` (node's schema only), in memory on one connection.
+/// The first release's `control.db` (node's schema only), in memory on one connection.
 ///
 /// # Panics
 ///
 /// If a schema file is missing or fails to apply.
-pub async fn brick1_db() -> SqlitePool {
+pub async fn first_release_db() -> SqlitePool {
     let options = SqliteConnectOptions::new()
         .in_memory(true)
         .foreign_keys(true);
@@ -62,7 +62,7 @@ pub async fn brick1_db() -> SqlitePool {
 ///
 /// If a schema file or a migration fails.
 pub async fn control_db() -> SqlitePool {
-    let pool = brick1_db().await;
+    let pool = first_release_db().await;
     crate::migrate(&pool)
         .await
         .expect("agentrix-store migrations");

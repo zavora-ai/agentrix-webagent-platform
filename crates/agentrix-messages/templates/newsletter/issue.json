@@ -10,6 +10,6 @@
   ],
   "link": {"label": "Check your own site for free", "url": "https://agentrix.website/assess"}
  },
- "unsubscribe_url": "https://agentrix.website/fix/stop?token=nl_3b8x",
+ "unsubscribe_url": "https://agentrix.website/_home/fix/stop?token=nl_3b8x",
  "consent": {"words": "Send me the weekly fix", "given_at": "Sun 8 Nov, 10:20", "source": "agentrix.website footer"}
 }

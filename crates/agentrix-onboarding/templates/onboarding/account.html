@@ -5,10 +5,10 @@
     New: concept/journeys/owner-account.html (O2.1): a passkey first; without one, a code by
     email, or a password and an authenticator app; then recovery codes, shown once.
     Sign in (O2.3) and recovery are drawn in the same language. static/onboarding/account.js
-    drives Brick 1's /auth/passkey/*, /auth/password, /auth/totp and W6's /auth/email/*,
+    drives the first release's /auth/passkey/*, /auth/password, /auth/totp and W6's /auth/email/*,
     /auth/recovery-codes and /auth/recover/*. Email never approves anything (ADR-014).
     A browser that's already signed in gets "You're signed in" instead of the create or sign-in
-    form, because Brick 1's passkey register adds a passkey to whoever is signed in. -#}
+    form, because the first release's passkey register adds a passkey to whoever is signed in. -#}
 {% block title %}{% if mode == "new" %}{% if host %}Keep {{ host }}{% else %}Create your account{% endif %}{% elif mode == "signin" %}Sign in{% else %}Get back into your account{% endif %}{% endblock %}
 {% block body_class %}page-setup page-account{% endblock %}
 {% block topright %}{% if mode == "signin" %}<a class="btn btn-ghost btn-sm" href="{{ new_href }}">Create an account</a>{% else %}<a class="btn btn-ghost btn-sm" href="{{ signin_href }}">Sign in</a>{% endif %}{% endblock %}
@@ -28,7 +28,7 @@
         <a class="btn btn-primary" id="continue-as" href="{{ next }}">Continue with this account</a>
         <button class="btn" type="button" id="sign-out">{% if mode == "new" %}Sign out and create a new account{% else %}Sign out and sign in as someone else{% endif %}</button>
       </div>
-      <p class="o-hint">To add a passkey to this account, use Sign-in and security in your console.</p>
+      <p class="o-hint">There's no page yet for adding a passkey to an account that's already signed in.</p>
     </div>
   {% else %}
 
@@ -141,7 +141,7 @@
         <label class="o-field">Email<input id="rc-email" type="email" autocomplete="username" required></label>
         <label class="o-field">One recovery code<input id="rc-code" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" required></label>
         <button class="btn btn-primary self-start" type="submit">Get back in</button>
-        <p class="o-hint">The code works once. Next you add a new passkey, and we tell you by email that a code was used.</p>
+        <p class="o-hint">The code works once, and we email you to say it was used.</p>
       </form>
       <div role="tabpanel" id="t-email" aria-labelledby="tab-email" class="o-sec" hidden>
         <label class="o-field">Email<input id="re-email" type="email" autocomplete="username" required></label>
@@ -155,7 +155,7 @@
     </div>
     <div id="step-held" class="o-sec" hidden>
       <div class="o-wait" role="status" id="held-words"></div>
-      <p class="small">We've told you by email and every other way we can reach you. If this wasn't you, sign in any other way and the hold is cancelled.</p>
+      <p class="small">We've emailed the account's address about it. If it wasn't you, sign in with your passkey or authenticator app before then and stop it on this page.</p>
     </div>
     <p class="small muted">Remembered it? <a href="{{ signin_href }}">Sign in</a>.</p>
   {% endif %}

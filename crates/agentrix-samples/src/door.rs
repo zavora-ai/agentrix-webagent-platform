@@ -46,13 +46,13 @@ use crate::App;
 use crate::shell::{Desk, Shell, desks, front};
 use crate::web::{self, Ctx, Page, html, see_other};
 
-/// The MCP protocol versions the door speaks, newest first (as Brick 1's door).
+/// The MCP protocol versions the door speaks, newest first (as the first release's door).
 pub const MCP_VERSIONS: &[&str] = &["2025-06-18", "2025-03-26"];
 
 /// The words every place that states the terms carries (D8).
 pub const SAMPLE_TERMS: &str = "Sample terms, not legal advice.";
 
-/// The metadata key an agent sends an idempotency key under (as Brick 1's door).
+/// The metadata key an agent sends an idempotency key under (as the first release's door).
 const IDEMPOTENCY_KEY: &str = "agenticwebprotocol.com/idempotency-key";
 
 /// The door's routes, merged into the sample host router.
@@ -2044,7 +2044,7 @@ async fn claim(
     let mut response = see_other("/bag");
     response.headers_mut().append(
         header::SET_COOKIE,
-        web::set_cookie(&app, web::CART, id, 60 * 60 * 24 * 30),
+        web::set_cookie(&app, web::CART, id, web::CART_SECONDS),
     );
     Ok(response)
 }

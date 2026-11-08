@@ -26,7 +26,7 @@
   --coral-strong: #b72d50;
   --coral-50: #fff0f4;
 
-  /* Neutrals. --muted is Brick 1's #5f5e73 (AA on --surface-2), not the concepts' #656479. */
+  /* Neutrals. --muted is the first release's #5f5e73 (AA on --surface-2), not the concepts' #656479. */
   --ink: #23223a;
   --ink-2: #4a4960;
   --muted: #5f5e73;

@@ -675,15 +675,18 @@ async fn page(app: &Router, path: &str) -> (StatusCode, String) {
 #[tokio::test]
 async fn every_console_page_renders_from_the_database() {
     let seeded = seed().await;
-    let app = router(PagesState {
+    let state = PagesState {
         console: Arc::new(Console::new().expect("templates")),
         reads: Arc::new(reads(&seeded)),
         onboarding: None,
-    });
+        concepts: None,
+    };
+    let old = first_release_router(state.clone());
+    let app = router(state);
     for (name, path, shows) in [
         (
             "today",
-            "/console/brick1-today",
+            "/console/first-today",
             "A quiet night: nothing needed you.",
         ),
         (
@@ -709,7 +712,8 @@ async fn every_console_page_renders_from_the_database() {
         ),
         ("quarantine", "/console/quarantine", "An old admin account"),
     ] {
-        let (status, html) = page(&app, path).await;
+        let on = if path == "/console/move" { &app } else { &old };
+        let (status, html) = page(on, path).await;
         assert_eq!(status, StatusCode::OK, "{path}: {html}");
         assert!(
             html.contains("Kilele Bakery"),
@@ -721,7 +725,7 @@ async fn every_console_page_renders_from_the_database() {
             std::fs::write(format!("{dir}/db-{name}.html"), &html).unwrap();
         }
     }
-    let (_, decision) = page(&app, "/console/decisions/dc_1").await;
+    let (_, decision) = page(&old, "/console/decisions/dc_1").await;
     assert!(
         decision.contains(&seeded.go_live.fingerprint.to_string()),
         "the card shows the fingerprint it signs"
@@ -765,12 +769,13 @@ async fn today_shows_the_questions_visitors_passed() {
         "newest first"
     );
 
-    let app = router(PagesState {
+    let app = first_release_router(PagesState {
         console: Arc::new(Console::new().expect("templates")),
         reads: Arc::new(reads(&seeded)),
         onboarding: None,
+        concepts: None,
     });
-    let (status, html) = page(&app, "/console/brick1-today").await;
+    let (status, html) = page(&app, "/console/first-today").await;
     assert_eq!(status, StatusCode::OK, "{html}");
     assert!(html.contains("Questions visitors passed to you"), "{html}");
     assert!(html.contains("Do you bake sugar-free cakes?"));

@@ -9,9 +9,14 @@
 //! Only the site's proven owner (`sites.owner_account_id`, set when the claim is verified) can
 //! start a subscription. The price is W3's catalogue's, never the browser's. A subscription's
 //! first charge is the day it's approved, so this step comes right before go-live.
+//!
+//! The owner's period comes from their plan choice (`/setup/plan`): monthly, or 12 months up
+//! front, which PayPal charges once as the 12-month total ([`plan_price`]) and W3's billing
+//! records with its period and amount (`Billing::start_for`).
 
 use std::sync::Arc;
 
+use agentrix_billing::Period;
 use agentrix_effects::{EffectError, Effects, PlanPrice, SubscriptionStart};
 use agentrix_host::{NodeContext, OwnerSessions};
 use agentrix_types::{Money, SiteId};
@@ -124,6 +129,8 @@ async fn view_for(st: &PayRoutes, site: &str, next: &str) -> anyhow::Result<PayP
     };
     view.plan_name = plan.name.clone();
     view.price_words = dollars(plan.price_cents);
+    view.period = choice.period.as_str().to_owned();
+    view.charge_words = charge_words(plan, choice.period);
     view.budget_words = format!("${}", choice.ai_budget_usd);
     if !st.effects.enabled() {
         view.state = PayState::Off;
@@ -150,10 +157,30 @@ async fn view_for(st: &PayRoutes, site: &str, next: &str) -> anyhow::Result<PayP
 }
 
 fn dollars(cents: i64) -> String {
-    if cents % 100 == 0 {
-        format!("${}", cents / 100)
-    } else {
-        format!("${}.{:02}", cents / 100, cents % 100)
+    crate::view::usd(cents)
+}
+
+/// "$149 a month" or "$1,430.40 for 12 months".
+pub fn charge_words(plan: &agentrix_billing::Plan, period: Period) -> String {
+    match period {
+        Period::Monthly => format!("{} a month", dollars(plan.price_cents)),
+        Period::Annual => format!("{} for 12 months", dollars(plan.annual_cents())),
+    }
+}
+
+/// What W6's gateway asks PayPal for: the monthly price, and for 12 months up front the
+/// 12-month total, charged once and renewed a year later. Always W3's catalogue's numbers.
+pub fn plan_price(plan: &agentrix_billing::Plan, period: Period) -> PlanPrice {
+    let usd = |minor| Money {
+        currency: "USD".into(),
+        minor,
+    };
+    PlanPrice {
+        plan_id: plan.id.clone(),
+        version: agentrix_billing::catalogue().version,
+        name: format!("Agentrix {}", plan.name),
+        monthly: usd(plan.price_cents),
+        annual: (period == Period::Annual).then(|| usd(plan.annual_cents())),
     }
 }
 
@@ -256,11 +283,11 @@ async fn start(
     if view.state != PayState::Ready {
         return Redirect::to(&here(&site, &next)).into_response();
     }
-    let Some(plan) = plan_choice(&st.pool, &site)
+    let Some((plan, period)) = plan_choice(&st.pool, &site)
         .await
         .ok()
         .flatten()
-        .and_then(|c| agentrix_billing::plan(&c.plan_id))
+        .and_then(|c| agentrix_billing::plan(&c.plan_id).map(|p| (p, c.period)))
     else {
         return Redirect::to(&here(&site, &next)).into_response();
     };
@@ -283,15 +310,7 @@ async fn start(
         .effects
         .start_subscription(SubscriptionStart {
             site: SiteId::new(site.clone()),
-            plan: PlanPrice {
-                plan_id: plan.id.clone(),
-                version: agentrix_billing::catalogue().version,
-                name: format!("Agentrix {}", plan.name),
-                monthly: Money {
-                    currency: "USD".into(),
-                    minor: plan.price_cents,
-                },
-            },
+            plan: plan_price(plan, period),
             subscriber_email: None,
             return_url,
             cancel_url,
@@ -301,9 +320,10 @@ async fn start(
         .await;
     match started {
         Ok(s) => {
-            // W3's billing records it as waiting for approval; went_live sets its start.
+            // W3's billing records it as waiting for approval, with its period and what one
+            // charge is; went_live sets its start.
             if let Err(e) = agentrix_billing::Billing::new(st.pool.clone())
-                .start(&site, &plan.id, &s.provider_ref, None)
+                .start_for(&site, &plan.id, period, &s.provider_ref, None)
                 .await
             {
                 tracing::warn!(error = %e, "recording the subscription in billing");
@@ -347,4 +367,31 @@ pub fn router(st: PayRoutes) -> Router {
         .route("/setup/pay", get(page).post(start))
         .route("/setup/pay/return", get(back_from_paypal))
         .with_state(st)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The amount PayPal is asked for is the catalogue's: monthly, or 12 months less the one
+    /// discount, charged once.
+    #[test]
+    fn paypal_is_asked_for_the_period_the_owner_chose() {
+        let commerce = agentrix_billing::plan("commerce").unwrap();
+        let monthly = plan_price(commerce, Period::Monthly);
+        assert_eq!(
+            (monthly.monthly.minor, monthly.annual.as_ref()),
+            (14_900, None)
+        );
+        let annual = plan_price(commerce, Period::Annual);
+        assert_eq!(annual.monthly.minor, 14_900);
+        assert_eq!(annual.annual.as_ref().map(|m| m.minor), Some(143_040));
+        assert_eq!(annual.charge().minor, 143_040);
+        assert_eq!(annual.annual.unwrap().currency, "USD");
+        assert_eq!(charge_words(commerce, Period::Monthly), "$149 a month");
+        assert_eq!(
+            charge_words(commerce, Period::Annual),
+            "$1,430.40 for 12 months"
+        );
+    }
 }

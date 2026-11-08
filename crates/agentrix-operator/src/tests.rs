@@ -327,12 +327,12 @@ async fn mount_serves_the_ops_host() {
 }
 
 #[test]
-fn approval_requests_carry_both_the_seams_shape_and_brick_1s() {
-    // Node's adapter parses Brick 1's internally tagged ApproveRequest; the seam's doc says
+fn approval_requests_carry_both_the_seams_shape_and_the_first_releases() {
+    // Node's adapter parses the first release's internally tagged ApproveRequest; the seam's doc says
     // {"totp": code}. The request must satisfy both.
     #[derive(serde::Deserialize)]
     #[serde(tag = "method", rename_all = "lowercase")]
-    enum Brick1 {
+    enum FirstRelease {
         Totp { code: String },
     }
     let (fake, approvals) = testing::approvals();
@@ -372,7 +372,7 @@ fn approval_requests_carry_both_the_seams_shape_and_brick_1s() {
     assert_eq!(proof.method, "totp");
     let sent = seen.lock().unwrap().clone().unwrap();
     assert_eq!(sent["totp"], "246810");
-    let Brick1::Totp { code } = serde_json::from_value(sent).unwrap();
+    let FirstRelease::Totp { code } = serde_json::from_value(sent).unwrap();
     assert_eq!(code, "246810");
     assert_eq!(fake.signed.lock().unwrap().len(), 1);
 }

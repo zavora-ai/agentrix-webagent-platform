@@ -23,7 +23,7 @@ Nothing is waiting for you.
 ::note Composed from your site's records, receipts and spend. Each line links to its receipt in the console.
 {% endblock %}
 {% block push %}Your morning brief is ready.{% endblock %}
-{% block push_url %}/console{% endblock %}
+{% block push_url %}{{ console_url }}{% endblock %}
 {% block chat %}
 # Good morning{% if person.name %}, {{ person.name }}{% endif %}.
 

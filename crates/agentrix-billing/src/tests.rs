@@ -301,3 +301,155 @@ fn the_first_month_ai_lasts_thirty_days() {
         assert_eq!(p.includes[0], "Web hosting included", "{id}");
     }
 }
+
+/// 12 months up front: 12 times the monthly price less the catalogue's one discount, to the cent.
+#[test]
+fn twelve_months_cost_twelve_monthly_prices_less_the_discount() {
+    assert_eq!(catalogue().annual_discount_percent, 20);
+    for (id, monthly, year, saved) in [
+        ("essential", 2900, 27_840, 6960),
+        ("business", 7900, 75_840, 18_960),
+        ("commerce", 14_900, 143_040, 35_760),
+    ] {
+        let p = plan(id).unwrap();
+        assert_eq!(p.charge_cents(Period::Monthly), monthly, "{id}");
+        assert_eq!(p.annual_cents(), year, "{id}");
+        assert_eq!(p.charge_cents(Period::Annual), year, "{id}");
+        assert_eq!(p.annual_saving_cents(), saved, "{id}");
+    }
+    // Rounded to the nearest cent when the discount doesn't divide evenly.
+    assert_eq!(annual_cents(999, 15), 10_190); // 101.898 dollars
+    assert_eq!(annual_cents(2900, 0), 34_800);
+    assert_eq!(Period::parse("annual"), Some(Period::Annual));
+    assert_eq!(Period::parse("monthly"), Some(Period::Monthly));
+    assert_eq!(Period::parse("weekly"), None);
+}
+
+#[test]
+fn a_renewal_is_one_month_or_twelve_later() {
+    let at = Utc.with_ymd_and_hms(2026, 11, 8, 9, 0, 0).unwrap();
+    assert_eq!(
+        Period::Monthly.renewal(at),
+        Utc.with_ymd_and_hms(2026, 12, 8, 9, 0, 0).unwrap()
+    );
+    assert_eq!(
+        Period::Annual.renewal(at),
+        Utc.with_ymd_and_hms(2027, 11, 8, 9, 0, 0).unwrap()
+    );
+    // The month's last day when the next month is shorter.
+    let end = Utc.with_ymd_and_hms(2027, 1, 31, 9, 0, 0).unwrap();
+    assert_eq!(
+        Period::Monthly.renewal(end),
+        Utc.with_ymd_and_hms(2027, 2, 28, 9, 0, 0).unwrap()
+    );
+    assert_eq!(
+        plan_key_parts("commerce@1"),
+        ("commerce", 1, Period::Monthly)
+    );
+    assert_eq!(
+        plan_key_parts("commerce@2:annual"),
+        ("commerce", 2, Period::Annual)
+    );
+}
+
+/// An annual plan's AI still comes month by month: the first-month offer for 30 days, then the
+/// monthly allowance, never 12 months of it.
+#[tokio::test]
+async fn an_annual_plan_keeps_the_monthly_ai_allowance() {
+    let pool = pool().await;
+    site(&pool, "site_y", "yearly.example").await;
+    let billing = Billing::new(pool.clone());
+    let sub = billing
+        .start_for("site_y", "business", Period::Annual, "I-YEAR", None)
+        .await
+        .unwrap();
+    assert_eq!(sub.period(), Period::Annual);
+    let at = Utc.with_ymd_and_hms(2026, 11, 8, 9, 0, 0).unwrap();
+    let started = Some(at);
+    let p = plan("business").unwrap();
+    let day = |d: i64| at + Duration::days(d);
+    assert_eq!(p.included_ai(started, day(10)), 150_000_000);
+    assert_eq!(p.included_ai(started, day(45)), 15_000_000);
+    assert_eq!(p.included_ai(started, day(300)), 15_000_000);
+    let usage = billing.usage(Utc::now()).await.unwrap();
+    let u = usage.iter().find(|u| u.site_id == "site_y").unwrap();
+    assert_eq!(u.included_micro_usd, 150_000_000, "the first month's offer");
+}
+
+#[tokio::test]
+async fn an_annual_plan_is_charged_once_renews_in_twelve_months_and_counts_a_twelfth_in_mrr() {
+    let pool = pool().await;
+    site(&pool, "site_a", "annual.example").await;
+    let billing = Billing::new(pool.clone());
+    let sub = billing
+        .start_for("site_a", "commerce", Period::Annual, "I-ANNUAL", None)
+        .await
+        .unwrap();
+    assert_eq!((sub.period.as_str(), sub.price_cents), ("annual", 143_040));
+    let t0 = Utc.with_ymd_and_hms(2026, 11, 8, 9, 0, 0).unwrap();
+    billing
+        .on_event(&event("I-ANNUAL", EventKind::Activated, t0, None))
+        .await
+        .unwrap();
+    billing.went_live("site_a", t0).await.unwrap();
+    let mut paid = event(
+        "I-ANNUAL",
+        EventKind::PaymentCompleted,
+        t0 + Duration::minutes(1),
+        Some("PAY-Y1"),
+    );
+    paid.amount_cents = Some(143_040);
+    paid.period_end = None;
+    billing.on_event(&paid).await.unwrap();
+    let sub = billing.for_site("site_a").await.unwrap().unwrap();
+    assert_eq!(
+        sub.next_charge().unwrap(),
+        Period::Annual.renewal(paid.at),
+        "the next charge is 12 months on"
+    );
+    let m = billing.money(t0 + Duration::hours(1)).await.unwrap();
+    assert_eq!((m.mrr_cents, m.collected_cents), (11_920, 143_040));
+    // Invoiced once: no run asks for it again until 12 months have passed.
+    for month in ["2026-12", "2027-06", "2027-10"] {
+        assert!(
+            billing.draft_run(month).await.unwrap().drafts.is_empty(),
+            "{month}"
+        );
+    }
+    let due = billing.draft_run("2027-11").await.unwrap();
+    assert_eq!((due.drafts.len(), due.total_cents), (1, 143_040));
+    let (line,): (String,) = sqlx::query_as("SELECT description FROM invoice_lines")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(line, "Commerce plan, 12 months from 2026-11");
+}
+
+#[tokio::test]
+async fn an_annual_subscription_comes_in_from_the_effects_gateway_with_its_period() {
+    let pool = pool().await;
+    site(&pool, "site_f", "annual-w6.example").await;
+    sqlx::raw_sql(
+        "CREATE TABLE plan_subscriptions (id TEXT PRIMARY KEY, site_id TEXT NOT NULL, plan_key TEXT NOT NULL, provider_ref TEXT UNIQUE, approve_url TEXT, \
+         state TEXT NOT NULL, currency TEXT NOT NULL, amount_minor INTEGER NOT NULL, period_end INTEGER, last_event TEXT, sandbox INTEGER NOT NULL, \
+         created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    let now = Utc::now().timestamp();
+    sqlx::query("INSERT INTO plan_subscriptions VALUES ('sub_y', 'site_f', 'essential@1:annual', 'I-Y', NULL, 'active', 'USD', 27840, ?, NULL, 1, ?, ?)")
+        .bind(now + 365 * 86_400)
+        .bind(now)
+        .bind(now)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let billing = Billing::new(pool.clone());
+    assert_eq!(billing.sync().await.unwrap(), 1);
+    let sub = billing.for_site("site_f").await.unwrap().unwrap();
+    assert_eq!(
+        (sub.plan_id.as_str(), sub.period(), sub.price_cents),
+        ("essential", Period::Annual, 27_840)
+    );
+}

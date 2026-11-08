@@ -1,4 +1,4 @@
-//! [`Metrics`] over Brick 1's `control.db`, read-only.
+//! [`Metrics`] over the first release's `control.db`, read-only.
 //!
 //! Every SQL string here is built from fixed fragments; caller values are always bound.
 

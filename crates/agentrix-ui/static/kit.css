@@ -186,7 +186,7 @@ h1, h2, h3, p, li, dd, summary, td { overflow-wrap: anywhere; }
 .tabs a, .tabs button { flex: 1; min-height: 40px; display: grid; place-items: center; border: 0; border-radius: 9px; background: transparent; color: var(--ink-2); font: 700 var(--fs-14)/1.2 var(--font-text); text-decoration: none; cursor: pointer; padding: 0 10px; }
 .tabs [aria-selected="true"], .tabs [aria-current="page"] { background: var(--paper); color: var(--head); box-shadow: var(--shadow-1); }
 
-/* ---------- Forms (owner.css .o-*, Brick 1's 48 px inputs) ---------- */
+/* ---------- Forms (owner.css .o-*, the first release's 48 px inputs) ---------- */
 .o-field { display: grid; gap: 6px; font: 600 var(--fs-13)/1.2 var(--font-text); color: var(--ink-2); }
 .o-field input, .o-field select, .o-field textarea {
   min-height: 48px; width: 100%; padding: 10px 14px; border-radius: 12px;
@@ -332,7 +332,7 @@ a.kpi:hover { border-color: var(--indigo); }
 .ladder.lowered [aria-pressed="true"], .ladder.lowered [aria-current="true"] { background: var(--wait-bg); color: var(--wait); }
 .ladder.has-ceiling { margin-bottom: 16px; }
 .ladder-why { font-size: var(--fs-12); color: var(--muted); margin-top: 6px; }
-/* The list layout (Brick 1's .levels) for narrow cards and screen readers */
+/* The list layout (the first release's .levels) for narrow cards and screen readers */
 .ladder.as-list { grid-template-columns: 1fr; gap: 6px; padding: 0; background: none; border: 0; }
 .ladder.as-list .rung { justify-items: start; text-align: left; padding: 8px 10px; border: 1px solid var(--line); font-size: var(--fs-14); }
 .ladder.as-list [aria-current="true"] { border-color: var(--indigo); background: var(--indigo-50); }

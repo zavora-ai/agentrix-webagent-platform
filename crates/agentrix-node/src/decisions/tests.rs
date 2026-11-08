@@ -268,7 +268,9 @@ async fn a_quarantine_restore_is_a_signed_decision_and_code_never_comes_back() {
     )
     .await;
     assert_eq!(status, StatusCode::SEE_OTHER);
-    let id = location.strip_prefix("/console/decisions/").unwrap();
+    let id = location
+        .strip_prefix(&format!("/console/{}/decisions/", world.site))
+        .unwrap();
     let card = s.store.card(&DecisionId::new(id)).await.unwrap().unwrap();
     assert_eq!(
         (card.card.kind, card.state),
@@ -300,8 +302,11 @@ async fn a_quarantine_restore_is_a_signed_decision_and_code_never_comes_back() {
     )
     .await;
     assert_eq!(
-        (status, location.as_str()),
-        (StatusCode::SEE_OTHER, "/console/quarantine")
+        (status, location),
+        (
+            StatusCode::SEE_OTHER,
+            format!("/console/{}/quarantine", world.site)
+        )
     );
     assert_eq!(
         s.store
@@ -343,8 +348,11 @@ async fn declining_go_live_stops_the_move_and_changes_nothing() {
     )
     .await;
     assert_eq!(
-        (status, location.as_str()),
-        (StatusCode::SEE_OTHER, "/console/decisions")
+        (status, location),
+        (
+            StatusCode::SEE_OTHER,
+            format!("/console/{}/decisions", world.site)
+        )
     );
     assert_eq!(
         s.store

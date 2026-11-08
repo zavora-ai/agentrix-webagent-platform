@@ -1,4 +1,5 @@
-//! Routes every sample host has: assets, Ask, passing a question to the owner, holds.
+//! Routes every sample host has: assets, Ask, passing a question to the owner, holds, and the
+//! privacy page with its look-alike report.
 
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -10,11 +11,11 @@ use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::App;
-use crate::web::{Ctx, Fail};
+use crate::web::{Ctx, Fail, Page, html};
 
 /// The common routes.
 pub fn routes() -> Router<App> {
@@ -23,6 +24,97 @@ pub fn routes() -> Router<App> {
         .route("/ask", post(crate::ask::ask))
         .route("/ask/pass", post(pass))
         .route("/hold", post(hold))
+        .route("/privacy", get(privacy))
+}
+
+/// Where look-alike reports go: the platform's own address (`AGENTRIX_EMAIL_FROM`'s default).
+/// A sample's owner is invented, so Agentrix, which runs the sample, takes the report.
+pub const REPORT_TO: &str = agentrix_messages::email::DEFAULT_FROM;
+
+/// The facts the privacy page states, each from the code that keeps them, so the page can't
+/// drift from what the site does.
+#[derive(Debug, Clone, Serialize)]
+pub struct Privacy {
+    /// A sign-in code works for this many minutes.
+    pub code_minutes: u32,
+    /// Wrong tries before a code stops working.
+    pub code_tries: u8,
+    /// Days the sign-in cookie lasts.
+    pub session_days: i64,
+    /// Days the bag cookie lasts.
+    pub bag_days: i64,
+    /// Months the daily visit totals are kept.
+    pub visit_months: i64,
+    /// Where look-alike reports go.
+    pub report_to: &'static str,
+    /// A `mailto:` link for a report, with the subject and the questions filled in.
+    pub report_href: String,
+}
+
+impl Privacy {
+    /// The facts for this site, with a report link that names it.
+    pub fn for_site(ctx: &Ctx) -> Self {
+        let subject = format!("A site pretending to be {} (sample)", ctx.site.name);
+        let body = format!(
+            "The address I saw:\nWhat it asked for:\nHow the link reached me:\n\nThe real site is {}",
+            ctx.host.origin
+        );
+        Self {
+            code_minutes: agentrix_identity::visitor::CODE_MINUTES,
+            code_tries: agentrix_identity::visitor::CODE_TRIES,
+            session_days: agentrix_identity::visitor::SESSION_SECONDS / 86_400,
+            bag_days: crate::web::CART_SECONDS / 86_400,
+            visit_months: agentrix_store::visits::KEEP_DAYS * 12 / 365,
+            report_to: REPORT_TO,
+            report_href: format!(
+                "mailto:{REPORT_TO}?subject={}&body={}",
+                mailto_encode(&subject),
+                mailto_encode(&body)
+            ),
+        }
+    }
+}
+
+/// Percent-encodes a `mailto:` header value (RFC 6068): everything but letters, digits and
+/// `-._~`, so slashes and line breaks survive the page's HTML escaping and the mail app.
+fn mailto_encode(s: &str) -> String {
+    s.bytes()
+        .map(|b| match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                (b as char).to_string()
+            }
+            _ => format!("%{b:02X}"),
+        })
+        .collect()
+}
+
+/// `GET /privacy`: what the sample keeps, in its own look, and how to report a look-alike.
+async fn privacy(State(app): State<App>, Extension(ctx): Extension<Ctx>) -> Page {
+    let description = format!(
+        "What {} keeps about you and for how long, and how to report a site pretending to be it.",
+        ctx.site.name
+    );
+    let extra = json!({ "privacy": Privacy::for_site(&ctx) });
+    let (template, view) = match ctx.site.archetype.as_str() {
+        "news" => (
+            "tana/privacy.html",
+            crate::news::view(&app, &ctx, "", "Privacy", &description, extra).await?,
+        ),
+        archetype => {
+            let shell = app.shell(&ctx, "", "Privacy", &description).await?;
+            let mut view = json!({ "shell": shell });
+            if let (Some(v), serde_json::Value::Object(e)) = (view.as_object_mut(), extra) {
+                v.extend(e);
+            }
+            let template = if archetype == "shop" {
+                "classy/privacy.html"
+            } else {
+                "kilele/privacy.html"
+            };
+            (template, view)
+        }
+    };
+    Ok(html(app.render(template, &view)?))
 }
 
 /// "the price list of Sun 1 Nov": a price list as visitors see it, by the day it took effect

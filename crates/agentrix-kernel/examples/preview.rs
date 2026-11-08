@@ -7,7 +7,7 @@
 //! ```
 //!
 //! It runs on an in-memory database with a fake signed-in owner. `POST /dev/ask/{desk}` plays
-//! one Ask turn's frames through the hub, as Brick 1's `/ask` sends them, and
+//! one Ask turn's frames through the hub, as the first release's `/ask` sends them, and
 //! `POST /dev/card/{on|off}` raises and decides a held-order card. Development only: none of
 //! this is mounted in node.
 

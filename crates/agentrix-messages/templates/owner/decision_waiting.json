@@ -7,7 +7,7 @@
  "person": {
   "name": "Wanjiru"
  },
- "console_url": "https://agentrix.website/console",
+ "console_url": "https://agentrix.website/console/kilele-bakery-sample",
  "waiting": 1,
  "card": {
   "since": "18:00",
@@ -15,6 +15,6 @@
   "agent": "The Editor",
   "risk": "medium",
   "money": false,
-  "url": "https://agentrix.website/console/decisions/d-118"
+  "url": "https://agentrix.website/d/d-118"
  }
 }

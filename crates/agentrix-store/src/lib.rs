@@ -2,7 +2,7 @@
 //!
 //! - [`metrics`]: the read side behind every number the owner console, the control plane and
 //!   the home page show. [`metrics::Metrics`] is the trait the consoles call;
-//!   [`metrics::SqliteMetrics`] reads Brick 1's `control.db` and the Model Gateway's `usage`.
+//!   [`metrics::SqliteMetrics`] reads the first release's `control.db` and the Model Gateway's `usage`.
 //! - [`catalogue`]: every number the concepts draw, its source, and the honest words to show
 //!   while it has none (specs/platform/03-data.md §7).
 //! - [`visits`]: visit counts without trackers (06 §4.9): the beacon endpoint, daily totals,

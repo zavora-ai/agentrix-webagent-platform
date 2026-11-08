@@ -7,7 +7,7 @@
  "person": {
   "name": "Wanjiru"
  },
- "console_url": "https://agentrix.website/console",
+ "console_url": "https://agentrix.website/console/kilele-bakery-sample",
  "invoice": {
   "number": "AGX-2026-0412",
   "paid": false,
@@ -27,6 +27,6 @@
     "amount": 2.2
    }
   ],
-  "url": "https://agentrix.website/console/billing/invoices/AGX-2026-0412"
+  "url": "https://agentrix.website/billing?site=kilele-bakery-sample"
  }
 }

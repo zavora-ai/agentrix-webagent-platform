@@ -79,10 +79,10 @@ pub struct SiteInfo {
     pub owner: Option<String>,
 }
 
-/// A waiting decision as a chat shows it: W5's v2 cards and Brick 1's cards alike.
+/// A waiting decision as a chat shows it: W5's v2 cards and the first release's cards alike.
 #[derive(Debug, Clone, PartialEq)]
 pub struct CardView {
-    /// `dec2_…` or Brick 1's id.
+    /// `dec2_…` or the first release's id.
     pub id: String,
     /// What will happen.
     pub title: String,
@@ -369,7 +369,7 @@ impl Channels {
             .and_then(|c| c.name.split_whitespace().next().map(str::to_owned))
     }
 
-    /// Whether `account` owns `site` (Brick 1's `sites`, or W1's roster owner).
+    /// Whether `account` owns `site` (the first release's `sites`, or W1's roster owner).
     pub async fn owns(&self, site: &str, account: &str) -> bool {
         let row: Option<(i64,)> =
             sqlx::query_as("SELECT 1 FROM sites WHERE site_id = ? AND owner_account_id = ?")
@@ -424,7 +424,7 @@ impl Channels {
         Ok(sent.entries.first().map(|e| e.id.clone()))
     }
 
-    /// The site's waiting decisions, newest first: W5's v2 cards, then Brick 1's.
+    /// The site's waiting decisions, newest first: W5's v2 cards, then the first release's.
     pub async fn waiting_cards(&self, site: &str) -> Vec<CardView> {
         let mut out = Vec::new();
         match self.decisions().list(site).await {

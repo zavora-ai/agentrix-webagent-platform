@@ -603,6 +603,28 @@ body:has(.paste input:focus) .desk-yoursite img { animation: breathe 2.4s ease-i
 .guide-btn:hover::before, .guide-btn:focus-visible::before { animation: guide-breathe 2.2s ease-in-out infinite; }
 .guide-btn[aria-expanded="true"]::before { animation: none; opacity: .45; }
 @keyframes guide-breathe { 0%, 100% { opacity: 0; transform: scale(.96); } 50% { opacity: .55; transform: scale(1.04); } }
+/* The mark comes alive on hover or keyboard focus (the mark or the word beside it): its colour
+   sweeps round, it leans in, and its eye blinks, once each time. Browsers without @property
+   still lean and blink. Still for reduced motion. */
+@property --mark-turn { syntax: "<angle>"; inherits: false; initial-value: 210deg; }
+.logo .mark, .guide-btn .mark { background: conic-gradient(from var(--mark-turn), #38356d 0 55%, #de4060 55% 100%); }
+.brand:hover .guide-btn .mark, .guide-btn:focus-visible .mark, .logo:hover .mark, .logo:focus-visible .mark { animation: mark-alive 1.1s cubic-bezier(.45, .05, .25, 1) 1; }
+.brand:hover .guide-btn .mark::after, .guide-btn:focus-visible .mark::after, .logo:hover .mark::after, .logo:focus-visible .mark::after { animation: mark-blink 1.1s ease-in-out 1; }
+@keyframes mark-alive {
+  0% { --mark-turn: 210deg; transform: rotate(0) scale(1); }
+  45% { transform: rotate(-8deg) scale(1.12); }
+  100% { --mark-turn: 570deg; transform: rotate(0) scale(1); }
+}
+@keyframes mark-blink {
+  0%, 100% { transform: scale(1); }
+  30% { transform: scaleY(.2); }
+  42% { transform: scale(1); }
+  70% { transform: scale(1.15); border-radius: 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand:hover .guide-btn .mark, .guide-btn:focus-visible .mark, .logo:hover .mark, .logo:focus-visible .mark,
+  .brand:hover .guide-btn .mark::after, .guide-btn:focus-visible .mark::after, .logo:hover .mark::after, .logo:focus-visible .mark::after { animation: none; }
+}
 .guide { position: fixed; z-index: 60; top: 72px; right: 16px; width: min(400px, calc(100vw - 32px)); max-height: calc(100vh - 88px); display: flex; flex-direction: column; background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-3); overflow: hidden; }
 .guide[hidden], .guide [hidden] { display: none !important; }
 .guide-head { display: flex; align-items: center; gap: 10px; padding: 14px 14px 10px 16px; }

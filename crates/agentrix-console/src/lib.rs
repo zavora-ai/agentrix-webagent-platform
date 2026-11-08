@@ -1,5 +1,12 @@
 //! Console and public templates ported from `concept/` (design §8, D5).
 //!
+//! **Deprecated: the owner pages here (Today, Decisions, Decision, Trust, WebAgents,
+//! Quarantine) are the first release's five-tab console, replaced by Agentrix OS at `/os`
+//! (`agentrix-shell`).** Node answers their old routes with a 308 to the `/os` page (see
+//! `agentrix_node::pages`). The receipt page stays (it is public), and so does the Move page
+//! for a node without W4's Move (`agentrix-onboarding`). The [`view`] models are still the
+//! shared types the shell's port returns.
+//!
 //! Server-rendered pages with small JS islands and SSE for live parts, on the tokens in
 //! `concept/styles.css`. Phone first, light and dark, WCAG 2.2 AA. Task S1-08.
 //!
@@ -35,21 +42,28 @@ pub enum Page {
     Register,
     /// DNS TXT or file proof (R3). View: [`view::ClaimView`].
     Claim,
-    /// The Move, live (R4–R6, R6.5). View: [`view::MoveView`].
+    /// The Move, live (R4–R6, R6.5). View: [`view::MoveView`]. Deprecated: W4's Move page
+    /// (`agentrix-onboarding`) serves `/console/move`; this one only without it.
     Move,
-    /// The Chief WebAgent's brief (R10.1). View: [`view::TodayView`].
+    /// The Chief WebAgent's brief (R10.1). View: [`view::TodayView`]. Deprecated: replaced
+    /// by `/os` (Back office).
     Today,
-    /// Cards waiting and decided (R10.1). View: [`view::DecisionsView`].
+    /// Cards waiting and decided (R10.1). View: [`view::DecisionsView`]. Deprecated:
+    /// replaced by `/os/decisions`.
     Decisions,
-    /// One card, including the go-live card (R7). View: [`view::DecisionView`].
+    /// One card, including the go-live card (R7). View: [`view::DecisionView`]. Deprecated:
+    /// replaced by the card in `/os` (`/d/{id}`).
     Decision,
-    /// Receipts and the gauntlet score (R10.3, R13). View: [`view::TrustView`].
+    /// Receipts and the gauntlet score (R10.3, R13). View: [`view::TrustView`]. Deprecated:
+    /// replaced by `/os/trust`.
     Trust,
     /// One receipt, with a check in the browser (R10.3). View: [`view::ReceiptView`].
     Receipt,
-    /// Jobs and dial positions, read-only (R10.2). View: [`view::WebAgentsView`].
+    /// Jobs and dial positions, read-only (R10.2). View: [`view::WebAgentsView`]. Deprecated:
+    /// replaced by `/os/webagents`.
     WebAgents,
     /// Items left behind, with restore as a signed decision (S2-06). View: [`view::QuarantineView`].
+    /// Deprecated: replaced by `/os/quarantine`.
     Quarantine,
 }
 

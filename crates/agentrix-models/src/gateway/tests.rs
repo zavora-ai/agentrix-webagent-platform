@@ -673,7 +673,7 @@ async fn a_zero_limit_refuses_rather_than_meaning_unlimited() {
 #[tokio::test]
 async fn the_usage_row_names_the_webagent_and_job_that_called() {
     let rig = rig(Options::default()).await;
-    // The columns W8's migration 0801 adds (this rig starts from Brick 1's 0001).
+    // The columns W8's migration 0801 adds (this rig starts from the first release's 0001).
     sqlx::raw_sql(
         "ALTER TABLE usage ADD COLUMN webagent TEXT; ALTER TABLE usage ADD COLUMN job TEXT;",
     )
@@ -718,7 +718,7 @@ async fn the_usage_row_names_the_webagent_and_job_that_called() {
 
 #[tokio::test]
 async fn calls_without_a_webagent_still_write_to_a_usage_table_from_before_0801() {
-    // Brick 1's usage table, no webagent or job columns: the INSERT doesn't name them.
+    // The first release's usage table, no webagent or job columns: the INSERT doesn't name them.
     let rig = rig(Options::default()).await;
     let answered = rig.post("/v1/chat/completions", "build", chat_body()).await;
     assert_eq!(answered.status(), 200);

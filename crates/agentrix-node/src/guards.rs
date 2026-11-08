@@ -1,4 +1,4 @@
-//! What the platform crates add to Brick 1's governed paths at handover
+//! What the platform crates add to the first release's governed paths at handover
 //! (`specs/platform/handover-wiring.md` §2a):
 //!
 //! - **Dials that bite** (W1, `agentrix_kernel::Rosters::check`): a held order at the agent door,
@@ -10,7 +10,7 @@
 //!   a site, checked per request. A `notice` hold serves only the neutral notice; a `read-only`
 //!   hold serves the signed release with answers and forms paused.
 //!
-//! [`Guards::default`] checks nothing, so every path runs exactly as Brick 1 built it (the
+//! [`Guards::default`] checks nothing, so every path runs exactly as the first release built it (the
 //! tests' default); `app.rs` builds [`Guards::for_node`]. A dial check that fails to read is
 //! logged and the path runs as before: a held order still asks the owner, and reads stay
 //! allowed. A Freeze that can't be read counts as frozen (the gate's own rule). A hold that

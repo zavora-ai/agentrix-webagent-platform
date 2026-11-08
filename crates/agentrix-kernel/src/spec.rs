@@ -1,7 +1,7 @@
 //! `WebAgentSpec`: one WebAgent as data (05 §2.1, "The roster as data").
 //!
 //! The console's WebAgent card, the Store listing (can, never, wakes, jobs, budget) and the
-//! dial all render from a spec, never from hand-written copy (07 §3.4). Levels are Brick 1's
+//! dial all render from a spec, never from hand-written copy (07 §3.4). Levels are the first release's
 //! [`Level`], the owner's words for `awp_types::AutonomyLevel` (05 §2.3), so the charters
 //! owners already signed overlay a spec without translation.
 

@@ -11,7 +11,7 @@
 ::fact Paid with | {{ plan.method }}
 ::fact Next charge | {{ plan.next_charge }}
 
-Change or cancel the plan at any time in Billing. If you cancel, the site keeps full service until the end of the month you paid for.
+You can cancel the plan at any time in Billing. If you cancel, the site keeps full service until the end of the month you paid for.
 
-::button Open billing | {{ console_url }}/billing
+::button Open billing | {{ plan.url }}
 {% endblock %}

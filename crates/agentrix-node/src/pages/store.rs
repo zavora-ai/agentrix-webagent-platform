@@ -9,7 +9,7 @@
 //! ```ignore
 //! // app.rs
 //! let reads = SqliteReads::new(pool.clone(), receipts.keys().clone(), AppDelegates { auth, decisions, cas, pool });
-//! let pages = pages::router(PagesState { console, reads: Arc::new(reads), onboarding: None });
+//! let pages = pages::router(PagesState { console, reads: Arc::new(reads), onboarding: None, concepts: None });
 //! ```
 
 use agentrix_types::ui::{CardEvent, ParityEvent, StepName, TickEvent, UiEvent};

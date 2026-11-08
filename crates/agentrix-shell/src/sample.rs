@@ -155,6 +155,49 @@ impl SamplePort {
     }
 }
 
+/// The sample go-live card's starting levels, shaped like charter v1.
+fn sample_charter() -> Vec<agentrix_types::JobLevel> {
+    use agentrix_types::{JobLevel, Level};
+    let job = |webagent: &str, role: &str, job: &str, level, ceiling| JobLevel {
+        webagent: webagent.into(),
+        role: role.into(),
+        job: job.into(),
+        level,
+        ceiling,
+        ceiling_reason: String::new(),
+    };
+    vec![
+        job(
+            "Mover",
+            "Moves and publishes your site",
+            "Publish a new release",
+            Level::AskFirst,
+            Level::WithinBudget,
+        ),
+        job(
+            "Editor",
+            "Keeps your pages true",
+            "Fix typos and out-of-date facts",
+            Level::Suggest,
+            Level::WithinBudget,
+        ),
+        job(
+            "Guardian",
+            "Watches your live site",
+            "Undo a bad release",
+            Level::UndoOnly,
+            Level::UndoOnly,
+        ),
+        job(
+            "Guardian",
+            "Watches your live site",
+            "Block an attack",
+            Level::DoAndTell,
+            Level::DoAndTell,
+        ),
+    ]
+}
+
 #[async_trait]
 impl ShellPort for SamplePort {
     async fn access(
@@ -204,24 +247,37 @@ impl ShellPort for SamplePort {
             return Ok(None);
         };
         let fp = digest(9);
+        let go_live = row.kind == "go-live";
         Ok(Some(cv::Card {
             id: row.id.clone(),
-            kind: cv::CardKind::OrderHeld,
+            kind: match row.kind.as_str() {
+                "go-live" => cv::CardKind::GoLive,
+                "quarantine-restore" => cv::CardKind::QuarantineRestore,
+                _ => cv::CardKind::OrderHeld,
+            },
             title: row.title.clone(),
             asked_by: row.asked_by.clone(),
             risk: row.risk,
             risk_words: row.risk_words.clone(),
             why_words: "Returning customer, usual amount. Money only moves after you approve."
                 .into(),
-            effects: vec![
-                row.summary.clone(),
-                "Amani gets a PayPal request for KSh 4,500 after you approve".into(),
-            ],
+            effects: if go_live {
+                vec![row.summary.clone()]
+            } else {
+                vec![
+                    row.summary.clone(),
+                    "Amani gets a PayPal request for KSh 4,500 after you approve".into(),
+                ]
+            },
             facts: vec![cv::Fact {
                 label: "Expires".into(),
                 value: "19:00".into(),
             }],
-            levels: Vec::new(),
+            levels: if go_live {
+                sample_charter().iter().map(map::job_levels).collect()
+            } else {
+                Vec::new()
+            },
             fingerprint: fp.clone(),
             fingerprint_short: format!("{}…{}", &fp[7..11], &fp[fp.len() - 4..]),
             fields: vec![cv::Fact {

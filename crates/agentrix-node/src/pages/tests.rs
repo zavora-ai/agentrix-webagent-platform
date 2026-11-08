@@ -364,12 +364,22 @@ impl ConsoleReads for Fake {
     }
 }
 
-fn app(fake: Fake) -> Router {
-    router(PagesState {
+fn state(fake: Fake) -> PagesState {
+    PagesState {
         console: Arc::new(Console::new().expect("templates")),
         reads: Arc::new(fake),
         onboarding: None,
-    })
+        concepts: None,
+    }
+}
+
+fn app(fake: Fake) -> Router {
+    router(state(fake))
+}
+
+/// The first release's deprecated owner pages, rendered by their kept handlers.
+fn first_release(fake: Fake) -> Router {
+    first_release_router(state(fake))
 }
 
 async fn get(app: &Router, path: &str, accept: Option<&str>) -> (StatusCode, HeaderMap, String) {
@@ -399,10 +409,35 @@ fn preview(name: &str, html: &str) {
 }
 
 #[tokio::test]
+async fn first_release_pages_go_to_their_page_in_agentrix_os() {
+    let app = app(Fake::new(false, false));
+    for (from, to) in [
+        ("/console", "/os"),
+        ("/console/today", "/os"),
+        ("/console/first-today", "/os"),
+        ("/console/decisions", "/os/decisions"),
+        ("/console/decisions/dc_1", "/d/dc_1"),
+        ("/console/trust", "/os/trust"),
+        ("/console/webagents", "/os/webagents"),
+        ("/console/quarantine", "/os/quarantine"),
+    ] {
+        let (status, headers, _) = get(&app, from, None).await;
+        assert_eq!(status, StatusCode::PERMANENT_REDIRECT, "{from}");
+        assert_eq!(headers[header::LOCATION], to, "{from}");
+    }
+    assert_eq!(
+        get(&app, "/console/decisions/..%2Fsettings", None).await.0,
+        StatusCode::NOT_FOUND,
+        "only a plain card id is passed on"
+    );
+}
+
+#[tokio::test]
 async fn every_console_page_renders_from_the_store() {
+    let old = first_release(Fake::new(true, false));
     let app = app(Fake::new(true, false));
     for (name, path) in [
-        ("today", "/console/brick1-today"),
+        ("today", "/console/first-today"),
         ("decisions", "/console/decisions"),
         ("decision", "/console/decisions/dc_1"),
         ("move", "/console/move"),
@@ -410,7 +445,8 @@ async fn every_console_page_renders_from_the_store() {
         ("webagents", "/console/webagents"),
         ("quarantine", "/console/quarantine"),
     ] {
-        let (status, _, html) = get(&app, path, None).await;
+        let app = if path == "/console/move" { &app } else { &old };
+        let (status, _, html) = get(app, path, None).await;
         assert_eq!(status, StatusCode::OK, "{path}: {html}");
         assert!(
             html.contains("Kilele Bakery"),
@@ -422,7 +458,7 @@ async fn every_console_page_renders_from_the_store() {
 
 #[tokio::test]
 async fn signed_out_goes_to_sign_in_and_comes_back() {
-    let app = app(Fake::new(false, false));
+    let app = first_release(Fake::new(false, false));
     let (status, headers, _) = get(&app, "/console/trust", None).await;
     assert_eq!(status, StatusCode::SEE_OTHER);
     assert_eq!(
@@ -435,7 +471,7 @@ async fn signed_out_goes_to_sign_in_and_comes_back() {
 async fn the_go_live_card_carries_its_fingerprint_options_and_locked_positions() {
     let fake = Fake::new(true, false);
     let fp = fake.go_live.fingerprint.to_string();
-    let app = app(fake);
+    let app = first_release(fake);
     let (_, _, html) = get(&app, "/console/decisions/dc_1", None).await;
     assert!(
         html.contains(&fp),
@@ -460,7 +496,7 @@ async fn the_go_live_card_carries_its_fingerprint_options_and_locked_positions()
 async fn a_decided_card_names_the_method_and_links_its_receipt() {
     let fake = Fake::new(true, true);
     let receipt = fake.receipts[2].digest().unwrap().to_string();
-    let app = app(fake);
+    let app = first_release(fake);
     let (_, _, html) = get(&app, "/console/decisions/dc_1", None).await;
     assert!(html.contains("Approved with a code from your authenticator app"));
     assert!(html.contains(&format!("/receipts/{receipt}")));
@@ -499,7 +535,7 @@ async fn receipts_verify_and_open_as_json_or_a_page_for_anyone() {
 async fn a_tampered_receipt_says_so() {
     let mut fake = Fake::new(true, false);
     fake.receipts[1].body.destroyed = Some(false);
-    let app = app(fake);
+    let app = first_release(fake);
     let (_, _, html) = get(&app, "/console/trust", None).await;
     assert!(
         html.contains("Not verified"),
@@ -532,7 +568,13 @@ async fn frames_come_from_the_cas_and_unknown_things_are_404() {
         StatusCode::NOT_FOUND
     );
     assert_eq!(
-        get(&app, "/console/decisions/nope", None).await.0,
+        get(
+            &first_release(Fake::new(true, false)),
+            "/console/decisions/nope",
+            None
+        )
+        .await
+        .0,
         StatusCode::NOT_FOUND
     );
 }
@@ -558,8 +600,8 @@ async fn frames_are_the_owners_or_a_free_assess() {
 
 #[tokio::test]
 async fn the_brief_and_the_gauntlet_read_their_stored_shapes() {
-    let app = app(Fake::new(true, false));
-    let (_, _, today) = get(&app, "/console/brick1-today", None).await;
+    let app = first_release(Fake::new(true, false));
+    let (_, _, today) = get(&app, "/console/first-today", None).await;
     assert!(
         today.contains("A quiet night: your site stayed up"),
         "the headline opens the brief"

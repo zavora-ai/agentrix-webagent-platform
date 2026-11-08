@@ -154,6 +154,15 @@ async fn every_page_renders() {
             "If you approve, exactly this happens",
         ),
         ("/decisions/dec_golive_1", "Approved with your passkey"),
+        (
+            "/decisions/dec_golive_1",
+            "address record doesn't change. We don't edit your DNS",
+        ),
+        (
+            "/decisions/dec_golive_1",
+            "Your WebAgents start work: the Mover, the Editor and the Guardian.",
+        ),
+        ("/decisions/dec_golive_1", "Going live charges nothing."),
         ("/webagents", "Never:"),
         ("/trust", "The containment gauntlet"),
         ("/quarantine", "Ask for it back"),
@@ -478,6 +487,45 @@ async fn signed_out_goes_to_sign_in_and_other_sites_are_not_found() {
     let (s, _, to) = get(&app, "/os").await;
     assert_eq!(s, StatusCode::SEE_OTHER);
     assert_eq!(to.unwrap(), format!("/console/{SITE}"));
+}
+
+#[tokio::test]
+async fn os_pages_open_the_same_page_of_the_owners_console() {
+    let (app, _) = make(SamplePort::default()).await;
+    for (from, to) in [
+        ("/os/decisions", format!("/console/{SITE}/decisions")),
+        ("/os/trust", format!("/console/{SITE}/trust")),
+        ("/os/webagents", format!("/console/{SITE}/webagents")),
+        ("/os/quarantine", format!("/console/{SITE}/quarantine")),
+        (
+            "/os/decisions/dec_order_118",
+            format!("/console/{SITE}/decisions/dec_order_118"),
+        ),
+        (
+            "/os/trust?from=mail",
+            format!("/console/{SITE}/trust?from=mail"),
+        ),
+    ] {
+        let (s, _, location) = get(&app, from).await;
+        assert_eq!(s, StatusCode::SEE_OTHER, "{from}");
+        assert_eq!(location.as_deref(), Some(to.as_str()), "{from}");
+    }
+    for bad in ["/os/..%2Fsettings", "/os/trust/..", "/os/a%20b"] {
+        let (s, _, _) = get(&app, bad).await;
+        assert_eq!(s, StatusCode::NOT_FOUND, "{bad}");
+    }
+    let (app, _) = make(SamplePort {
+        signed_in: false,
+        ..SamplePort::default()
+    })
+    .await;
+    let (s, _, to) = get(&app, "/os/decisions").await;
+    assert!(s.is_redirection(), "{s}");
+    let to = to.unwrap();
+    assert!(
+        to.contains("/os/decisions") || to.contains("%2Fos%2Fdecisions"),
+        "sign-in comes back to the page: {to}"
+    );
 }
 
 #[tokio::test]

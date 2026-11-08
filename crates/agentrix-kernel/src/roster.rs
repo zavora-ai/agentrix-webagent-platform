@@ -2,7 +2,7 @@
 //!
 //! [`template`] builds one WebAgent's spec for a site's look. [`Roster::build`] puts a site's
 //! team together: who is on duty, who is in the Store, the Concierge's desks, every mark, and
-//! the Chief WebAgent's team mark. Where Brick 1's charter v1 already names a job ("Publish a
+//! the Chief WebAgent's team mark. Where the first release's charter v1 already names a job ("Publish a
 //! new release", "Fix typos and out-of-date facts", "Hold orders from AI customers", "Undo a
 //! bad release"), the job here has the same name, level and ceiling, so the charters owners
 //! signed overlay it exactly ([`Roster::apply_charter`]).
@@ -819,7 +819,7 @@ impl Roster {
     }
 
     /// Lays a signed charter's levels over the specs' starting levels. A job matches by its
-    /// WebAgent's name and the job's name, as Brick 1's charter v1 writes them.
+    /// WebAgent's name and the job's name, as the first release's charter v1 writes them.
     pub fn apply_charter(&mut self, charter: &Charter) {
         for jl in &charter.jobs {
             if let Some(job) = self.find_job_mut(jl) {
@@ -1043,7 +1043,7 @@ pub fn sample(site: &str, slug: &str) -> Option<Roster> {
     Some(Roster::build(site, look, &on_duty, &desks))
 }
 
-/// Who is on duty on a moved Brick 1 site: the Chief and the four its charter v1 names.
+/// Who is on duty on a moved the first release site: the Chief and the four its charter v1 names.
 pub const MOVED_SITE_ON_DUTY: [&str; 3] = ["concierge", "editor", "guardian"];
 
 #[cfg(test)]
@@ -1133,7 +1133,7 @@ mod tests {
     }
 
     #[test]
-    fn brick_one_charter_overlays_exactly() {
+    fn first_release_charter_overlays_exactly() {
         let mut r = Roster::build(
             "site_k1",
             looks::sample("kilele").unwrap(),

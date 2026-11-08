@@ -14,5 +14,5 @@ Here is the invoice for {{ invoice.period }}. {{ invoice.method }} pays it on {{
 {% endfor %}
 ::fact Total | {{ invoice.amount|money(invoice.currency) }}
 
-::button See the invoice | {{ invoice.url }}
+::button Open billing | {{ invoice.url }}
 {% endblock %}

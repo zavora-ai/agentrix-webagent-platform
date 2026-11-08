@@ -22,7 +22,7 @@ fn start_is_the_address_bar_with_its_three_promises() {
     let html = pages().render_start(&common::start()).unwrap();
     assert!(html.contains(r#"<form class="addr-form" method="post" action="/assess""#));
     assert!(html.contains(r#"name="url""#));
-    assert!(html.contains("Show me"));
+    assert!(html.contains(">Check my site</button>"));
     for promise in ["No account", "No passwords", "Only what's already public"] {
         assert!(html.contains(promise), "missing {promise}");
     }
@@ -112,7 +112,7 @@ fn could_not_finish_never_shows_findings() {
         assert!(html.contains("We haven't guessed at any findings."));
         assert!(html.contains(r#"href="/start">Try another address"#));
         assert!(!html.contains("class=\"finding\""));
-        assert!(!html.contains("Continue with passkey"));
+        assert!(!html.contains("Keep this site: create your account"));
     }
 }
 
@@ -145,10 +145,11 @@ fn claim_by_file_offers_the_file_and_says_what_was_seen() {
 }
 
 #[test]
-fn a_proved_claim_leads_to_the_move() {
+fn a_proved_claim_leads_to_the_new_look_then_the_move() {
     let html = pages().render_claim(&common::claim_verified()).unwrap();
     assert!(html.contains("✓ Found it. kilele-bakery.example is yours"));
-    assert!(html.contains(r#"href="/console/move">Next: start the Move"#));
+    assert!(html.contains(r#"/concepts">Next: choose your new look"#));
+    assert!(html.contains(r#"href="/console/move">keep your current look and start the Move"#));
     assert!(!html.contains("Check now"));
 }
 
@@ -184,19 +185,16 @@ fn sign_in_and_recovery_have_their_own_ways_in() {
     let signin = pages()
         .render(
             OnboardingPage::Account,
-            &AccountPage::new(AccountMode::Signin, "/console/today", None),
+            &AccountPage::new(AccountMode::Signin, "/os", None),
         )
         .unwrap();
     assert!(signin.contains("Sign in with a passkey"));
-    assert!(
-        signin
-            .contains(r#"href="/account/recover?next=/console/today">Get back into your account"#)
-    );
+    assert!(signin.contains(r#"href="/account/recover?next=/os">Get back into your account"#));
     assert!(!signin.contains("Save your recovery codes"));
     let recover = pages()
         .render(
             OnboardingPage::Account,
-            &AccountPage::new(AccountMode::Recover, "/console/today", None),
+            &AccountPage::new(AccountMode::Recover, "/os", None),
         )
         .unwrap();
     assert!(recover.contains("With a recovery code"));
@@ -237,7 +235,7 @@ fn setup_has_the_chief_speak_and_points_at_the_claim() {
 #[test]
 fn keep_it_leads_to_the_account_page_with_the_site() {
     let html = pages().render_assess(&common::done()).unwrap();
-    assert!(html.contains(r#"href="/account/new?next=/sites/site_0193test/claim&amp;host=fixture.example">Continue with passkey"#));
+    assert!(html.contains(r#"href="/account/new?next=/sites/site_0193test/claim&amp;host=fixture.example">Keep this site: create your account"#));
     assert!(html.contains(r#"href="/account/signin?next=/sites/site_0193test/claim">Sign in"#));
 }
 
@@ -297,9 +295,9 @@ fn the_move_draws_the_rail_rooms_and_the_go_live_card() {
         html.contains(r#"action="/moves/move_0193test/accept""#),
         "a flagged page can be accepted"
     );
-    assert!(
-        html.contains(r#"href="/console/decisions/dec_0193test">Go live · approve with passkey"#)
-    );
+    assert!(html.contains(
+        r#"href="/console/site_0193test/decisions/dec_0193test">Go live · approve with passkey"#
+    ));
     assert!(html.contains("/static/onboarding/move.js?v="));
 }
 
@@ -340,6 +338,11 @@ fn plans_come_from_the_catalogue_and_paypal_is_the_only_rail() {
         name: name.into(),
         kind: kind.into(),
         price_cents: cents,
+        annual_cents: if kind == "site" {
+            agentrix_billing::annual_cents(cents, 20)
+        } else {
+            0
+        },
         included_ai_micro_usd: ai * 1_000_000,
         webagents: vec!["Chief".into(), "Concierge".into(), "Cashier".into()],
         includes: vec![format!("${ai} of AI a month")],
@@ -379,6 +382,23 @@ fn plans_come_from_the_catalogue_and_paypal_is_the_only_rail() {
         r#"<form class="o-body setup-body" id="plan" method="post" action="/setup/plan">"#
     ));
     assert!(html.contains(r#"name="plan_id" id="plan-id" value="commerce""#));
+    // Monthly or 12 months at the catalogue's one discount, both priced in USD.
+    assert!(html.contains("How often you pay"));
+    assert!(html.contains(r#"name="period" value="monthly" checked"#));
+    assert!(html.contains(r#"name="period" value="annual">"#));
+    assert!(html.contains("12 months (20% off)"));
+    assert!(
+        html.contains("or $1,430.40 for 12 months") && html.contains("or $278.40 for 12 months")
+    );
+    assert!(html.contains(
+        r#"<span data-plan-annual>$1,430.40</span> once for 12 months, instead of <span data-plan-year>$1,788</span> paid monthly. You save <span data-plan-saving>$357.60</span>."#
+    ));
+    assert!(html.contains(r#"<span data-plan-charge>$149 a month</span>"#));
+    let mut annual = view.clone();
+    annual.period = "annual".into();
+    let html = pages().render(OnboardingPage::Plan, &annual).unwrap();
+    assert!(html.contains(r#"name="period" value="annual" checked"#));
+    assert!(html.contains(r#"<span data-plan-charge>$1,430.40 for 12 months</span>"#));
     let empty = PlanPage::new("site_0193test", None, &[], "/sites/site_0193test/claim");
     let none = pages().render(OnboardingPage::Plan, &empty).unwrap();
     assert!(
@@ -396,6 +416,8 @@ fn pay_says_where_the_plan_payment_stands() {
         state: PayState::Ready,
         plan_name: "Commerce".into(),
         price_words: "$149".into(),
+        charge_words: "$149 a month".into(),
+        period: "monthly".into(),
         budget_words: "$30".into(),
         said: None,
         approve_url: None,
@@ -436,11 +458,33 @@ fn pay_says_where_the_plan_payment_stands() {
             OnboardingPage::Pay,
             &PayPage {
                 state: PayState::NoPlan,
-                ..base
+                ..base.clone()
             },
         )
         .unwrap();
     assert!(none.contains("You haven't chosen a plan for this site yet."));
+    let annual = PayPage {
+        state: PayState::Ready,
+        charge_words: "$1,430.40 for 12 months".into(),
+        period: "annual".into(),
+        ..base.clone()
+    };
+    let ready = p.render(OnboardingPage::Pay, &annual).unwrap();
+    assert!(ready.contains(
+        "<b>Commerce · $1,430.40 for 12 months</b> · first charge today, the day your site goes live: the 12-month total, once"
+    ));
+    let active = p
+        .render(
+            OnboardingPage::Pay,
+            &PayPage {
+                state: PayState::Active,
+                ..annual
+            },
+        )
+        .unwrap();
+    assert!(active.contains(
+        "✓ Approved on PayPal · Commerce · $1,430.40 for 12 months, charged from today, then again in 12 months"
+    ));
 }
 
 #[test]
@@ -454,6 +498,15 @@ fn billing_shows_the_plan_and_cancels_only_with_an_approval() {
         },
         summary: "Commerce · $149 a month · PayPal subscription · next charge Mon 7 Dec".into(),
         has_plan: true,
+        period_words: "Monthly".into(),
+        next_charge: Some("Mon 7 Dec 2026, $149".into()),
+        switch: Some(agentrix_onboarding::view::PeriodSwitch {
+            to: "annual".into(),
+            words: "Pay for 12 months at a time: $1,430.40 once a year instead of $1,788 paid monthly, so you save $357.60. It starts at your next renewal, Mon 7 Dec 2026.".into(),
+            button: "Switch to 12 months".into(),
+            agree_to: None,
+            pending: None,
+        }),
         spent_words: Some("$3.40".into()),
         budget_words: Some("$30".into()),
         spent_pct: 10,
@@ -472,6 +525,12 @@ fn billing_shows_the_plan_and_cancels_only_with_an_approval() {
     let html = pages().render(OnboardingPage::Billing, &view).unwrap();
     assert!(html.contains("Commerce · $149 a month · PayPal subscription · next charge Mon 7 Dec"));
     assert!(html.contains("<b>$3.40</b> of your $30 AI budget this period"));
+    // The period, the next charge's day and amount, and switching at the next renewal.
+    assert!(html.contains(r#"<h3>How often you pay</h3><span class="chip">Monthly</span>"#));
+    assert!(html.contains("Next charge: <b>Mon 7 Dec 2026, $149</b>"));
+    assert!(html.contains(r#"<input type="hidden" name="period" value="annual"><button class="btn" type="submit">Switch to 12 months</button>"#));
+    assert!(html.contains("so you save $357.60. It starts at your next renewal, Mon 7 Dec 2026."));
+    assert!(!html.contains("Agree on PayPal"));
     assert!(html.contains("meter pct-10"));
     assert!(html.contains("What your approval signs"));
     assert!(
@@ -580,6 +639,26 @@ fn the_live_card_points_at_pictures_only_when_some_wait() {
             .contains("Pictures for pages that had none"),
         "only once live"
     );
+}
+
+#[test]
+fn the_move_shows_the_look_chosen_before_it() {
+    use agentrix_onboarding::view::{LookRef, MoveState};
+    let mut running = common::move_view(MoveState::Running);
+    assert!(
+        !pages()
+            .render_move(&running)
+            .unwrap()
+            .contains("Your new look")
+    );
+    running.look = Some(LookRef {
+        name: "Oven Warm".into(),
+        sentence: "A cosy look in crust colours.".into(),
+        href: "/sites/site_0193test/concepts".into(),
+    });
+    let html = pages().render_move(&running).unwrap();
+    assert!(html.contains("Your new look: <b>Oven Warm</b>. A cosy look in crust colours."));
+    assert!(html.contains(r#"<a href="/sites/site_0193test/concepts">Change it</a>"#));
 }
 
 #[test]

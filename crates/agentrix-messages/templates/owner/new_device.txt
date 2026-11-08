@@ -8,9 +8,9 @@
 {% endif %}
 {{ signin.when }}, with {{ signin.method }}. If it was you, there's nothing to do.
 
-If it wasn't, open Devices and people and sign that device out. Then change what they used to get in.
+If it wasn't, message us on WhatsApp now: the link is at the end of this email. The console can't show your devices or sign them out yet.
 
-::button Review your devices | {{ console_url }}/trust/devices
+::button Open the console | {{ console_url }}
 {% endblock %}
 {% block push %}A new device signed in to your account.{% endblock %}
-{% block push_url %}/console/trust/devices{% endblock %}
+{% block push_url %}{{ console_url }}{% endblock %}

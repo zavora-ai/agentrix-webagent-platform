@@ -8,7 +8,7 @@ Everything {{ site.name }} holds, in open formats: {{ export.contents }}.
 ::fact Fingerprint | {{ export.digest }}
 ::fact Link works until | {{ export.expires }}
 
-::button Download the export | {{ export.url }}
+::button Open billing | {{ export.url }}
 
 You'll be asked to sign in first. The fingerprint lets you check the file you downloaded is the one we made.
 {% endblock %}

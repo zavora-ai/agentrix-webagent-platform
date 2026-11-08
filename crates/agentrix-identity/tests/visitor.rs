@@ -712,7 +712,7 @@ async fn every_page_renders_signed_out_and_signed_in() {
         ),
         ("/account/recover", "Get back into your account"),
         ("/account/keeps", "What Kilele Bakery keeps"),
-        ("/account/signed-out", "Your basket stays on this device."),
+        ("/account/signed-out", "Your bag stays on this device."),
     ];
     for (path, words) in signed_out {
         let page = send(&app, get(path, None)).await;

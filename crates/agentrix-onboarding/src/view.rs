@@ -76,7 +76,7 @@ pub struct AssessPage {
     pub report: Option<ReportCard>,
     /// Present when `state` is `Unreachable` or `Refused` (R1.6).
     pub unreachable: Option<Unreachable>,
-    /// "Continue with passkey": create the account, then the claim.
+    /// "Keep this site: create your account": create the account, then the claim.
     pub keep_href: String,
     /// "Sign in", then the claim.
     pub signin_href: String,
@@ -207,7 +207,7 @@ impl From<console::AssessView> for AssessPage {
             AssessState::Done => "Step 2 of 3",
             AssessState::Unreachable | AssessState::Refused => "",
         };
-        // Brick 1 sends "Move this site" to sign-in, then the claim. A new owner creates the
+        // The first release sends "Move this site" to sign-in, then the claim. A new owner creates the
         // account instead, passkey first (O1.8 → O2.1), and both carry the same `next`.
         let next = v
             .move_href
@@ -458,6 +458,17 @@ pub struct MovePage {
     /// Once live, where the pictures drafted for pages that had none wait for the owner (W11's
     /// Pictures app), when any wait. Node sets it; `None` hides the line.
     pub pictures_href: Option<String>,
+    /// The look the owner chose before the Move ("Choose your new look"), which the rebuild
+    /// uses. Node sets it; `None` hides the line.
+    pub look: Option<LookRef>,
+}
+
+/// The look chosen before the Move: its name, its direction in a sentence and where to change it.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct LookRef {
+    pub name: String,
+    pub sentence: String,
+    pub href: String,
 }
 
 /// A chip: its class and words.
@@ -715,6 +726,7 @@ impl From<console::MoveView> for MovePage {
             spend_words: v.spend_words,
             uploads: v.uploads,
             pictures_href: None,
+            look: None,
         }
     }
 }
@@ -731,6 +743,9 @@ pub struct PlanInput {
     pub kind: String,
     /// US cents a month.
     pub price_cents: i64,
+    /// US cents for 12 months paid up front (W3's `Plan::annual_cents`: 12 months less the
+    /// catalogue's discount); 0 when the plan isn't offered that way.
+    pub annual_cents: i64,
     pub included_ai_micro_usd: i64,
     pub webagents: Vec<String>,
     pub includes: Vec<String>,
@@ -743,6 +758,12 @@ pub struct PlanCard {
     pub name: String,
     /// "$29".
     pub price_words: String,
+    /// "$278.40": 12 months paid up front; empty when not offered.
+    pub annual_words: String,
+    /// "$348": 12 monthly charges, what the 12-month price is set against.
+    pub year_words: String,
+    /// "$69.60": what paying for 12 months up front saves.
+    pub saving_words: String,
     /// Whole dollars of AI included a month, for the budget slider.
     pub included_usd: i64,
     pub includes: Vec<String>,
@@ -758,6 +779,12 @@ pub struct PlanPage {
     pub plans: Vec<PlanCard>,
     /// The plan pressed when the page opens.
     pub chosen: String,
+    /// `monthly` or `annual`: how often the owner pays, checked when the page opens.
+    pub period: String,
+    /// Whether 12 months up front is offered (the catalogue prices it).
+    pub annual: bool,
+    /// The catalogue's discount on 12 months up front, percent (W3's `annual_discount_percent`).
+    pub discount_percent: i64,
     /// Where PayPal sends the owner back to.
     pub return_path: String,
     /// Where to go once the subscription is approved: the claim.
@@ -765,10 +792,26 @@ pub struct PlanPage {
 }
 
 fn dollars(cents: i64) -> String {
+    usd(cents)
+}
+
+/// "$29", "$278.40", "$1,430.40": US dollars with thousands separators, cents only when there
+/// are some.
+pub fn usd(cents: i64) -> String {
+    let sign = if cents < 0 { "-" } else { "" };
+    let cents = cents.abs();
+    let whole = (cents / 100).to_string();
+    let mut grouped = String::new();
+    for (i, c) in whole.chars().enumerate() {
+        if i > 0 && (whole.len() - i).is_multiple_of(3) {
+            grouped.push(',');
+        }
+        grouped.push(c);
+    }
     if cents % 100 == 0 {
-        format!("${}", cents / 100)
+        format!("{sign}${grouped}")
     } else {
-        format!("${}.{:02}", cents / 100, cents % 100)
+        format!("{sign}${grouped}.{:02}", cents % 100)
     }
 }
 
@@ -794,6 +837,13 @@ impl PlanPage {
                         id: p.id.clone(),
                         name: p.name.clone(),
                         price_words: dollars(p.price_cents),
+                        annual_words: if p.annual_cents > 0 {
+                            usd(p.annual_cents)
+                        } else {
+                            String::new()
+                        },
+                        year_words: usd(p.price_cents * 12),
+                        saving_words: usd((p.price_cents * 12 - p.annual_cents).max(0)),
                         included_usd: p.included_ai_micro_usd / 1_000_000,
                         includes: p.includes.clone(),
                         webagents_words: and_list(&p.webagents),
@@ -812,8 +862,11 @@ impl PlanPage {
         Self {
             site_id: site_id.to_owned(),
             host,
+            annual: plans.iter().any(|p| !p.annual_words.is_empty()),
             plans,
             chosen,
+            period: agentrix_billing::Period::Monthly.as_str().to_owned(),
+            discount_percent: agentrix_billing::catalogue().annual_discount_percent,
             return_path: format!(
                 "/setup/plan/return?site={}&next={}",
                 encode(site_id),
@@ -852,6 +905,10 @@ pub struct PayPage {
     pub plan_name: String,
     /// "$149".
     pub price_words: String,
+    /// What one charge is, with how often: "$149 a month" or "$1,430.40 for 12 months".
+    pub charge_words: String,
+    /// `monthly` or `annual`.
+    pub period: String,
     /// "$30".
     pub budget_words: String,
     /// What PayPal or the gateway said, in words, when something didn't work.
@@ -872,9 +929,15 @@ pub struct PayPage {
 pub struct BillingPage {
     pub site_id: String,
     pub state_chip: Chip,
-    /// "Commerce · $149 a month · PayPal subscription · next charge Mon 7 Dec"; empty with no plan.
+    /// "Commerce · $149 a month · PayPal subscription"; empty with no plan.
     pub summary: String,
     pub has_plan: bool,
+    /// "Monthly" or "12 months, 20% off".
+    pub period_words: String,
+    /// "Mon 7 Dec 2026, $149": the next charge's day and amount, once PayPal has charged.
+    pub next_charge: Option<String>,
+    /// Paying the other way: what it costs and when it starts.
+    pub switch: Option<PeriodSwitch>,
     /// "$3.40" of "$30" this period, when the gateway has counted it.
     pub spent_words: Option<String>,
     pub budget_words: Option<String>,
@@ -887,6 +950,22 @@ pub struct BillingPage {
     /// After a cancel: what happened, in words.
     pub said: Option<String>,
     pub plan_href: String,
+}
+
+/// Switching between monthly and 12 months up front (applies at the next renewal).
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct PeriodSwitch {
+    /// `annual` or `monthly`: what the button switches to.
+    pub to: String,
+    /// "Pay for 12 months at a time: $1,430.40 once a year instead of $1,788, so you save $357.60."
+    pub words: String,
+    /// "Switch to 12 months".
+    pub button: String,
+    /// On a live plan whose switch isn't agreed at PayPal yet: the period to post to open
+    /// PayPal's page again.
+    pub agree_to: Option<String>,
+    /// "From your next renewal, Mon 7 Dec 2026, you pay $1,430.40 for 12 months.", once asked.
+    pub pending: Option<String>,
 }
 
 /// The cancel card (owner-billing.html's "Cancel" decision).

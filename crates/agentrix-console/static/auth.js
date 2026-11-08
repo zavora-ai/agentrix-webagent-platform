@@ -4,7 +4,7 @@
   const root = document.getElementById("auth");
   if (!root) return;
   const register = root.dataset.auth === "register";
-  const next = root.dataset.next || "/console/today";
+  const next = root.dataset.next || "/os";
   const $ = id => document.getElementById(id);
   const err = $("auth-error");
   const show = m => { err.hidden = false; err.textContent = m; };

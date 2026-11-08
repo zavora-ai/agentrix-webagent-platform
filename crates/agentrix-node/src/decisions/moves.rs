@@ -187,6 +187,33 @@ impl MovesState {
         Ok("/console/move".into())
     }
 
+    /// The look the owner chose before the Move ("Choose your new look", `agentrix-concepts`),
+    /// read from the chosen design's stored page. `None` keeps the old theme's colours; a
+    /// failed read only logs.
+    async fn chosen_look(&self, site: &SiteId) -> Option<agentrix_move::theme::Tokens> {
+        let chosen = match agentrix_concepts::chosen(&self.blobs.pool, site.as_str()).await {
+            Ok(c) => c?,
+            Err(e) => {
+                tracing::warn!(error = %format!("{e:#}"), "reading the chosen look failed");
+                return None;
+            }
+        };
+        let digest: Digest = chosen.html_digest?.parse().ok()?;
+        let bytes = self.blobs.cas.get(&digest).await.ok().flatten()?;
+        let look = agentrix_concepts::look::from_html(&String::from_utf8_lossy(&bytes))?;
+        Some(agentrix_move::theme::Tokens {
+            bg: look.bg,
+            soft: look.soft,
+            ink: look.ink,
+            ink2: look.ink2,
+            line: look.line,
+            accent: look.accent,
+            on_accent: look.on_accent,
+            display: look.display,
+            text: look.text,
+        })
+    }
+
     async fn start(&self, headers: &HeaderMap, site: &str) -> Result<String, Fail> {
         let site = SiteId::new(site);
         self.owner(headers, &site).await?;
@@ -264,6 +291,7 @@ impl MovesState {
             wp_content,
             crawl: None,
             fixture: fixture != 0,
+            look: self.chosen_look(&site).await,
         };
         let assessed = self.latest_receipt(&site, "job.fetch").await;
         let claimed = self.latest_receipt(&site, "claim.verified").await;
@@ -344,7 +372,7 @@ impl MovesState {
             )
         })?;
         Ok(match state {
-            MoveState::AwaitingOwner => "/console/decisions".into(),
+            MoveState::AwaitingOwner => format!("/console/{}/decisions", mv.site),
             _ => "/console/move".into(),
         })
     }

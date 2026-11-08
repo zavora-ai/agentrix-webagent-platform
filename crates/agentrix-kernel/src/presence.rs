@@ -6,7 +6,7 @@
 //!
 //! - [`Presence`] is the hub: per site, the last frame for each WebAgent and desk, and a
 //!   broadcast to every open stream. [`global`] is the node's one hub.
-//! - The `on_*` methods turn Brick 1's events into frames: Ask frames ([`Presence::on_ask`]),
+//! - The `on_*` methods turn the first release's events into frames: Ask frames ([`Presence::on_ask`]),
 //!   the Move's UI events ([`Presence::on_move`]), decision cards
 //!   ([`Presence::on_decision`]), brief runs ([`Presence::on_brief`]) and the voice level
 //!   ([`Presence::on_voice`]). Node's wiring calls them where those events already happen.
@@ -102,7 +102,7 @@ fn now() -> String {
 pub fn raised_by(kind: CardKind) -> &'static str {
     match kind {
         CardKind::GoLive | CardKind::QuarantineRestore => "mover",
-        // Brick 1 holds orders that AI customers place through the agent door.
+        // The first release holds orders that AI customers place through the agent door.
         CardKind::OrderHeld => "agent-desk",
     }
 }
@@ -181,7 +181,7 @@ impl Presence {
         sites.get(site)?.last.get(webagent).cloned()
     }
 
-    /// One frame of an Ask turn on `desk` (Brick 1's `/ask` SSE: `ready`, `awp.presence`,
+    /// One frame of an Ask turn on `desk` (the first release's `/ask` SSE: `ready`, `awp.presence`,
     /// `delta`, `reply`, `error`, `done`). The desk is `concierge` for the front desk.
     pub fn on_ask(&self, site: &str, desk: &str, event: &str, data: &serde_json::Value) {
         match event {
@@ -432,7 +432,7 @@ impl Presence {
 }
 
 /// Reads what is recorded for a site the first time a stream opens for it: cards waiting on the
-/// owner, and a Move in progress with its latest step. Brick 1's tables, read by id; missing
+/// owner, and a Move in progress with its latest step. The first release's tables, read by id; missing
 /// tables read as nothing recorded.
 pub async fn baseline(hub: &Presence, pool: &SqlitePool, site: &str) -> anyhow::Result<()> {
     if hub.seeded(site) {

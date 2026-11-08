@@ -14,7 +14,7 @@
 //!   address its User-Agent names) and `/.well-known/agentrix-crawler` (03 §4), and the
 //!   living marks under `/_home/marks/` ([`marks`]).
 //! - [`mount_with_front_door`] adds the same routes plus `GET /`. The coordinator swaps it in
-//!   for [`mount`] once Brick 1's Start page leaves `/`.
+//!   for [`mount`] once the first release's Start page leaves `/`.
 //!
 //! Server-rendered with minijinja in strict mode, one small stylesheet on the tokens in
 //! `concept/styles.css`, light and dark. The only script is the hero film's play and pause
@@ -517,7 +517,7 @@ pub fn mount(ctx: &NodeContext) -> anyhow::Result<Mounted> {
         ))
 }
 
-/// Mounts every home-page route including `GET /`, once Brick 1's Start page has left `/`
+/// Mounts every home-page route including `GET /`, once the first release's Start page has left `/`
 /// (`specs/platform/handover-wiring.md` §1.2). `/home` then redirects to `/` for good.
 pub fn mount_with_front_door(ctx: &NodeContext) -> anyhow::Result<Mounted> {
     let home = Home::from_context(ctx)?;
@@ -686,7 +686,10 @@ impl Home {
             Section {
                 label: "Price list · How to pay".into(),
                 href: "/prices".into(),
-                text: "Plans are paid annually or monthly in US dollars (USD), through PayPal, and a 12-month plan comes with a 20% discount. Moving your site is free. PayPal is the only way to pay for a plan, so you can't pay a plan with M-Pesa.".into(),
+                text: format!(
+                    "Plans are paid annually or monthly in US dollars (USD), through PayPal, and a 12-month plan comes with a {}% discount. Moving your site is free. PayPal is the only way to pay for a plan, so you can't pay a plan with M-Pesa.",
+                    agentrix_billing::catalogue().annual_discount_percent
+                ),
             },
         ));
         let open = self.inner.probe.open();

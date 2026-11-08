@@ -5,13 +5,13 @@
 //! What it serves, all server-rendered from the concepts in `concept/control-plane/`:
 //!
 //! - **Sign-in** for Zavora's people: passkey first, an authenticator code without one. The proof
-//!   comes from Brick 1's approvals API through `agentrix_host::Approvals`, bound to a sign-in
+//!   comes from the first release's approvals API through `agentrix_host::Approvals`, bound to a sign-in
 //!   fingerprint. Operators get their own session table and cookie (`__Host-agx_ops`), so an
 //!   owner's session on the platform host is never accepted here.
 //! - **Roles** (08 §2.3): `op.admin`, `op.sre`, `op.release`, `op.finance`, `op.support`,
 //!   `op.partners`, `op.security`, `op.auditor` and `director`, from the roles file
 //!   ([`OperatorState::apply_roles_file`]) or an `op.admin`. Every grant is a ledger entry.
-//! - **Fleet, Customers, a site, Trust**: read-only views over Brick 1's `control.db` (sites,
+//! - **Fleet, Customers, a site, Trust**: read-only views over the first release's `control.db` (sites,
 //!   Moves, releases, receipts, decisions, usage, budgets, gauntlet runs, sealed-room jobs),
 //!   content-free by construction: ids, kinds, counts, durations and money, never site content.
 //! - **The operator ledger** (08 §4.6): append-only and hash-chained ([`ledger`]).
@@ -23,7 +23,7 @@
 //! mounted.push(agentrix_operator::mount(&ops)?);
 //! ```
 //!
-//! where `ops_approvals` is Brick 1's `Approvals` on a second `AuthState` whose origin is the ops
+//! where `ops_approvals` is the first release's `Approvals` on a second `AuthState` whose origin is the ops
 //! host (`https://ops.agentrix.website`) and whose RP id stays the platform's
 //! (`agentrix.website`), so the passkeys people already have work on the ops host and a
 //! ceremony from any other host fails WebAuthn's origin check. [`mount`] serves
@@ -62,7 +62,7 @@ pub struct OperatorConfig {
     pub origin: Url,
     /// `Secure` and `__Host-` cookies. True behind TLS; false only for local development.
     pub secure_cookies: bool,
-    /// The cell this node is, for the Fleet page (08 §3.2). Brick 1 runs one: `atl-0`.
+    /// The cell this node is, for the Fleet page (08 §3.2). The first release runs one: `atl-0`.
     pub cell: Cell,
     /// The platform's own origin (`https://agentrix.website`), for links to receipts.
     pub platform_origin: Option<Url>,
@@ -193,7 +193,7 @@ impl std::fmt::Debug for OperatorState {
 }
 
 impl OperatorState {
-    /// The operator console over `pool` (Brick 1's `control.db`, migrated through 0300), proving
+    /// The operator console over `pool` (the first release's `control.db`, migrated through 0300), proving
     /// sign-ins and approvals through `approvals` (the ops host's).
     pub fn new(
         config: OperatorConfig,

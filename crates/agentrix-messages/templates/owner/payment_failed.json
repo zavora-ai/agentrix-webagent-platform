@@ -7,7 +7,7 @@
  "person": {
   "name": "Wanjiru"
  },
- "console_url": "https://agentrix.website/console",
+ "console_url": "https://agentrix.website/console/kilele-bakery-sample",
  "dunning": {
   "day": 0,
   "plan": "Commerce",
@@ -19,7 +19,6 @@
   "read_only_on": "Mon 28 Dec",
   "read_only_since": null,
   "closes_on": null,
-  "export_url": null,
-  "pay_url": "https://agentrix.website/console/billing/pay"
+  "pay_url": "https://agentrix.website/billing?site=kilele-bakery-sample"
  }
 }

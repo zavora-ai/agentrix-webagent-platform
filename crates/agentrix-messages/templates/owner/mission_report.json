@@ -7,7 +7,7 @@
  "person": {
   "name": "Wanjiru"
  },
- "console_url": "https://agentrix.website/console",
+ "console_url": "https://agentrix.website/console/kilele-bakery-sample",
  "mission": {
   "name": "Christmas cakes: 60 preorders by 18 Dec",
   "status": "On track: 23 of 60 preordered, 8 this week.",
@@ -22,6 +22,6 @@
    "currency": "KES"
   },
   "ends": "Fri 18 Dec",
-  "url": "https://agentrix.website/console/missions/m-2"
+  "url": "https://agentrix.website/console/kilele-bakery-sample/missions/m-2"
  }
 }

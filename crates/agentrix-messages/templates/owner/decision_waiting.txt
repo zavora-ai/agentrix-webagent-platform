@@ -1,5 +1,5 @@
 {% block push %}{% if waiting > 1 %}{{ waiting }} decisions are waiting.{% else %}A decision is waiting.{% endif %}{% endblock %}
-{% block push_url %}/console/decisions{% endblock %}
+{% block push_url %}{{ card.url }}{% endblock %}
 {% block chat %}
 # Waiting for you, since {{ card.since }}
 

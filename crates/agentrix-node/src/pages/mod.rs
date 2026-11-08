@@ -1,5 +1,22 @@
 //! The console's GET pages (design §3.0, §4.1): `/console/*`, the receipt page and frames.
 //!
+//! **Deprecated: the first release's owner pages are replaced by Agentrix OS at `/os`
+//! (`agentrix-shell`).** [`router`] answers each old path with a 308 to its `/os` page:
+//!
+//! | Old route | Now |
+//! |---|---|
+//! | `/console`, `/console/today`, `/console/first-today` | `/os` (Back office) |
+//! | `/console/decisions` | `/os/decisions` |
+//! | `/console/decisions/{id}` | `/d/{id}` (the card in `/os`) |
+//! | `/console/trust` | `/os/trust` |
+//! | `/console/webagents` | `/os/webagents` |
+//! | `/console/quarantine` | `/os/quarantine` |
+//!
+//! `/console/move` has no `/os` twin, so it still serves W4's Move (`agentrix-onboarding`),
+//! and the first release's Move page only when node runs without W4's pages. The receipt page and frames
+//! are public and stay. The first release's handlers are kept, unmounted, in [`first_release_router`] for their
+//! tests until they are removed.
+//!
 //! Each handler reads through [`ConsoleReads`], maps the values with [`map`], and renders an
 //! `agentrix-console` page. POSTs stay with their owners: `decisions/` (approve, decline,
 //! quarantine restore), `auth/` and `claim/`. A page that is not signed in redirects to
@@ -38,24 +55,69 @@ pub struct PagesState {
     pub reads: Arc<dyn ConsoleReads>,
     /// W4's pages: the Move drawn as `concept/move.html`. Without them the console's renders.
     pub onboarding: Option<Arc<agentrix_onboarding::Pages>>,
+    /// `control.db`, for the look the owner chose before the Move (`agentrix-concepts`). `None`
+    /// leaves the Move page's look line out.
+    pub concepts: Option<sqlx::SqlitePool>,
 }
 
-/// The console's GET routes, for `app.rs` to merge.
+/// The console's GET routes, for `app.rs` to merge. The first release's owner pages are deprecated: each
+/// old path is a 308 to its page in Agentrix OS (see the module docs).
 pub fn router(state: PagesState) -> Router {
     Router::new()
-        // The owner console is W5's shell at /os (handover item 2b.2). Brick 1's Today stays
-        // reachable at /console/brick1-today; its other pages are linked from the shell.
-        .route("/console", get(|| async { Redirect::to("/os") }))
-        .route("/console/today", get(|| async { Redirect::to("/os") }))
-        .route("/console/brick1-today", get(today))
+        .route("/console", get(|| async { to_os("/os") }))
+        .route("/console/today", get(|| async { to_os("/os") }))
+        .route("/console/first-today", get(|| async { to_os("/os") }))
+        .route(
+            "/console/decisions",
+            get(|| async { to_os("/os/decisions") }),
+        )
+        .route("/console/decisions/{id}", get(card_to_os))
+        .route("/console/move", get(move_page))
+        .route("/console/trust", get(|| async { to_os("/os/trust") }))
+        .route(
+            "/console/webagents",
+            get(|| async { to_os("/os/webagents") }),
+        )
+        .route(
+            "/console/quarantine",
+            get(|| async { to_os("/os/quarantine") }),
+        )
+        .route("/receipts/{digest}", get(receipt))
+        .route("/frames/{digest}", get(frame))
+        .with_state(state)
+}
+
+/// A 308 from a deprecated the first release page to its page in Agentrix OS. The targets don't name the
+/// site (`/os/…` and `/d/…` find the signed-in owner's), so the redirect is the same for
+/// everyone and safe to keep.
+fn to_os(path: &str) -> Response {
+    Redirect::permanent(path).into_response()
+}
+
+/// `/console/decisions/{id}` to the card's short link, which opens it in Agentrix OS. Only a
+/// plain card id passes.
+async fn card_to_os(Path(id): Path<String>) -> Response {
+    let plain = !id.is_empty()
+        && id.len() <= 80
+        && id
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-');
+    if !plain {
+        return PageError::NotFound.into_response();
+    }
+    to_os(&format!("/d/{id}"))
+}
+
+/// Deprecated: the first release's owner pages, no longer mounted. [`router`] sends each of these paths
+/// to its Agentrix OS page; the handlers stay, with their tests, until they are removed.
+pub fn first_release_router(state: PagesState) -> Router {
+    Router::new()
+        .route("/console/first-today", get(today))
         .route("/console/decisions", get(decisions))
         .route("/console/decisions/{id}", get(decision))
-        .route("/console/move", get(move_page))
         .route("/console/trust", get(trust))
         .route("/console/webagents", get(webagents))
         .route("/console/quarantine", get(quarantine))
-        .route("/receipts/{digest}", get(receipt))
-        .route("/frames/{digest}", get(frame))
         .with_state(state)
 }
 
@@ -82,7 +144,7 @@ impl IntoResponse for PageError {
         match self {
             Self::SignIn(next) => Redirect::to(&format!("/auth/signin?next={next}")).into_response(),
             Self::Go(path) => Redirect::to(&path).into_response(),
-            Self::NotFound => (StatusCode::NOT_FOUND, Html("<!doctype html><title>Not found</title><p>We couldn't find that. <a href=\"/console/today\">Back to your console</a></p>")).into_response(),
+            Self::NotFound => (StatusCode::NOT_FOUND, Html("<!doctype html><title>Not found</title><p>We couldn't find that. <a href=\"/os\">Back to your console</a></p>")).into_response(),
             Self::Internal(e) => {
                 tracing::error!(error = %format!("{e:#}"), "console page failed");
                 (StatusCode::INTERNAL_SERVER_ERROR, Html("<!doctype html><title>Something went wrong</title><p>This page couldn't load just now. Nothing was changed. Please try again in a moment.</p>")).into_response()
@@ -252,6 +314,22 @@ async fn move_page(State(state): State<PagesState>, headers: HeaderMap, uri: Uri
     if let Some(p) = &state.onboarding {
         let live = view.run.state == view::MoveState::Live;
         let mut page = agentrix_onboarding::view::MovePage::from(view);
+        // The look chosen before the Move ("Choose your new look"); a failed read only hides it.
+        if let Some(pool) = &state.concepts {
+            match agentrix_concepts::chosen(pool, site.id.as_str()).await {
+                Ok(Some(c)) => {
+                    page.look = Some(agentrix_onboarding::view::LookRef {
+                        name: c.name,
+                        sentence: c.direction,
+                        href: format!("/sites/{}/concepts", site.id.as_str()),
+                    });
+                }
+                Ok(None) => {}
+                Err(e) => {
+                    tracing::warn!(error = %format!("{e:#}"), "reading the chosen look failed")
+                }
+            }
+        }
         // Pictures the fill drafted after go-live wait in Pictures (1.3). A failed count only
         // hides the line.
         if live {

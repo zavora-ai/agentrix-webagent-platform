@@ -245,6 +245,7 @@ pub async fn build(config: &Config) -> anyhow::Result<App> {
         console: console.clone(),
         reads: Arc::new(reads),
         onboarding: Some(onboarding.clone()),
+        concepts: Some(pool.clone()),
     };
     // The operator console's host (W3): a second sign-in context whose origin is the ops host
     // and whose passkey RP id stays the platform's, so an operator's passkey works there. Its own

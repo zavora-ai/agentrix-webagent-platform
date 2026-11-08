@@ -205,6 +205,18 @@ async fn telegram_end_to_end() {
     agentrix_decisions::migrate(&ctx.pool).await.unwrap();
     agentrix_messages::migrate(&ctx.pool).await.unwrap();
     agentrix_shell::migrate(&ctx.pool).await.unwrap();
+    // Quiet hours default to 22:00–06:00 and would hold the brief when this runs at night, so
+    // put them six hours away from now in the site's time (UTC+3).
+    let quiet_start = (Utc::now() + chrono::Duration::minutes(180 + 360)).time();
+    let quiet_end = quiet_start + chrono::Duration::minutes(1);
+    sqlx::query("INSERT INTO shell_quiet_hours (site_id, start_hm, end_hm, updated_at, updated_by) VALUES (?, ?, ?, ?, 'test')")
+        .bind(SITE)
+        .bind(quiet_start.format("%H:%M").to_string())
+        .bind(quiet_end.format("%H:%M").to_string())
+        .bind(Utc::now().to_rfc3339())
+        .execute(&ctx.pool)
+        .await
+        .unwrap();
     agentrix_channels::migrate(&ctx.pool).await.unwrap();
 
     let client = Client::with_base(

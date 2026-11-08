@@ -1,4 +1,4 @@
-//! The owner console as node mounts it, on an in-memory `control.db` built from Brick 1's schema
+//! The owner console as node mounts it, on an in-memory `control.db` built from the first release's schema
 //! files and seeded with the Kilele Bakery sample (marked Sample), for walking every page and
 //! action locally: the shell, W1's roster, dials and Workshop, card v2 and the Store.
 //!
@@ -62,7 +62,7 @@ async fn main() -> anyhow::Result<()> {
         .seed_sample(SITE, "kilele")
         .await?;
 
-    // A held order (Brick 1's card) and a passed question.
+    // A held order (the first release's card) and a passed question.
     let effect = EffectRequest {
         site: SiteId::new(SITE),
         webagent: "orders".into(),

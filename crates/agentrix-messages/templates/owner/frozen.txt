@@ -14,7 +14,7 @@ Your pages stay up from the signed copy. Nothing new is sent, charged or publish
 ::button Open the console | {{ console_url }}
 {% endblock %}
 {% block push %}{% if freeze.frozen %}Every WebAgent is frozen.{% else %}Your WebAgents are working again.{% endif %}{% endblock %}
-{% block push_url %}/console{% endblock %}
+{% block push_url %}{{ console_url }}{% endblock %}
 {% block chat %}
 {% if freeze.frozen %}
 Agentrix: every WebAgent on {{ site.name }} is frozen ({{ freeze.by }}, {{ freeze.at }}). Pages stay up. Unfreezing needs the console.

@@ -1,4 +1,4 @@
-//! Shared types for Brick 1 (specs/brick-1/design.md §3, §4). Task S0-08.
+//! Shared types for the first release (specs/first-release/design.md §3, §4). Task S0-08.
 //!
 //! - **Ids:** [`SiteId`], [`MoveId`], [`AssessmentId`], [`JobId`], [`ReceiptId`],
 //!   [`DecisionId`], [`FindingId`], [`QuarantineId`].

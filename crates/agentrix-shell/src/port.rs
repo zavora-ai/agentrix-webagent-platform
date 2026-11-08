@@ -1,10 +1,10 @@
 //! What the shell reads: the port between the shell's pages and the platform.
 //!
-//! `agentrix-node` implements [`ShellPort`] over Brick 1's console reads (`pages::ConsoleReads`
+//! `agentrix-node` implements [`ShellPort`] over the first release's console reads (`pages::ConsoleReads`
 //! and `pages::map`), the approval ceremony (`auth::Approvals` through `decisions::Approver`)
-//! and the receipts store. Wherever Brick 1 already builds a view model, the port hands that
-//! model back (`agentrix_console::view`), so a page in the shell shows exactly what Brick 1's
-//! page showed, from the same reads. Values the shell needs that Brick 1 never built are small
+//! and the receipts store. Wherever the first release already builds a view model, the port hands that
+//! model back (`agentrix_console::view`), so a page in the shell shows exactly what the first release's
+//! page showed, from the same reads. Values the shell needs that the first release never built are small
 //! rows defined here.
 
 use agentrix_console::view as cv;
@@ -65,7 +65,7 @@ pub enum Access {
     NotFound,
 }
 
-/// A decision card as the lane and the list show it, from Brick 1's cards or card v2.
+/// A decision card as the lane and the list show it, from the first release's cards or card v2.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct CardRow {
     /// The card's id.
@@ -189,7 +189,7 @@ pub trait ShellPort: Send + Sync + 'static {
         back: &str,
     ) -> PortResult<Access>;
 
-    /// Brick 1's Today: the brief, questions visitors passed, model spend, recent receipts.
+    /// The first release's Today: the brief, questions visitors passed, model spend, recent receipts.
     async fn today(&self, owner: &Owner) -> PortResult<cv::TodayView>;
     /// Every card of the site, newest first.
     async fn cards(&self, owner: &Owner) -> PortResult<Vec<CardRow>>;

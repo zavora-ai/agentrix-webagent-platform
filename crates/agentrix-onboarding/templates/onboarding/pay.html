@@ -1,6 +1,7 @@
 {% extends "onboarding/base.html" %}
 {#- OnboardingPage::Pay · view::PayPage { site_id, state: "no-plan"|"ready"|"pending"|"active"|"off",
-      plan_name, price_words, budget_words, said?, approve_url?, plan_href, next }
+      plan_name, price_words, charge_words, period, budget_words, said?, approve_url?, plan_href,
+      next }
     owner-plan.html's PayPal step (O3.2), taken just before go-live: a subscription's first
     charge is the day it's approved, and that's go-live day (W6's Effects Gateway, W3's prices).
     PayPal's own page takes the approval; Agentrix never sees the owner's PayPal details. -#}
@@ -21,12 +22,12 @@
     <a class="btn btn-primary self-start" href="{{ plan_href }}">Choose a plan</a>
     {% else %}
     <div class="o-card">
-      <div class="spread"><h3>{{ plan_name }}</h3><span class="chip">{{ price_words }} a month</span></div>
+      <div class="spread"><h3>{{ plan_name }}</h3><span class="chip">{{ charge_words }}</span></div>
       <p class="small">AI budget: {{ budget_words }} a month, set as a limit. <a href="{{ plan_href }}">Change the plan</a></p>
       <label class="o-rail"><input type="radio" checked disabled><div><b>PayPal</b><span>A PayPal subscription, approved on PayPal's own page. Charged in USD.</span></div><span class="tag">Subscription</span></label>
     </div>
     {% if state == "active" %}
-    <div class="o-ok" role="status">✓ Approved on PayPal · {{ plan_name }} · {{ price_words }} a month, charged from today</div>
+    <div class="o-ok" role="status">✓ Approved on PayPal · {{ plan_name }} · {{ charge_words }}, charged from today{% if period == "annual" %}, then again in 12 months{% endif %}</div>
     <a class="btn btn-primary self-start" href="{{ next }}">Next: go live</a>
     {% elif state == "pending" %}
     <div class="o-wait" role="status">Waiting for you on PayPal's page. Nothing is charged until you agree there.</div>
@@ -38,7 +39,7 @@
     <form method="post" action="/setup/pay" class="o-sec">
       <input type="hidden" name="site" value="{{ site_id }}">
       <input type="hidden" name="next" value="{{ next }}">
-      <p class="small"><b>{{ plan_name }} · {{ price_words }} a month</b> · first charge today, the day your site goes live</p>
+      <p class="small"><b>{{ plan_name }} · {{ charge_words }}</b> · first charge today, the day your site goes live{% if period == "annual" %}: the 12-month total, once{% endif %}</p>
       <button class="btn btn-primary self-start" type="submit">Continue to PayPal</button>
     </form>
     {% endif %}

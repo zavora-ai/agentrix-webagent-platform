@@ -43,6 +43,7 @@ use webauthn_rs::prelude::{
 pub(crate) use consent::when as consent_when;
 pub use consent::{ConsentReceipt, Purpose, PurposeWords};
 pub use routes::router;
+pub use session::SESSION_SECONDS;
 
 use crate::device;
 use crate::mailer::{CodeMailer, CodePurpose, Mail, MailKind, is_reserved_example};

@@ -226,7 +226,10 @@ async fn list_plans_reads_the_catalogue_with_hosting_and_both_ais() {
             c.included_ai_micro_usd / 10_000
         );
         if c.kind == "site" {
-            let pct = agentrix_home::door::ANNUAL_DISCOUNT_PERCENT;
+            // The door quotes the catalogue's one discount, the number /setup/plan charges.
+            let pct = catalogue.annual_discount_percent;
+            assert_eq!(pct, 20);
+            assert_eq!(p["twelve_months"]["price_cents"], c.annual_cents());
             assert_eq!(
                 p["twelve_months"]["price_cents"],
                 c.price_cents * 12 * (100 - pct) / 100

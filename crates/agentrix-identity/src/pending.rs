@@ -1,6 +1,6 @@
 //! Short-lived state between the two halves of a ceremony (a passkey challenge, a code waiting
 //! to be typed, recovery codes waiting to be shown once). In memory on the single node, keyed
-//! by an unguessable id, gone after `ttl`. Brick 1's `auth/pending.rs`, with `get_mut` for
+//! by an unguessable id, gone after `ttl`. The first release's `auth/pending.rs`, with `get_mut` for
 //! counting tries.
 
 use std::collections::HashMap;

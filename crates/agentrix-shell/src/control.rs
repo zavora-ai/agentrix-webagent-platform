@@ -2,7 +2,7 @@
 //! through [`NodeContext::owners`], approvals through [`NodeContext::approvals`] (the frozen
 //! approve contract) and receipts through [`NodeContext::receipts`].
 //!
-//! The SQL is Brick 1's (`agentrix-node/src/pages/store.rs`, `db/usage.rs`), ported with the
+//! The SQL is the first release's (`agentrix-node/src/pages/store.rs`, `db/usage.rs`), ported with the
 //! console's pages. `control.db`'s tables keep their writers; the shell only reads them.
 
 use std::str::FromStr;
@@ -415,7 +415,7 @@ impl ShellPort for ControlPort {
                 }
             })
             .collect();
-        // Card v2 (agentrix-decisions) beside Brick 1's, newest first.
+        // Card v2 (agentrix-decisions) beside the first release's, newest first.
         for r in agentrix_decisions::Decisions::new(&self.ctx)
             .list(&o.site.id)
             .await?
@@ -976,7 +976,7 @@ fn v2_card(
     });
     cv::Card {
         id: id.clone(),
-        // The view's kind only distinguishes Brick 1's three cards; v2 cards render the same way.
+        // The view's kind only distinguishes the first release's three cards; v2 cards render the same way.
         kind: cv::CardKind::OrderHeld,
         title: r.card.title.clone(),
         asked_by: map::mark(

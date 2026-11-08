@@ -17,7 +17,7 @@
 {%- set words = {"pages": "pages and what the Move found on them", "releases": "releases and the Move's steps", "jobs": "sealed-room jobs", "receipts": "receipts"} -%}
 {%- set access_words = "read" if g.access == "read" else "read and change" -%}
 <main class="wrap grant-wrap">
-  <a class="logo" href="/console/today"><span class="mark" aria-hidden="true"></span>Agentrix</a>
+  <a class="logo" href="/os"><span class="mark" aria-hidden="true"></span>Agentrix</a>
   <article class="card decision{% if g.state != 'requested' %} done{% endif %}" id="grant" data-grant="{{ g.grant_id }}" data-method="{{ method }}"{% if options %} data-options="{{ options }}"{% endif %}>
     <div class="head"><span class="from"><span class="avatar sm" style="background:var(--op)">Z</span>Zavora Support asks</span>
       {%- if g.state == "requested" %}<span class="chip chip-wait">Waiting for you</span>{% elif g.state == "active" %}<span class="chip chip-ok">On until {{ g.ends_at|clock }}</span>{% else %}<span class="chip">{{ {"declined": "You declined", "revoked": "Ended early", "expired": "Ran out", "withdrawn": "Withdrawn"}[g.state] }}</span>{% endif %}</div>
@@ -50,7 +50,7 @@
     <div class="done-line" role="status">{{ {"declined": "You declined. Zavora can't see anything it asked for.", "revoked": "Access ended early. Zavora can't see your site any more.", "expired": "The time ran out. Zavora can't see your site any more.", "withdrawn": "Zavora withdrew the request. Nothing was shared."}[g.state] }}</div>
     {%- endif %}
   </article>
-  <p class="small muted" style="margin-top:12px">Signed in as {{ owner_name }}. Receipts for this are on your <a href="/console/trust">Trust centre</a>.</p>
+  <p class="small muted" style="margin-top:12px">Signed in as {{ owner_name }}. Receipts for this are on your <a href="/os/trust">Trust centre</a>.</p>
 </main>
 </body>
 </html>

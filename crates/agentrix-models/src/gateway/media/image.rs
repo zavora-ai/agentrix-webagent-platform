@@ -1,4 +1,4 @@
-//! The `image` purpose (02 §6; Brick 1 design §4.3's `AGENTRIX_IMAGE` and `_IMAGE_FAST`).
+//! The `image` purpose (02 §6; the first release design §4.3's `AGENTRIX_IMAGE` and `_IMAGE_FAST`).
 //!
 //! - `POST /v1/images/generations`: OpenAI's shape (`prompt`, `size`, `n`, `seed`, `steps`,
 //!   `negative_prompt`, `output_format` and the rest of Vultr's image fields). The default

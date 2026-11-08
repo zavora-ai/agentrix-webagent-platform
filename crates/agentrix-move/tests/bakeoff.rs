@@ -194,6 +194,7 @@ async fn clean_site(blobs: &MemoryBlobs) -> CleanSite {
         wp_content: Some(blobs.insert(&site, WP_CONTENT)),
         crawl: None,
         fixture: true,
+        look: None,
     };
     let old = read_fallback(blobs, &site, &inputs).await.unwrap();
     let inventory = old.hydrate(blobs, &site).await.unwrap();

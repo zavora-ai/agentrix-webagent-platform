@@ -406,7 +406,7 @@ async fn the_papers_owner_apps_use_its_own_words() {
     );
     let (_, _, body) = send(&app, get(&format!("{T}/subscribers"), None)).await;
     assert!(body.contains("Give a subscription") && body.contains(">Give</button>"));
-    assert!(body.contains("Given by you") && body.contains("PayPal (sandbox)"));
+    assert!(body.contains("Given by you") && body.contains("PayPal test mode"));
     assert!(!body.contains("owner grant") && !body.contains("Grant"));
     let (_, _, body) = send(&app, get(&format!("{T}/digest"), None)).await;
     assert!(body.contains("<h1>Friday five</h1>"));

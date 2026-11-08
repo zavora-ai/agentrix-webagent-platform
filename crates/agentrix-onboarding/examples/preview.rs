@@ -251,6 +251,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         name: name.into(),
                         kind: "site".into(),
                         price_cents: cents,
+                        annual_cents: agentrix_billing::annual_cents(cents, agentrix_billing::catalogue().annual_discount_percent),
                         included_ai_micro_usd: ai * 1_000_000,
                         webagents: agents.iter().map(|a| a.to_string()).collect(),
                         includes: inc.iter().map(|a| a.to_string()).collect(),

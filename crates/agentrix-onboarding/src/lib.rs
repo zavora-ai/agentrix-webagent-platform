@@ -62,6 +62,11 @@ pub fn plans() -> Vec<view::PlanInput> {
             name: p.name.clone(),
             kind: p.kind.clone(),
             price_cents: p.price_cents,
+            annual_cents: if p.kind == "site" {
+                p.annual_cents()
+            } else {
+                0
+            },
             included_ai_micro_usd: p.included_ai_micro_usd,
             webagents: p.webagents.clone(),
             includes: p.includes.clone(),
