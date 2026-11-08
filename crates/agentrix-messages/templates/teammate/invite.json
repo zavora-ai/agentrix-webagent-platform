@@ -1,0 +1,1 @@
+{"site": {"name": "Kilele Bakery", "host": "kilele-bakery-sample.agentrix.website", "sample": true}, "person": {"name": "Peter"}, "invite": {"by": "Wanjiru", "role": "a manager", "can": "Decide everyday cards, edit pages, answer customers", "cannot": "Approve money, change billing, add people", "expires": "Mon 23 Nov", "url": "https://agentrix.website/invite/i_7c2m"}}

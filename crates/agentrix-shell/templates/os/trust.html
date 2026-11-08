@@ -1,0 +1,51 @@
+{% extends "os/base.html" %}
+{#- ShellPage::Trust · view::TrustView (+ Chrome) {
+      gauntlet: Gauntlet { held, of, score_words, run_words, receipt, attacks: [{ name, plain, held, receipt? }] }?,
+      receipts: [ReceiptRow], key_id, left_behind }
+    01b C26, C27, C30 (concept/console/trust.html): Freeze, protections, receipts that verify in the browser. -#}
+{% block title %}Trust centre · {{ site.name }}{% endblock %}
+{% block field %}
+<section class="view on" aria-labelledby="trust-h">
+  <div class="field-head"><div><h2 id="trust-h">Trust centre</h2><div class="sub">What your WebAgents may do, what they did, and the switch to stop them</div></div></div>
+  <div class="cards">
+    {% if freeze_enabled or freeze %}<article class="fcard span2">
+      <div class="freeze-big{% if freeze %} on{% endif %}">
+        <div><h3>{% if freeze %}Frozen{% else %}Freeze{% endif %}</h3><p>{% if freeze %}{{ freeze.words }}. Your site keeps serving its signed release. Unfreezing needs your {{ "passkey" if has_passkey else "authenticator app" }}.{% else %}One press stops every WebAgent at its next safe point. Your site keeps serving its signed release. Unfreezing needs your {{ "passkey" if has_passkey else "authenticator app" }}.{% endif %}</p></div>
+        {% if freeze %}<button class="btn" type="button" data-unfreeze="{{ base }}/unfreeze/sheet">Unfreeze</button>
+        {% else %}<form method="post" action="{{ base }}/freeze" data-freeze-form><input type="hidden" name="back" value="{{ base }}/trust"><button class="btn" type="submit">Freeze now</button></form>{% endif %}
+      </div>
+    </article>{% endif %}
+
+    <article class="fcard span2" aria-labelledby="g-h">
+      <div class="spread-h"><h3 id="g-h">The containment gauntlet</h3>{% if gauntlet %}<span class="chip {{ 'chip-ok' if gauntlet.held == gauntlet.of else 'chip-risk' }}">{{ gauntlet.held }} of {{ gauntlet.of }} held</span>{% endif %}</div>
+      {% if gauntlet %}
+      <p>Ten attacks planted in Zavora's fixture, run against this deployment {{ gauntlet.run_words }}. The score is computed from receipts only. <a href="/receipts/{{ gauntlet.receipt }}">The run's receipt</a></p>
+      <table class="surface-table">
+        <thead><tr><th>Attack</th><th>What it tried</th><th>Result</th></tr></thead>
+        <tbody>{% for a in gauntlet.attacks %}<tr><td><b>{{ a.name }}</b></td><td>{{ a.plain }}</td><td><span class="yesno {{ 'y' if a.held else 'n' }}">{{ "Held" if a.held else "Got through" }}</span>{% if a.receipt %} · <a href="/receipts/{{ a.receipt }}">receipt</a>{% endif %}</td></tr>{% endfor %}</tbody>
+      </table>
+      {% else %}
+      <p>The gauntlet hasn't run against this deployment yet, so there's no score to show.</p>
+      {% endif %}
+    </article>
+
+    <article class="fcard">
+      <div class="fcard-head"><span class="sysmark" aria-hidden="true">{{ m.icon("move") }}</span><div class="who"><b>Left behind by the Move</b><span class="state-line">Kept out of your new site</span></div>{% if left_behind %}<span class="chip">{{ left_behind }}</span>{% endif %}</div>
+      <p>{% if left_behind %}{{ left_behind }} item{{ "" if left_behind == 1 else "s" }} from your old site stayed behind, with the evidence. You can ask for one back; putting it back is a decision you approve.{% else %}Nothing from your old site was left behind.{% endif %}</p>
+      <div class="verbs"><a class="btn btn-sm" href="{{ base }}/quarantine">See what was left behind</a></div>
+    </article>
+
+    <article class="fcard">
+      <div class="fcard-head"><span class="sysmark" aria-hidden="true">{{ m.icon("decisions") }}</span><div class="who"><b>Your decisions</b><span class="state-line">Approved over the exact effect</span></div></div>
+      <p>Each approval is bound to a fingerprint of exactly what will run. It runs once, and the receipt says whether your passkey or an authenticator code approved it.</p>
+      <div class="verbs"><a class="btn btn-sm" href="{{ base }}/decisions">Every decision</a></div>
+    </article>
+
+    <article class="fcard span2" id="receipts" aria-labelledby="r-h">
+      <div class="spread-h"><h3 id="r-h">Receipts</h3><span class="small muted">Signed with key <span class="mono">{{ key_id }}</span></span></div>
+      <p class="small muted">Open a receipt to check its signature against our published key, on our server and again in your browser.</p>
+      {% for r in receipts %}{{ m.receipt(r) }}{% else %}<p>No receipts yet. They appear as soon as anything runs.</p>{% endfor %}
+    </article>
+  </div>
+</section>
+{% endblock %}

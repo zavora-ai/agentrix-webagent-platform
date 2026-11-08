@@ -1,0 +1,25 @@
+{% extends "owner/base.html" %}
+{% block field %}{% import "owner/macros.html" as m %}
+{{ m.head(c) }}
+<h2 class="sec">Open</h2>
+{% for q in open %}
+<article class="fcard question">
+  <div class="from">{{ m.chip(q.desk ~ " desk", "info") }}<span class="muted small">asked {{ q.asked }}{% if q.page %} on {{ q.page }}{% endif %}</span></div>
+  <p class="q">&ldquo;{{ q.question }}&rdquo;</p>
+  <p class="muted small">{% if q.contact %}Reply to {{ q.contact }}.{% else %}No contact left; the answer stays here.{% endif %} The desk couldn't answer from the site's pages, so it passed this to {{ owner }}.</p>
+  <form method="post" action="{{ q.href }}" class="decide">
+    <label for="a-{{ q.id }}">Your answer</label>
+    <textarea id="a-{{ q.id }}" name="answer" rows="2" maxlength="2000" required placeholder="Answer in a sentence or two."></textarea>
+    <div class="verbs"><button class="btn btn-primary btn-sm">Save answer</button></div>
+  </form>
+</article>
+{% else %}
+<article class="fcard">{{ m.empty("No questions waiting. When a desk can't answer from the site's pages, the visitor can pass the question to " ~ owner ~ " and it shows here.") }}</article>
+{% endfor %}
+<h2 class="sec">Answered</h2>
+<article class="fcard">
+  {% if answered %}
+  <ul class="answered">{% for q in answered %}<li><span class="muted small">{{ q.desk }} desk · {{ q.asked }}{% if q.contact %} · {{ q.contact }}{% endif %}</span><b>&ldquo;{{ q.question }}&rdquo;</b><span>{{ q.answer }}</span></li>{% endfor %}</ul>
+  {% else %}{{ m.empty("Nothing answered yet. Answers you save appear here.") }}{% endif %}
+</article>
+{% endblock %}

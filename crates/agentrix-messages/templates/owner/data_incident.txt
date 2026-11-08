@@ -1,0 +1,19 @@
+{% block subject %}A data incident affected {{ site.name }}{% endblock %}
+{% block preheader %}What happened, what it touched, and what we've done.{% endblock %}
+{% block body %}
+# A data incident affected your site
+We're telling you within 72 hours of confirming it, as we promised.
+
+::fact What happened | {{ incident.what }}
+::fact When | {{ incident.when }}
+::fact Found | {{ incident.found }}
+::fact Data involved | {{ incident.data }}
+::fact Customers affected | {{ incident.affected }}
+::fact What we've done | {{ incident.done }}
+
+What you should do: {{ incident.your_steps }}
+
+We'll update you as we learn more. The full report, with the receipts behind it, is in the Trust centre.
+
+::button Read the incident report | {{ incident.url }}
+{% endblock %}

@@ -1,0 +1,438 @@
+//! Plans in USD through PayPal Subscriptions (James: "PayPal only", "USD for plans"). W3 owns
+//! the plan catalogue and the billing row; this keeps PayPal's side: one product and plan per
+//! platform plan and version, and each subscription's state as PayPal reports it.
+
+use agentrix_types::{Money, ReceiptKind, SiteId};
+use reqwest::Method;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use uuid::Uuid;
+
+use crate::paypal;
+use crate::{EffectError, Effects, Outcome, fingerprint, journal, now};
+
+/// A platform plan's price, from W3's catalogue.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlanPrice {
+    /// For example `business`.
+    pub plan_id: String,
+    /// The catalogue version (prices change by version, never in place).
+    pub version: u32,
+    /// For example "Agentrix Business".
+    pub name: String,
+    /// Monthly price in USD.
+    pub monthly: Money,
+}
+
+impl PlanPrice {
+    fn key(&self) -> String {
+        format!("{}@{}", self.plan_id, self.version)
+    }
+}
+
+/// An owner starting a plan.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SubscriptionStart {
+    /// The site the plan is for.
+    pub site: SiteId,
+    /// The plan.
+    pub plan: PlanPrice,
+    /// The owner's email, to prefill PayPal's page.
+    pub subscriber_email: Option<String>,
+    /// Where PayPal sends the owner after approving.
+    pub return_url: String,
+    /// Where PayPal sends the owner who cancels.
+    pub cancel_url: String,
+    /// The first charge's day (PayPal's `start_time`, in the future), for example go-live day.
+    /// `None` charges when the owner approves.
+    #[serde(default)]
+    pub starts_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+/// A subscription waiting for the owner on PayPal's page.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SubscriptionStarted {
+    /// `sub_…`.
+    pub subscription_id: String,
+    /// PayPal's `I-…`.
+    pub provider_ref: String,
+    /// PayPal's page.
+    pub approve_url: String,
+    /// The effect's fingerprint.
+    pub fingerprint: String,
+}
+
+/// A subscription as PayPal reports it.
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct PlanSubscription {
+    /// `sub_…`.
+    pub id: String,
+    /// The site.
+    pub site_id: String,
+    /// `<plan_id>@<version>`.
+    pub plan_key: String,
+    /// PayPal's `I-…`.
+    pub provider_ref: Option<String>,
+    /// PayPal's page while pending.
+    pub approve_url: Option<String>,
+    /// pending_approval | active | suspended | cancelled | expired | past_due.
+    pub state: String,
+    /// USD.
+    pub currency: String,
+    /// The monthly price.
+    pub amount_minor: i64,
+    /// End of the paid period, when PayPal says.
+    pub period_end: Option<i64>,
+    /// The last PayPal event applied.
+    pub last_event: Option<String>,
+    /// PayPal's sandbox.
+    pub sandbox: bool,
+    /// Created.
+    pub created_at: i64,
+    /// Updated.
+    pub updated_at: i64,
+}
+
+#[derive(Serialize)]
+struct StartKey<'a> {
+    kind: &'static str,
+    site: &'a SiteId,
+    plan: String,
+    amount: &'a Money,
+}
+
+impl Effects {
+    /// PayPal's plan id for a platform plan and version, made once (product, then plan).
+    pub async fn ensure_plan(&self, plan: &PlanPrice) -> Result<String, EffectError> {
+        if plan.monthly.currency != "USD" || plan.monthly.minor <= 0 {
+            return Err(EffectError::BadRequest(
+                "Plans are priced in USD, above zero.".into(),
+            ));
+        }
+        let key = plan.key();
+        let existing: Option<(String, i64)> = sqlx::query_as(
+            "SELECT paypal_plan_id, amount_minor FROM paypal_plans WHERE plan_key = ?",
+        )
+        .bind(&key)
+        .fetch_optional(self.pool())
+        .await?;
+        if let Some((id, minor)) = existing {
+            if minor != plan.monthly.minor {
+                return Err(EffectError::BadRequest(format!(
+                    "{key} already has another price; prices change by version."
+                )));
+            }
+            return Ok(id);
+        }
+        let client = self.client()?;
+        let product = client
+            .request(
+                Method::POST,
+                "/v1/catalogs/products",
+                Some(&json!({ "name": plan.name, "type": "SERVICE", "category": "SOFTWARE", "description": format!("{} plan for one website", plan.name) })),
+                Some(&format!("product-{key}")),
+            )
+            .await
+            .map_err(|e| EffectError::NotExecuted(format!("PayPal didn't take the plan: {e}")))?;
+        let product_id = product["id"]
+            .as_str()
+            .ok_or_else(|| EffectError::Internal("PayPal product without id".into()))?
+            .to_owned();
+        let body = json!({
+            "product_id": product_id,
+            "name": plan.name,
+            "status": "ACTIVE",
+            "billing_cycles": [{
+                "frequency": { "interval_unit": "MONTH", "interval_count": 1 },
+                "tenure_type": "REGULAR", "sequence": 1, "total_cycles": 0,
+                "pricing_scheme": { "fixed_price": paypal::amount("USD", plan.monthly.minor) },
+            }],
+            "payment_preferences": { "auto_bill_outstanding": true, "payment_failure_threshold": 3 },
+        });
+        let created = client
+            .request(
+                Method::POST,
+                "/v1/billing/plans",
+                Some(&body),
+                Some(&format!("plan-{key}")),
+            )
+            .await
+            .map_err(|e| EffectError::NotExecuted(format!("PayPal didn't take the plan: {e}")))?;
+        let paypal_plan_id = created["id"]
+            .as_str()
+            .ok_or_else(|| EffectError::Internal("PayPal plan without id".into()))?
+            .to_owned();
+        sqlx::query("INSERT OR IGNORE INTO paypal_plans (plan_key, product_id, paypal_plan_id, currency, amount_minor, created_at) VALUES (?, ?, ?, 'USD', ?, ?)")
+            .bind(&key)
+            .bind(&product_id)
+            .bind(&paypal_plan_id)
+            .bind(plan.monthly.minor)
+            .bind(now())
+            .execute(self.pool())
+            .await?;
+        Ok(paypal_plan_id)
+    }
+
+    /// Starts a subscription; the owner approves it on PayPal's page. Idempotent per site, plan
+    /// and price.
+    pub async fn start_subscription(
+        &self,
+        start: SubscriptionStart,
+    ) -> Result<SubscriptionStarted, EffectError> {
+        let fp = fingerprint(&StartKey {
+            kind: "subscription.create",
+            site: &start.site,
+            plan: start.plan.key(),
+            amount: &start.plan.monthly,
+        })?
+        .to_string();
+        let existing: Option<PlanSubscription> = sqlx::query_as(
+            "SELECT s.* FROM plan_subscriptions s JOIN effects e ON e.subject = s.id WHERE e.fingerprint = ? AND s.state = 'pending_approval'",
+        )
+        .bind(&fp)
+        .fetch_optional(self.pool())
+        .await?;
+        if let Some(s) = existing {
+            if let (Some(provider_ref), Some(approve_url)) = (s.provider_ref, s.approve_url) {
+                return Ok(SubscriptionStarted {
+                    subscription_id: s.id,
+                    provider_ref,
+                    approve_url,
+                    fingerprint: fp,
+                });
+            }
+        }
+        let paypal_plan_id = self.ensure_plan(&start.plan).await?;
+        let client = self.client()?;
+        let subscription_id = format!("sub_{}", Uuid::now_v7().simple());
+        journal::release(self.pool(), &fp).await?;
+        if journal::claim(
+            self.pool(),
+            &fp,
+            start.site.as_str(),
+            "subscription.create",
+            &subscription_id,
+        )
+        .await?
+        .is_some()
+        {
+            return Err(EffectError::Unknown("subscription already starting".into()));
+        }
+        let mut body = json!({
+            "plan_id": paypal_plan_id,
+            "custom_id": subscription_id,
+            "application_context": {
+                "brand_name": "Agentrix",
+                "user_action": "SUBSCRIBE_NOW",
+                "shipping_preference": "NO_SHIPPING",
+                "return_url": start.return_url,
+                "cancel_url": start.cancel_url,
+            },
+        });
+        if let Some(starts_at) = start.starts_at {
+            if starts_at <= chrono::Utc::now() {
+                return Err(EffectError::BadRequest(
+                    "A plan's first charge can't be in the past.".into(),
+                ));
+            }
+            body["start_time"] =
+                json!(starts_at.to_rfc3339_opts(chrono::SecondsFormat::Secs, true));
+        }
+        if let Some(email) = &start.subscriber_email {
+            body["subscriber"] = json!({ "email_address": email });
+        }
+        let created = match client
+            .request(
+                Method::POST,
+                "/v1/billing/subscriptions",
+                Some(&body),
+                Some(fp.trim_start_matches("sha256:")),
+            )
+            .await
+        {
+            Ok(created) => created,
+            Err(e) => {
+                journal::release(self.pool(), &fp).await?;
+                return Err(if e.outcome_unknown() {
+                    EffectError::Unknown(e.to_string())
+                } else {
+                    EffectError::NotExecuted(format!("PayPal didn't start the plan: {e}"))
+                });
+            }
+        };
+        let provider_ref = created["id"]
+            .as_str()
+            .ok_or_else(|| EffectError::Internal("PayPal subscription without id".into()))?
+            .to_owned();
+        let approve_url =
+            paypal::link(&created, &["approve", "payer-action"]).ok_or_else(|| {
+                EffectError::Internal("PayPal subscription without an approve link".into())
+            })?;
+        let at = now();
+        sqlx::query(
+            "INSERT INTO plan_subscriptions (id, site_id, plan_key, provider_ref, approve_url, state, currency, amount_minor, sandbox, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, 'pending_approval', 'USD', ?, ?, ?, ?)",
+        )
+        .bind(&subscription_id)
+        .bind(start.site.as_str())
+        .bind(start.plan.key())
+        .bind(&provider_ref)
+        .bind(&approve_url)
+        .bind(start.plan.monthly.minor)
+        .bind(self.sandbox())
+        .bind(at)
+        .bind(at)
+        .execute(self.pool())
+        .await?;
+        let detail = json!({ "subscription": subscription_id, "plan": start.plan.key(), "provider_ref": provider_ref, "state": "pending_approval", "amount": start.plan.monthly, "sandbox": self.sandbox() });
+        let receipt = self
+            .receipt(
+                ReceiptKind::SubscriptionChanged,
+                &start.site,
+                detail.clone(),
+            )
+            .await;
+        journal::finish(
+            self.pool(),
+            &fp,
+            Outcome::Executed,
+            Some(&provider_ref),
+            &detail,
+            receipt.as_deref(),
+        )
+        .await?;
+        Ok(SubscriptionStarted {
+            subscription_id,
+            provider_ref,
+            approve_url,
+            fingerprint: fp,
+        })
+    }
+
+    /// Reads a subscription back from PayPal and records its state (after the owner returns
+    /// from PayPal's page, or on a webhook).
+    pub async fn refresh_subscription(
+        &self,
+        provider_ref: &str,
+    ) -> Result<PlanSubscription, EffectError> {
+        let current = self
+            .subscription_by_ref(provider_ref)
+            .await?
+            .ok_or(EffectError::NotFound)?;
+        let paypal = self
+            .client()?
+            .request(
+                Method::GET,
+                &format!("/v1/billing/subscriptions/{provider_ref}"),
+                None,
+                None,
+            )
+            .await
+            .map_err(|e| {
+                if e.outcome_unknown() {
+                    EffectError::Unknown(e.to_string())
+                } else {
+                    EffectError::NotExecuted(e.to_string())
+                }
+            })?;
+        let state = match paypal["status"].as_str().unwrap_or("") {
+            "ACTIVE" => "active",
+            "SUSPENDED" => "suspended",
+            "CANCELLED" => "cancelled",
+            "EXPIRED" => "expired",
+            _ => "pending_approval",
+        };
+        let period_end = paypal["billing_info"]["next_billing_time"]
+            .as_str()
+            .and_then(|t| chrono::DateTime::parse_from_rfc3339(t).ok())
+            .map(|t| t.timestamp());
+        self.set_subscription_state(&current, state, period_end, "refresh")
+            .await
+    }
+
+    pub(crate) async fn set_subscription_state(
+        &self,
+        current: &PlanSubscription,
+        state: &str,
+        period_end: Option<i64>,
+        event: &str,
+    ) -> Result<PlanSubscription, EffectError> {
+        sqlx::query("UPDATE plan_subscriptions SET state = ?, period_end = COALESCE(?, period_end), last_event = ?, updated_at = ? WHERE id = ?")
+            .bind(state)
+            .bind(period_end)
+            .bind(event)
+            .bind(now())
+            .bind(&current.id)
+            .execute(self.pool())
+            .await?;
+        if state != current.state {
+            let site = SiteId::new(current.site_id.clone());
+            let detail = json!({ "subscription": current.id, "plan": current.plan_key, "provider_ref": current.provider_ref, "from": current.state, "state": state, "event": event, "sandbox": current.sandbox });
+            self.receipt(ReceiptKind::SubscriptionChanged, &site, detail)
+                .await;
+        }
+        self.subscription_by_ref(current.provider_ref.as_deref().unwrap_or_default())
+            .await?
+            .ok_or(EffectError::NotFound)
+    }
+
+    /// Cancels a subscription at PayPal (an owner decision W3 or W5 raises and approves first).
+    pub async fn cancel_subscription(
+        &self,
+        site: &SiteId,
+        subscription_id: &str,
+        reason: &str,
+    ) -> Result<PlanSubscription, EffectError> {
+        let current: PlanSubscription =
+            sqlx::query_as("SELECT * FROM plan_subscriptions WHERE site_id = ? AND id = ?")
+                .bind(site.as_str())
+                .bind(subscription_id)
+                .fetch_optional(self.pool())
+                .await?
+                .ok_or(EffectError::NotFound)?;
+        if matches!(current.state.as_str(), "cancelled" | "expired") {
+            return Ok(current);
+        }
+        let provider_ref = current.provider_ref.clone().ok_or(EffectError::NotFound)?;
+        self.client()?
+            .request(
+                Method::POST,
+                &format!("/v1/billing/subscriptions/{provider_ref}/cancel"),
+                Some(&json!({ "reason": reason.chars().take(128).collect::<String>() })),
+                None,
+            )
+            .await
+            .map_err(|e| {
+                if e.outcome_unknown() {
+                    EffectError::Unknown(e.to_string())
+                } else {
+                    EffectError::NotExecuted(e.to_string())
+                }
+            })?;
+        self.set_subscription_state(&current, "cancelled", None, "cancel")
+            .await
+    }
+
+    pub(crate) async fn subscription_by_ref(
+        &self,
+        provider_ref: &str,
+    ) -> Result<Option<PlanSubscription>, sqlx::Error> {
+        sqlx::query_as("SELECT * FROM plan_subscriptions WHERE provider_ref = ?")
+            .bind(provider_ref)
+            .fetch_optional(self.pool())
+            .await
+    }
+
+    /// A site's subscriptions, newest first (for W3's Money pages and W5's billing card).
+    pub async fn subscriptions_for_site(
+        &self,
+        site: &SiteId,
+    ) -> Result<Vec<PlanSubscription>, EffectError> {
+        Ok(sqlx::query_as(
+            "SELECT * FROM plan_subscriptions WHERE site_id = ? ORDER BY created_at DESC, id DESC",
+        )
+        .bind(site.as_str())
+        .fetch_all(self.pool())
+        .await?)
+    }
+}

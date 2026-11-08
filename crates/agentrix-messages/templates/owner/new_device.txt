@@ -1,0 +1,16 @@
+{% block subject %}New sign-in to Agentrix on {{ signin.device }}{% endblock %}
+{% block preheader %}{{ signin.when }}. If it was you, there's nothing to do.{% endblock %}
+{% block body %}
+{% if signin.place %}
+# New sign-in on {{ signin.device }} in {{ signin.place }}
+{% else %}
+# New sign-in on {{ signin.device }}
+{% endif %}
+{{ signin.when }}, with {{ signin.method }}. If it was you, there's nothing to do.
+
+If it wasn't, open Devices and people and sign that device out. Then change what they used to get in.
+
+::button Review your devices | {{ console_url }}/trust/devices
+{% endblock %}
+{% block push %}A new device signed in to your account.{% endblock %}
+{% block push_url %}/console/trust/devices{% endblock %}

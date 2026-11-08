@@ -1,0 +1,15 @@
+{% block subject %}{{ invite.by }} invited you to help run {{ site.name }}{% endblock %}
+{% block preheader %}As {{ invite.role }}. The invitation works until {{ invite.expires }}.{% endblock %}
+{% block body %}
+# Help run {{ site.name }}
+{{ invite.by }} invited you to {{ site.name }} on Agentrix, as {{ invite.role }}.
+
+::fact You'll be able to | {{ invite.can }}
+::fact You won't | {{ invite.cannot }}
+
+Accept, and you'll make a passkey on your phone or computer. That's how you sign in and approve things; nobody else can use it.
+
+::button Accept the invitation | {{ invite.url }}
+
+It works until {{ invite.expires }}. Not expecting this? Ignore the email and nothing happens.
+{% endblock %}

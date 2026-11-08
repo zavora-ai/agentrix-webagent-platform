@@ -1,0 +1,12 @@
+{% block subject %}Your recovery code for {{ site.name }}{% endblock %}
+{% block preheader %}For getting back into your account. It works for {{ minutes }} minutes.{% endblock %}
+{% block body %}
+# Getting back into your account
+Someone, hopefully you, asked to get back into your {{ site.name }} account after losing a device or a password. Here is the code:
+
+::code {{ code }}
+
+It works for {{ minutes }} minutes. After you use it, add a new passkey or authenticator on your account page, so you have a way in next time.
+
+Not you? Don't share the code. Your account stays as it is, and {{ site.name }} will email you if anything changes.
+{% endblock %}
