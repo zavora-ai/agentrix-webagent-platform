@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # Agentrix Brick 1 · deploy a commit to the running stack (task S1-12; R14.1, R14.3).
 #
-#   deploy/deploy.sh [COMMIT] [--secrets] [--quick] [--no-gauntlet]
+#   deploy/deploy.sh [COMMIT] [--secrets] [--email] [--films DIR] [--quick] [--no-gauntlet]
 #       Ships COMMIT (default HEAD) to control, builds it there (release, --locked), installs
 #       node and models on control and the runner and egress on the sandbox, syncs the units,
 #       settings and Caddyfile, restarts, runs the stack smoke test, then re-runs the gauntlet
-#       on every live site (R13.2). --secrets also (re)writes control's provider keys from ./.env.
+#       on every live site (R13.2). --secrets also (re)writes control's provider keys from ./.env,
+#       and the Telegram bot file from $AGENTRIX_TELEGRAM_FILE (default
+#       ~/.config/agentrix/telegram.json) when there is one. --email writes RESEND_API_KEY (and
+#       RESEND_WEBHOOK_SECRET, AGENTRIX_EMAIL_FROM when set) from ./.env, which switches real
+#       email on. --films DIR uploads the home page's film (*.mp4, *.webm in DIR).
 #       --quick skips the slower rooms smoke test; --no-gauntlet skips the gauntlet re-run.
 #   deploy/deploy.sh --rollback     Puts back the binaries from before the last deploy, restarts,
 #                                   and runs the smoke test. Units and settings are not rolled back.
@@ -48,16 +52,18 @@ CONTROL_BINS=(agentrix-node agentrix-models agentrix-gauntlet)
 SANDBOX_BINS=(agentrix-runner agentrix-egress)
 
 # --- arguments ---------------------------------------------------------------------------
-MODE=deploy COMMIT=HEAD SECRETS=0 QUICK=() GAUNTLET=1
+MODE=deploy COMMIT=HEAD SECRETS=0 EMAIL=0 FILMS="" QUICK=() GAUNTLET=1
 while [ $# -gt 0 ]; do
   case $1 in
     --secrets) SECRETS=1 ;;
+    --email) EMAIL=1 ;;
+    --films) [ $# -ge 2 ] || die "--films needs a folder"; FILMS=$2; shift ;;
     --quick) QUICK=(--quick) ;;
     --no-gauntlet) GAUNTLET=0 ;;
     --rollback) MODE=rollback ;;
     --status) MODE=status ;;
     --break-lock) MODE=break-lock ;;
-    -h|--help) sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) die "unknown option $1" ;;
     *) COMMIT=$1 ;;
   esac
@@ -186,8 +192,8 @@ else
   missing=""
   while IFS= read -r path; do
     "${C[@]}" "sudo -n test -s '$path'" || missing="$missing $path"
-  done < <(git show "$SHA:deploy/systemd/agentrix-node.service" | sed -n 's/^LoadCredential=[^:]*:\(.*\)$/\1/p' | grep -v -E '/(gauntlet\.token|objects\.json)$')
-  # gauntlet.token and objects.json are exempt: the host setup below makes them when missing.
+  done < <(git show "$SHA:deploy/systemd/agentrix-node.service" | sed -n 's/^LoadCredential=[^:]*:\(.*\)$/\1/p' | grep -v -E '/(gauntlet\.token|objects\.json|paypal\.json|telegram\.json)$')
+  # These four are exempt: the host setup below makes them when missing (empty or no bot = off).
   [ -z "$missing" ] || die "missing on control:$missing. node would not start, so nothing was changed. Write it first (deploy/README.md, Secrets)."
 
   say "host setup on control (idempotent)"
@@ -208,6 +214,11 @@ if test -s /etc/agentrix/secrets/objects.json; then echo "Object Storage: config
 # PayPal sandbox keys (platform W6, agentrix-effects) are optional the same way: empty means off.
 test -e /etc/agentrix/secrets/paypal.json || install -m 0600 /dev/null /etc/agentrix/secrets/paypal.json
 if test -s /etc/agentrix/secrets/paypal.json; then echo "PayPal: configured (paypal.json)"; else echo "PayPal: off (paypal.json is empty)"; fi
+# The Telegram bot file (platform W13, agentrix-channels): a file that lists no bot means off.
+test -e /etc/agentrix/secrets/telegram.json || (umask 077; printf '{"bots":[]}\n' > /etc/agentrix/secrets/telegram.json)
+if grep -q '"token"' /etc/agentrix/secrets/telegram.json; then echo "Telegram: configured (telegram.json)"; else echo "Telegram: off (telegram.json lists no bot)"; fi
+# The home page's film (AGENTRIX_HOME_FILM_DIR in node.env); --films fills it.
+install -d -o agentrix -g agentrix -m 2750 /var/lib/agentrix/film
 # Vultr's Ubuntu image enables ufw with only 22 open; both ufw and nftables must accept.
 if command -v ufw >/dev/null && ufw status | grep -q 'Status: active'; then
   ufw allow 80/tcp >/dev/null; ufw allow 443/tcp >/dev/null
@@ -257,6 +268,36 @@ for name in ("ANTHROPIC_API_KEY", "VULTR_INFERENCE_API_KEY"):
     if m and m.group(1).strip():
         print(f"{name}={m.group(1).strip()}")
 EOF
+    tg=${AGENTRIX_TELEGRAM_FILE:-$HOME/.config/agentrix/telegram.json}
+    if [ -s "$tg" ]; then
+      say "Telegram bot file from $tg into /etc/agentrix/secrets/telegram.json (not printed)"
+      python3 -I -c 'import json,sys; d=json.load(open(sys.argv[1])); assert isinstance(d.get("bots"), list)' "$tg" ||
+        die "$tg isn't the expected JSON ({\"bots\":[{\"site\":…,\"token\":…}]})"
+      "${C[@]}" 'sudo -n sh -c "umask 077; cat > /etc/agentrix/secrets/telegram.json"' < "$tg"
+    fi
+  fi
+
+  if [ "$EMAIL" = 1 ]; then
+    say "email keys from ./.env into /etc/agentrix/secrets/node.env (not printed); real email is on"
+    [ -f .env ] || die "no ./.env with RESEND_API_KEY"
+    python3 -I - <<'EOF' | "${C[@]}" 'sudo -n sh -c "umask 077; cat > /etc/agentrix/secrets/node.env"'
+import re, pathlib, sys
+env = pathlib.Path(".env").read_text()
+found = False
+for name in ("RESEND_API_KEY", "RESEND_WEBHOOK_SECRET", "AGENTRIX_EMAIL_FROM"):
+    m = re.search(rf"(?m)^{name}=(.*)$", env)
+    if m and m.group(1).strip():
+        print(f"{name}={m.group(1).strip()}")
+        found = found or name == "RESEND_API_KEY"
+if not found:
+    sys.exit("no RESEND_API_KEY in ./.env")
+EOF
+  fi
+
+  if [ -n "$FILMS" ]; then
+    say "the home page's film from $FILMS into /var/lib/agentrix/film"
+    ls "$FILMS"/*.mp4 >/dev/null 2>&1 || die "$FILMS holds no .mp4"
+    (cd "$FILMS" && COPYFILE_DISABLE=1 tar -c --no-xattrs $(ls *.mp4 *.webm 2>/dev/null)) | "${C[@]}" 'sudo -n sh -c "set -e; d=/var/lib/agentrix; rm -rf \$d/film.new \$d/film.old; install -d -o agentrix -g agentrix -m 2750 \$d/film.new; tar -x -C \$d/film.new --no-same-owner --no-same-permissions; chown -R agentrix:agentrix \$d/film.new; chmod 0640 \$d/film.new/*; mv \$d/film \$d/film.old; mv \$d/film.new \$d/film; rm -rf \$d/film.old; ls \$d/film | tr \"\\n\" \" \"; echo"'
   fi
 
   # --- install on control, then the sandbox ---------------------------------------------

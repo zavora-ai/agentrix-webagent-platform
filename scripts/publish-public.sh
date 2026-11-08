@@ -126,6 +126,6 @@ if git -C "$public" diff --cached --quiet; then
   echo "the public repo already matches $ref ($short); nothing to publish"
   exit 0
 fi
-git -C "$public" commit -q -m "Update from the platform branch ($short)"
+git -C "$public" commit -q -m "Update from $ref ($short)"
 git -C "$public" push origin HEAD
 echo "published $ref ($short) as $(git -C "$public" rev-parse --short HEAD)"

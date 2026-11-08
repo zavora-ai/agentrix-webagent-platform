@@ -322,16 +322,16 @@
     },
     "film:12": {
       "brief": "Six in the evening outside Kilele Bakery, a small bright bakery in Westlands, Nairobi, with cream walls and wooden shelves of round sourdough loaves and croissants: Wanjiru, a Kenyan woman in her late thirties with short natural black hair, wearing a coral apron over a dark brown shirt, relaxed, waves goodbye to Njeri, a Kenyan woman in her early twenties with long braids, wearing a cream apron and Otieno, a Kenyan man in his mid twenties in a white baker's jacket and white baker's cap as the shutter comes down",
-      "bytes": 76408,
+      "bytes": 70754,
       "cost_micro_usd": 23593,
       "description": {
-        "alt": "A woman in a coral apron waves goodbye at a bakery window with shelves of sourdough loaves and croissants behind her.",
+        "alt": "A woman in a coral apron smiles at closing time outside a bakery window with shelves of sourdough loaves and croissants behind her.",
         "check": "Confirm the AI-generated faces do not resemble real identifiable people.",
         "photographic": true,
         "shows_person": true,
         "shows_text": false
       },
-      "digest": "sha256:f2150a6ec86edd3339f08423f7171fe056ce11364e0cee7adbbaa5e75b639301",
+      "digest": "sha256:c0707dfb1137b080362689c549e819f0acde84709c3aadf374fa24d67063d50f",
       "file": "film_12.webp",
       "height": 1152,
       "kind": "film",
@@ -339,6 +339,7 @@
       "media_type": "image/webp",
       "model": "z-image-turbo",
       "prompt": "Six in the evening outside Kilele Bakery, a small bright bakery in Westlands, Nairobi, with cream walls and wooden shelves of round sourdough loaves and croissants: Wanjiru, a Kenyan woman in her late thirties with short natural black hair, wearing a coral apron over a dark brown shirt, relaxed, waves goodbye to Njeri, a Kenyan woman in her early twenties with long braids, wearing a cream apron and Otieno, a Kenyan man in his mid twenties in a white baker's jacket and white baker's cap as the shutter comes down. Photoreal documentary film still, natural light, shallow depth of field, warm colour grade, Nairobi. The people are fictional and must not resemble any real or famous person. Colours and mood only: Warm colour grade, soft natural light, coral and cream accents. No readable text, letters, numbers, signs, logos, labels or watermarks anywhere.",
+      "retouched": "A stray raised hand that belonged to no one, between Wanjiru and the woman in front, was painted out on 8 Nov 2026. The wall and rail behind it were rebuilt from the picture itself, with no model and no cost.",
       "seed": 5012,
       "slot": "film:12",
       "verdict": {
