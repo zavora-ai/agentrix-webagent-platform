@@ -722,7 +722,11 @@ mod tests {
         assert!(body.contains("t switched on yet"));
         let (status, body, _) = get(&router, &format!("/console/messages/{id}")).await;
         assert_eq!(status, StatusCode::OK);
-        assert!(!body.contains("482"));
+        // The whole code, plain and spaced: "482" alone also turns up in random message ids.
+        assert!(
+            !body.contains("482913") && !body.contains("482 913"),
+            "the code itself never shows"
+        );
         let (status, html, headers) = get(&router, &format!("/console/messages/{id}/view")).await;
         assert_eq!(status, StatusCode::OK);
         assert!(
@@ -731,7 +735,11 @@ mod tests {
                 .unwrap()
                 .starts_with("sandbox")
         );
-        assert!(!html.contains("482"));
+        // The whole code, plain and spaced: "482" alone also turns up in random message ids.
+        assert!(
+            !html.contains("482913") && !html.contains("482 913"),
+            "the code itself never shows"
+        );
         let (status, body, _) = get(&router, "/console/messages/catalogue").await;
         assert_eq!(status, StatusCode::OK);
         assert!(body.contains("Every message Agentrix can send"));
