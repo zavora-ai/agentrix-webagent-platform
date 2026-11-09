@@ -458,7 +458,12 @@ async fn tana_pages_follow_the_copy_review() {
     assert!(!body.contains("Friday digest"));
 
     let all = tana_page(&app, "/archive").await;
-    assert!(all.contains("63 stories across"));
+    // The stories are dated relative to today, so between midnight and the day's first story
+    // fewer than all 63 are published yet: check the line, not the count.
+    assert!(
+        all.contains(" stories across ") && all.contains(" weekly issues, newest first."),
+        "{all}"
+    );
     let council = tana_page(&app, "/archive?section=council").await;
     assert!(
         council.contains("stories in Council across"),
