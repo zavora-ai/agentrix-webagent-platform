@@ -49,6 +49,48 @@ Checking and moving a real site needs the sealed rooms on a Vultr sandbox VM ([D
 on a laptop, *Paste your website address* says so instead of guessing. More in
 [Run it locally](#8-run-it-locally).
 
+## For the Vultr Agent Rush judges
+
+Challenge 1 asks for an agent that does real work inside isolated sandboxes on Vultr, a central
+control layer that plans, dispatches and verifies, model calls through Vultr Serverless
+Inference, and a person's approval before the final action. Each row below says where to see
+one of those on the live site, and where it lives in the code.
+
+### See it on agentrix.website
+
+| What Challenge 1 asks for | Open | What you'll see |
+|---|---|---|
+| A web agent doing real work in a sandbox | [agentrix.website/assess/fixture](https://agentrix.website/assess/fixture) | The Mover reads Zavora's deliberately infected WordPress site, `fixture.agentrix.website`, in a sealed browser room on the sandbox VM. Screenshots arrive about once a second. The room's receipt counts hosts contacted, requests, bytes downloaded and requests refused as it goes. The planted links to Vultr's metadata address and to `127.0.0.1` show up as refusals. |
+| Every action in an isolated sandbox, with limits and cleanup | The same page, then the health report | Each page opens in a fresh browser room with no keys, a per-job allowlist and CPU, memory, process and time caps. The room is destroyed when the check ends, and the report lists what was refused. |
+| Model calls through Vultr Serverless Inference | Ask any sample site something, for example [Kilele Bakery](https://kilele-bakery-sample.agentrix.website) | Plain facts come straight from the site's pages. Anything else is answered by a model on Vultr through the Model Gateway, which holds the only model keys. If the site doesn't say, the WebAgent says so. |
+| Pattern A: the model writes code, it runs, the result is checked, errors go back | After you claim a site: *Choose your new look* | Three design agents (Zavora CLI on DeepSeek v4.1, planned by GLM 5.3, all on Vultr) each write a home page in their own room. A check sends missing basics back to the designer that made the page. A panel on the page lists this run's evidence: the models used, every refused tool call, and each page's sha256 and signed receipt. |
+| Pattern B and a person's approval before the final action | After you claim a site: the Move, then the go-live card | Browsers in sealed rooms take screenshots, a vision model checks old against new, and the go-live card shows the parity score and what was left behind. Nothing goes live until the owner approves with a passkey. |
+| Agents talking to agents | `curl https://agentrix.website/.well-known/awp` | The site's agent manifest. The MCP door is at `/mcp`, and each sample site has its own, so a customer's AI agent can read plans or send Kilele a custom cake order, which waits for the owner. |
+| Images on Vultr | [Kilele's cake studio](https://kilele-bakery-sample.agentrix.website/cakes/studio) | Describe a cake to the Cakes desk. It draws the idea with a Vultr image model and labels the picture as made with AI. |
+| A record you can check | [agentrix.website/status](https://agentrix.website/status), receipts at `/receipts/{digest}` | Status by part, day by day. Every job, refusal and decision has a receipt, signed with the key published at `/.well-known/agentrix/keys`. |
+
+**Running the Move yourself.** Moving a site needs one you own: the claim page asks you to put a
+file or a DNS record on it. Only Zavora can claim its own fixture. The [demo video](specs/submission/)
+shows live Assess runs of zavora.ai and of the fixture, and a customer's AI agent using the agent
+door. How a Move runs, step by step, is in [2.4](#24-how-a-move-flows), and its ten planted attacks
+are in [4.4](#44-the-gauntlet).
+
+### How ADK-Rust and Vultr share the work
+
+ADK-Rust decides how an agent works; the platform's own crates and Vultr decide where it can act.
+
+| Piece | From | What it does here |
+|---|---|---|
+| `adk-site` | ADK-Rust | The Move's migration toolkit: the site inventory and crawl client, the infection detectors, the HTML sanitiser that strips scripts and hidden instructions, text parity, and the release log. Used in `crates/agentrix-move` (`inventory.rs`, `clean.rs`, `parity.rs`) and `crates/agentrix-node` (`site/release.rs`, `launch/`). |
+| `adk-model` | ADK-Rust | The Model Gateway's client for its second provider, Anthropic, with its retry policy (`crates/agentrix-models/src/claude.rs`). Calls to Vultr go through the gateway's own client (`upstream.rs`). We added a Vultr Serverless Inference preset to `adk-model` upstream for this entry ([zavora-ai/adk-rust#1345](https://github.com/zavora-ai/adk-rust/pull/1345)); Zavora CLI uses it. |
+| `adk-core` | ADK-Rust | Export and erasure of a person's data across the stores (`agentrix-store`, `agentrix-identity`, `agentrix-samples`), and the audit log the release step writes to (`agentrix-node/src/launch/`). |
+| Zavora CLI | Built on ADK-Rust | Runs the design agents headless. Shell commands are refused, file reads and writes stop at the agent's own room, and only `fs_write` is approved. |
+| `agentrix-sandbox` | This repository | Control signs a job spec and sends it over the VPC to `agentrix-runner` on the sandbox VM. Each job gets a fresh Docker room under gVisor (`runsc`) with caps, and the room is destroyed after the job. |
+| `agentrix-egress` | This repository | One egress proxy per room. It allows only the job's hosts, refuses metadata and private addresses, and puts every refusal on the receipt. |
+| `agentrix-models` | This repository | The Model Gateway: the only holder of model keys. It routes each call to Vultr Inference by purpose and records the provider and model on every answer. |
+| `agentrix-gauntlet` | This repository | The ten planted attacks, and the score computed from receipts. |
+| Control VM, VX1 sandbox VM, VPC, firewall groups, Object Storage, DNS, API | Vultr | Where all of the above runs ([9.1](#91-services-used)). |
+
 ## Contents
 
 1. [Why Agentrix WebAgent Platform?](#1-why-agentrix-webagent-platform)
